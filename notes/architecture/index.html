@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LightAgent 架构图集 · 思维导图索引</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --panel:#ffffff; --ink:#1c2733; --ink2:#5b6b7c; --line:#dbe3ec;
+    --center:#12325a; --center-ink:#eaf3ff;
+    --cyan:#0891b2; --emerald:#059669; --amber:#d97706; --violet:#7c3aed; --rose:#e11d48;
+    --shadow:0 6px 24px rgba(16,38,64,.10);
+  }
+  @media (prefers-color-scheme: dark){
+    html:not([data-theme]) , html[data-theme=""]{
+      --bg:#0d1420; --panel:#16202e; --ink:#e8eef6; --ink2:#93a4b8; --line:#26344a;
+      --center:#0a1c33; --center-ink:#d9ecff;
+      --cyan:#22d3ee; --emerald:#34d399; --amber:#fbbf24; --violet:#a78bfa; --rose:#fb7185;
+      --shadow:0 6px 24px rgba(0,0,0,.45);
+    }
+  }
+  html[data-theme="dark"]{
+    --bg:#0d1420; --panel:#16202e; --ink:#e8eef6; --ink2:#93a4b8; --line:#26344a;
+    --center:#0a1c33; --center-ink:#d9ecff;
+    --cyan:#22d3ee; --emerald:#34d399; --amber:#fbbf24; --violet:#a78bfa; --rose:#fb7185;
+    --shadow:0 6px 24px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif; }
+  header{max-width:1560px; margin:0 auto; padding:26px 28px 6px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;}
+  header h1{font-size:22px; letter-spacing:.5px;}
+  header .sub{color:var(--ink2); font-size:13px;}
+  header .spacer{flex:1;}
+  #themeBtn{border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer; box-shadow:var(--shadow);}
+  #themeBtn:hover{border-color:var(--ink2);}
+  #wrap{max-width:1560px; margin:0 auto; padding:8px 12px 30px;}
+  #map{width:100%; height:auto; display:block;}
+  .leaf{cursor:pointer;}
+  .leaf rect.card{fill:var(--panel); stroke:var(--line); stroke-width:1.2; rx:10; transition:stroke .15s, transform .15s;}
+  .leaf:hover rect.card{stroke:var(--accent); stroke-width:1.8;}
+  .leaf .num{font-size:11px; font-weight:700; fill:var(--accent); letter-spacing:.5px;}
+  .leaf .title{font-size:14.5px; font-weight:650; fill:var(--ink);}
+  .leaf .desc{font-size:11.5px; fill:var(--ink2);}
+  .leaf .badge{font-size:10px; fill:var(--accent); stroke:var(--accent); stroke-width:.8; fill-opacity:.10; rx:6;}
+  .leaf .badgeText{font-size:9.5px; fill:var(--accent); font-weight:600;}
+  .branchLab{font-size:15px; font-weight:700; fill:var(--accent);}
+  .branchSub{font-size:11px; fill:var(--ink2);}
+  .link{fill:none; stroke:var(--accent); stroke-opacity:.42; stroke-width:1.6; transition:stroke-opacity .15s, stroke-width .15s;}
+  .leaf:hover .link{stroke-opacity:.95; stroke-width:2.4;}
+  .trunk{fill:none; stroke:var(--ink2); stroke-opacity:.4; stroke-width:2;}
+  #centerGroup rect{fill:var(--center); rx:16;}
+  #centerGroup .ct{fill:var(--center-ink); font-size:21px; font-weight:750; text-anchor:middle; letter-spacing:1px;}
+  #centerGroup .cs{fill:var(--center-ink); opacity:.75; font-size:12px; text-anchor:middle;}
+  footer{max-width:1560px; margin:0 auto; padding:0 28px 30px; color:var(--ink2); font-size:12px; line-height:1.8;}
+  footer b{color:var(--ink);}
+</style>
+</head>
+<body>
+<header>
+  <h1>LightAgent 架构图集</h1>
+  <span class="sub">19 张交互式图表 · 深 / 浅主题 · 可缩放可导出 · 点击任意节点在新窗口打开对应图</span>
+  <span class="spacer"></span>
+  <button id="themeBtn">🌗 切换主题</button>
+</header>
+<div id="wrap"><svg id="map" role="img" aria-label="LightAgent 架构图集思维导图"></svg></div>
+<footer>
+  <b>阅读建议：</b>第一次了解本项目，按 <b>01 → 02 → 03</b> 的顺序看；关心某个具体机制时，从对应分支进入。
+  所有节点标注了真实函数名（如 <b>agent.run()</b>、<b>_finish_run</b>、<b>ToolRegistry.register_tool</b>），可与源码对照阅读。基于 commit <b>0f1c05a</b>（v0.10.0）绘制。
+</footer>
+
+<script>
+const DATA = [
+  { id:'flow', name:'核心流程', sub:'跑起来的每一步', color:'var(--emerald)', side:'right', items:[
+    {file:'03-main-loop.html', num:'03', title:'一次对话的完整流程', desc:'agent.run() 主循环 · 工具循环 · 三道安全门', type:'workflow'},
+    {file:'04-tool-call.html', num:'04', title:'工具从注册到执行', desc:'tool_info 约定 → ToolRegistry → dispatch()', type:'workflow'},
+    {file:'05-mcp.html', num:'05', title:'接入外部 MCP 工具', desc:'stdio / SSE / HTTP 三通道 · 懒重连', type:'workflow'},
+    {file:'06-swarm.html', num:'06', title:'多智能体协作转交', desc:'LightSwarm 意图判断 · on_handoff 钩子', type:'workflow'},
+    {file:'07-lightflow.html', num:'07', title:'LightFlow 多步工作流', desc:'拓扑执行 · 断点续跑 · 人工审批', type:'workflow'},
+    {file:'08-memory.html', num:'08', title:'记忆的读写与晋升', desc:'MemoryPolicy · 指纹去重 · 候选评审', type:'workflow'},
+    {file:'09-tool-generator.html', num:'09', title:'工具自动生成', desc:'create_tool：一句话让模型写个工具', type:'workflow'}
+  ]},
+  { id:'seq', name:'时序交互', sub:'消息怎么来回', color:'var(--amber)', side:'right', items:[
+    {file:'10-stream-sequence.html', num:'10', title:'流式对话时序', desc:'chunks 增量 · tool_calls 拼装 · 二次请求', type:'sequence'},
+    {file:'11-approval-sequence.html', num:'11', title:'人工审批时序', desc:'HumanApprovalHook 拦截 → 批复 → 放行', type:'sequence'},
+    {file:'12-session-sequence.html', num:'12', title:'会话持久化时序', desc:'open_session · checkpoint · 恢复续聊', type:'sequence'}
+  ]},
+  { id:'overview', name:'总览', sub:'建立全局感', color:'var(--cyan)', side:'left', items:[
+    {file:'01-overview.html', num:'01', title:'整体架构总览', desc:'你的代码 · LightAgent 框架 · 外部服务', type:'architecture'},
+    {file:'02-modules.html', num:'02', title:'代码模块地图', desc:'每个 .py 文件管什么 · 关键类在哪', type:'architecture'}
+  ]},
+  { id:'data', name:'数据流转', sub:'一段话的旅程', color:'var(--violet)', side:'left', items:[
+    {file:'13-request-dataflow.html', num:'13', title:'一次请求的数据流转', desc:'query 进 → 回复出 · 事件与用量旁路', type:'dataflow'},
+    {file:'14-knowledge-dataflow.html', num:'14', title:'记忆与知识检索', desc:'mem0 记忆线 · SQLite FTS5 知识线', type:'dataflow'}
+  ]},
+  { id:'state', name:'状态变化', sub:'一件事的一生', color:'var(--rose)', side:'left', items:[
+    {file:'15-run-lifecycle.html', num:'15', title:'单次运行生命周期', desc:'成功路径 · 重试环 · 中止的三种原因', type:'lifecycle'},
+    {file:'16-flow-step-lifecycle.html', num:'16', title:'LightFlow 步骤状态', desc:'六种状态 · 审批解卡 · 断点续跑', type:'lifecycle'},
+    {file:'17-memory-candidate-lifecycle.html', num:'17', title:'记忆候选状态', desc:'pending → 晋升 / 拒绝 / 暂存', type:'lifecycle'},
+    {file:'18-runtime-states.html', num:'18', title:'后台任务状态', desc:'Job 中断恢复 · Goal / Inbox 同套模式', type:'lifecycle'},
+    {file:'19-mcp-lifecycle.html', num:'19', title:'MCP 连接生命周期', desc:'懒连接 · 限量重试 · 规范报错', type:'lifecycle'}
+  ]}
+];
+
+const TYPE_ZH = {architecture:'架构', workflow:'流程', sequence:'时序', dataflow:'数据流', lifecycle:'状态'};
+const LEAF_W = 330, LEAF_H = 52, PITCH = 60, BRANCH_GAP = 40, MARGIN_TOP = 34, MARGIN_X = 96;
+const CENTER = {x:0, y:0, w:250, h:96};
+
+// 计算两侧布局
+function layoutSide(side){
+  const branches = DATA.filter(b=>b.side===side);
+  let y = MARGIN_TOP, out = [];
+  for(const b of branches){
+    const blockH = b.items.length * PITCH;
+    let ly = y + LEAF_H/2;
+    const leaves = b.items.map(it=>{ const p={...it, y:ly}; ly+=PITCH; return p; });
+    out.push({branch:b, leaves, branchY: (leaves[0].y + leaves[leaves.length-1].y)/2});
+    y += blockH + BRANCH_GAP;
+  }
+  return {branches:out, height:y - BRANCH_GAP + MARGIN_TOP};
+}
+const L = layoutSide('left'), R = layoutSide('right');
+const H = Math.max(L.height, R.height);
+const W = 1560;
+const cx = W/2, cy = H/2;
+
+const svg = document.getElementById('map');
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent||svg).appendChild(e); return e;
+}
+function bezier(x1,y1,x2,y2){
+  const mx = (x1+x2)/2;
+  return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+}
+function renderSide(sideData, dir){
+  // dir: 1 = 右侧, -1 = 左侧
+  const branchX = cx + dir*250, leafX = cx + dir*(250+170);
+  for(const {branch, leaves, branchY} of sideData.branches){
+    const g = el('g');
+    // 主干：中心 → 分支
+    el('path', {d:bezier(cx+dir*130, cy, branchX-dir*14, branchY), class:'trunk'}, g);
+    // 分支标签（带底色药丸，避免连线穿字）
+    const pillG = el('g', {class:'branchPill'}, g);
+    const wOf = t => [...t].reduce((a,ch)=> a + (ch.charCodeAt(0)>0x2e80 ? 13 : 6.5), 0);
+    const est = Math.max(wOf(branch.name)*1.3, wOf(branch.sub) + 10);
+    const pw = est + 34, ph = 62;
+    const px = branchX - pw/2;
+    const py = branchY-78;
+    const pillCX = branchX;
+    const t = el('text', {x:pillCX, y:branchY-44, class:'branchLab', 'text-anchor':'middle'}, pillG);
+    t.textContent = branch.name;
+    const ts = el('text', {x:pillCX, y:branchY-22, class:'branchSub', 'text-anchor':'middle'}, pillG);
+    ts.textContent = branch.sub;
+    const pill = el('rect', {x:px, y:py, width:pw, height:ph, rx:12,
+      style:'fill:var(--panel); stroke:'+branch.color+'; stroke-width:1.2'}, pillG);
+    pillG.insertBefore(pill, t);
+    for(const leaf of leaves){
+      const lg = el('g', {class:'leaf', 'data-file':leaf.file}, g);
+      lg.style.setProperty('--accent', branch.color);
+      const cardX = dir===1 ? leafX : leafX-LEAF_W;
+      // 连线：分支 → 叶子
+      el('path', {d:bezier(branchX+dir*10, branchY, dir===1?cardX:cardX+LEAF_W, leaf.y), class:'link'}, lg);
+      const cy2 = leaf.y - LEAF_H/2;
+      el('rect', {x:cardX, y:cy2, width:LEAF_W, height:LEAF_H, class:'card', rx:10}, lg);
+      // 类型徽标
+      const bw = 46;
+      const bx = dir===1 ? cardX+LEAF_W-bw-10 : cardX+10;
+      el('rect', {x:bx, y:cy2+8, width:bw, height:16, class:'badge', rx:6}, lg);
+      const bt = el('text', {x:bx+bw/2, y:cy2+19.5, class:'badgeText', 'text-anchor':'middle'}, lg);
+      bt.textContent = TYPE_ZH[leaf.type]||leaf.type;
+      // 编号 + 标题 + 描述（左右对称：文字锚点与徽标位置随方向镜像）
+      const anchor = dir===1 ? 'start' : 'end';
+      const tx = dir===1 ? cardX+14 : cardX+LEAF_W-14;
+      const num = el('text', {x:tx, y:cy2+21, class:'num', 'text-anchor':anchor}, lg);
+      num.textContent = leaf.num;
+      const ti = el('text', {x:dir===1 ? tx+30 : tx-30, y:cy2+22, class:'title', 'text-anchor':anchor}, lg);
+      ti.textContent = leaf.title;
+      const de = el('text', {x:tx, y:cy2+42, class:'desc', 'text-anchor':anchor}, lg);
+      de.textContent = leaf.desc;
+      // 点击打开
+      lg.addEventListener('click', ()=> window.open(leaf.file, '_blank'));
+      lg.addEventListener('keydown', ev=>{ if(ev.key==='Enter') window.open(leaf.file,'_blank'); });
+      lg.setAttribute('tabindex','0');
+      lg.setAttribute('role','link');
+      lg.setAttribute('aria-label', leaf.num+' '+leaf.title);
+    }
+    g.appendChild(pillG);
+  }
+}
+renderSide(R, 1);
+renderSide(L, -1);
+
+// 中心节点
+const cg = el('g', {id:'centerGroup'});
+el('rect', {x:cx-CENTER.w/2, y:cy-CENTER.h/2, width:CENTER.w, height:CENTER.h, rx:16, style:'filter:drop-shadow(0 8px 22px rgba(10,40,80,.35))'}, cg);
+const ct = el('text', {x:cx, y:cy-8, class:'ct'}, cg); ct.textContent = 'LightAgent';
+const ct2 = el('text', {x:cx, y:cy+18, class:'ct', style:'font-size:15px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
+const cs = el('text', {x:cx, y:cy+42, class:'cs'}, cg);
+cs.textContent = '5 类视角 · 19 张图 · 点击节点打开';
+</script>
+<script>
+(function(){
+  const btn = document.getElementById('themeBtn');
+  const forced = new URLSearchParams(location.search).get('theme');
+  const saved = localStorage.getItem('la-map-theme');
+  if(forced){ document.documentElement.dataset.theme = forced; }
+  else if(saved){ document.documentElement.dataset.theme = saved; }
+  btn.addEventListener('click', ()=>{
+    const cur = document.documentElement.dataset.theme ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('la-map-theme', next);
+  });
+})();
+</script>
+</body>
+</html>
