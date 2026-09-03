@@ -27,14 +27,19 @@
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{background:var(--bg); color:var(--ink); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif; }
-  header{max-width:1560px; margin:0 auto; padding:26px 28px 6px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;}
+  header{max-width:1560px; margin:0 auto; padding:18px 28px 6px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;}
   header h1{font-size:22px; letter-spacing:.5px;}
   header .sub{color:var(--ink2); font-size:13px;}
   header .spacer{flex:1;}
   #themeBtn{border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer; box-shadow:var(--shadow);}
   #themeBtn:hover{border-color:var(--ink2);}
-  #wrap{max-width:1560px; margin:0 auto; padding:8px 12px 30px;}
-  #map{width:100%; height:auto; display:block;}
+  #wrap{max-width:1560px; margin:0 auto; padding:6px 12px 22px; position:relative;}
+  #map{width:100%; height:auto; display:block; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;}
+  #map.dragging{cursor:grabbing;}
+  .ztool{display:flex; align-items:center; gap:6px;}
+  .ztool button{border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; width:30px; height:30px; font-size:15px; line-height:1; cursor:pointer; box-shadow:var(--shadow);}
+  .ztool button:hover{border-color:var(--ink2);}
+  #zpct{min-width:46px; text-align:center; font-size:12px; color:var(--ink2); font-variant-numeric:tabular-nums;}
   .leaf{cursor:pointer;}
   .leaf rect.card{fill:var(--panel); stroke:var(--line); stroke-width:1.2; rx:10; transition:stroke .15s, transform .15s;}
   .leaf:hover rect.card{stroke:var(--accent); stroke-width:1.8;}
@@ -51,15 +56,21 @@
   #centerGroup rect{fill:var(--center); rx:16;}
   #centerGroup .ct{fill:var(--center-ink); font-size:21px; font-weight:750; text-anchor:middle; letter-spacing:1px;}
   #centerGroup .cs{fill:var(--center-ink); opacity:.75; font-size:12px; text-anchor:middle;}
-  footer{max-width:1560px; margin:0 auto; padding:0 28px 30px; color:var(--ink2); font-size:12px; line-height:1.8;}
+  footer{max-width:1560px; margin:0 auto; padding:0 28px 20px; color:var(--ink2); font-size:12px; line-height:1.8;}
   footer b{color:var(--ink);}
 </style>
 </head>
 <body>
 <header>
   <h1>LightAgent 架构图集</h1>
-  <span class="sub">19 张交互式图表 · 深 / 浅主题 · 可缩放可导出 · 点击任意节点在新窗口打开对应图</span>
+  <span class="sub">19 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
   <span class="spacer"></span>
+  <span class="ztool" aria-label="缩放控制">
+    <button id="zout" aria-label="缩小" title="缩小（-）">−</button>
+    <span id="zpct" aria-live="polite">100%</span>
+    <button id="zin" aria-label="放大" title="放大（+）">＋</button>
+    <button id="zfit" aria-label="适应屏幕" title="重置视图（0 / ⌂）">⌂</button>
+  </span>
   <button id="themeBtn">🌗 切换主题</button>
 </header>
 <div id="wrap"><svg id="map" role="img" aria-label="LightAgent 架构图集思维导图"></svg></div>
@@ -200,6 +211,126 @@ const ct = el('text', {x:cx, y:cy-8, class:'ct'}, cg); ct.textContent = 'LightAg
 const ct2 = el('text', {x:cx, y:cy+18, class:'ct', style:'font-size:15px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
 const cs = el('text', {x:cx, y:cy+42, class:'cs'}, cg);
 cs.textContent = '5 类视角 · 19 张图 · 点击节点打开';
+
+// ===== 缩放与平移：以 viewBox 方式实现，任何倍率下文字都保持矢量清晰 =====
+(function(){
+  const pct = document.getElementById('zpct');
+  const MIN_S = 1, MAX_S = 14;
+  let s = 1, vx = 0, vy = 0;            // s: 相对适配视图的倍率; (vx,vy): 视口左上角在内容坐标系中的位置
+
+  const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+  function apply(){
+    const vw = W/s, vh = H/s;
+    svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+    if(pct) pct.textContent = Math.round(s*100) + '%';
+  }
+  function clampPan(){
+    const vw = W/s, vh = H/s;
+    // 视口与内容至少保留 30% 相交，防止把图拖出视野
+    const keepW = Math.min(vw*0.3, W*0.5), keepH = Math.min(vh*0.3, H*0.5);
+    vx = clamp(vx, -(vw - keepW), W - keepW);
+    vy = clamp(vy, -(vh - keepH), H - keepH);
+  }
+  function toView(clientX, clientY){
+    return new DOMPoint(clientX, clientY).matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function zoomAt(clientX, clientY, factor){
+    const ns = clamp(s * factor, MIN_S, MAX_S);
+    if(ns === s) return;
+    const k = ns / s;
+    const p = toView(clientX, clientY);   // 缩放前鼠标指的内容点
+    vx = p.x - (p.x - vx) / k;            // 让这个点在缩放后仍位于鼠标下
+    vy = p.y - (p.y - vy) / k;
+    s = ns;
+    clampPan();
+    apply();
+  }
+  function zoomCenter(factor){
+    const r = svg.getBoundingClientRect();
+    zoomAt(r.left + r.width/2, r.top + r.height/2, factor);
+  }
+  function reset(){ s = 1; vx = 0; vy = 0; apply(); }
+
+  // 滚轮：以光标为锚点缩放，并阻止页面滚动
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0016));
+  }, { passive:false });
+
+  // 指针事件：单指拖拽平移，双指捏合缩放；拖拽后抑制误触发的 click
+  const pts = new Map();
+  let drag = null, pinch = null, suppressClick = false;
+  svg.addEventListener('pointerdown', e => {
+    if(e.button !== 0 && e.pointerType === 'mouse') return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 1){
+      drag = { id:e.pointerId, x:e.clientX, y:e.clientY, vx, vy, moved:false };
+      // 不能在这里 setPointerCapture：捕获会把 click 重定向到 svg，卡片点击会失效；
+      // 捕获延迟到确认是拖拽（移动超阈值）后再启用。
+    }
+  });
+  svg.addEventListener('pointermove', e => {
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 2){
+      // 双指捏合：以两指中点为锚缩放，并跟随中点移动平移
+      const [a, b] = [...pts.values()];
+      const mid = {x:(a.x+b.x)/2, y:(a.y+b.y)/2};
+      const d = Math.hypot(a.x-b.x, a.y-b.y);
+      if(pinch){
+        if(pinch.lastD > 0) zoomAt(mid.x, mid.y, d / pinch.lastD);
+        const r = svg.getBoundingClientRect();
+        vx -= (mid.x - pinch.lastMx) * (W/s) / r.width;
+        vy -= (mid.y - pinch.lastMy) * (H/s) / r.height;
+        clampPan(); apply();
+        pinch.lastD = d; pinch.lastMx = mid.x; pinch.lastMy = mid.y;
+      } else {
+        pinch = { lastD: d, lastMx: mid.x, lastMy: mid.y };
+        drag = null; svg.classList.remove('dragging');
+      }
+      return;
+    }
+    pinch = null;
+    if(!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if(!drag.moved && Math.hypot(dx, dy) > 4){
+      drag.moved = true;
+      svg.classList.add('dragging');
+      try{ svg.setPointerCapture(e.pointerId); }catch(_){}
+    }
+    if(drag.moved){
+      const r = svg.getBoundingClientRect();
+      vx = drag.vx - dx * (W/s) / r.width;
+      vy = drag.vy - dy * (H/s) / r.height;
+      clampPan(); apply();
+    }
+  });
+  function endPointer(e){
+    pts.delete(e.pointerId);
+    pinch = null;
+    if(drag && e.pointerId === drag.id){
+      if(drag.moved) suppressClick = true;
+      drag = null;
+      svg.classList.remove('dragging');
+    }
+  }
+  svg.addEventListener('pointerup', endPointer);
+  svg.addEventListener('pointercancel', endPointer);
+  svg.addEventListener('click', e => {
+    if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick = false; }
+  }, true);
+
+  // 工具栏与键盘
+  document.getElementById('zin').addEventListener('click', () => zoomCenter(1.4));
+  document.getElementById('zout').addEventListener('click', () => zoomCenter(1/1.4));
+  document.getElementById('zfit').addEventListener('click', () => reset());
+  document.addEventListener('keydown', e => {
+    if(e.key === '+' || e.key === '=') zoomCenter(1.4);
+    else if(e.key === '-') zoomCenter(1/1.4);
+    else if(e.key === '0') reset();
+  });
+  apply();
+})();
 </script>
 <script>
 (function(){
