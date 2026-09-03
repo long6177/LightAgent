@@ -11518,7 +11518,7 @@
           Archify.routeProbe.pauseJourney({ preserveElapsed: true, reason: reason || 'manual' });
         }
       }
-      function zoom(next, options) {
+      function zoom(next, options, anchorX, anchorY) {
         options = options || {};
         if (options.manual !== false) interruptCamera();
         var previous = state.scale;
@@ -11526,11 +11526,13 @@
         if (next === previous) return;
         var centerX = (svg.clientWidth || 1) / 2;
         var centerY = (svg.clientHeight || 1) / 2;
-        var contentX = (centerX - state.x) / previous;
-        var contentY = (centerY - state.y) / previous;
+        if (typeof anchorX !== "number") anchorX = centerX;
+        if (typeof anchorY !== "number") anchorY = centerY;
+        var contentX = (anchorX - state.x) / previous;
+        var contentY = (anchorY - state.y) / previous;
         state.scale = next;
-        state.x = centerX - contentX * next;
-        state.y = centerY - contentY * next;
+        state.x = anchorX - contentX * next;
+        state.y = anchorY - contentY * next;
         apply();
       }
       function reset(options) {
@@ -11763,6 +11765,16 @@
 
       inBtn.addEventListener('click', function () { zoom(state.scale + 0.25); });
       outBtn.addEventListener('click', function () { zoom(state.scale - 0.25); });
+      svg.addEventListener('wheel', function (event) {
+        if (event.deltaY === 0) return;
+        var forward = event.deltaY < 0;
+        if (forward ? state.scale >= 3 : state.scale <= 1) return; // 已到边界则不拦截滚轮
+        event.preventDefault();
+        var r = svg.getBoundingClientRect();
+        var ax = event.clientX - r.left + state.x;
+        var ay = event.clientY - r.top + state.y;
+        zoom(state.scale + (forward ? 0.25 : -0.25), {}, ax, ay);
+      }, { passive: false });
       resetBtn.addEventListener('click', reset);
       container.addEventListener('pointerdown', function (event) {
         if (state.scale <= 1 || event.button !== 0 || event.target.closest('.diagram-nav, .focus-chip, .node-finder, .diagram-guide, .overview-map, .route-probe, .semantic-lens') || event.target.closest('[data-node-id]') || event.target.closest('[data-relationship-hit-key]')) return;
