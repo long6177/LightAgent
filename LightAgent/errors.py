@@ -113,6 +113,11 @@ ERROR_TAXONOMY = {
         "The unified capability policy denied this operation.",
         "Review Provider scope, permission snapshots, approval requirements, and Policy decisions.",
     ),
+    "LA-SANDBOX": LightAgentErrorInfo(
+        "LA-SANDBOX",
+        "This operation requires an explicit sandbox.",
+        "Register an isolated SandboxProvider before enabling execution-capable tools.",
+    ),
     "LA-BUDGET": LightAgentErrorInfo(
         "LA-BUDGET",
         "The configured runtime budget was exhausted.",
