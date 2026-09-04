@@ -148,6 +148,11 @@ from .knowledge import (
     SqliteFTSRetrievalProvider,
     WorkflowProviderAdapter,
 )
+from .builtin_tools.safe_expression import (
+    SafeExpressionError,
+    evaluate_safe_expression,
+    safe_expression,
+)
 from .builtin_tools.python_executor import (
     execute_python_code,
     execute_python_file,
@@ -298,4 +303,7 @@ __all__ = [
     "execute_python_file",
     "execute_python_code_stream",
     "upload_file_to_oss",
+    "SafeExpressionError",
+    "evaluate_safe_expression",
+    "safe_expression",
 ]

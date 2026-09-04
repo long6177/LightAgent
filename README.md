@@ -86,7 +86,7 @@ Older release notes are available on [GitHub Releases](https://github.com/wanxin
 | Capability layer | `CapabilityRegistry`, `PolicyEngine` | Scoped Providers, permission snapshots, lifecycle, policy, and audit. |
 | Multi-agent routing | `LightSwarm` | Role-based delegation across specialized agents. |
 | Deterministic workflow | `LightFlow` | Ordered DAG workflows, retries, checkpoints, durable approvals, resume, and rerun. |
-| Tools and integrations | `tools`, `ToolRegistry`, MCP | Python tools, generated tools, runtime tool loading, or MCP tool servers. |
+| Tools and integrations | `tools`, `ToolRegistry`, MCP | Python tools, generated tools, runtime tool loading, or MCP tool servers. Arbitrary Python execution is opt-in and requires an explicit sandbox boundary. |
 | Memory boundary | `MemoryPolicy`, `MemoryScope` | Tenant isolation, provenance, trust, expiration, and write admission controls. |
 | Shared memory prototype | `SharedMemoryPool` | In-memory shared memory experiments across agents. |
 | Safety controls | `input_guardrails`, `tool_guardrails`, `output_guardrails` | Privacy blocking, sensitive tool confirmation, high-risk parameter checks, and output redaction. |
@@ -114,6 +114,23 @@ LightAgent keeps the default call path simple while allowing production controls
 | Workflow | `LightFlow().step(...).run(query)` | Use for deterministic multi-step execution. |
 | Durable session | `agent.run(query, session_id="project-42")` | Continue and replay a persisted conversation. |
 | Async | `await agent.arun(query)` | Keep an asyncio application responsive. |
+
+### Safe Tool Execution Defaults
+
+In v0.10.1, arbitrary Python execution tools are not registered by default.
+Use the built-in `safe_expression` tool for bounded arithmetic and data-only
+expressions:
+
+```python
+from LightAgent import safe_expression
+
+print(safe_expression("45 * 9827"))
+```
+
+Enabling `execute_python_code`, `execute_python_file`, or
+`execute_python_code_stream` requires `enable_unsafe_python=True` and an
+explicit `SandboxProvider`. The executor remains a controlled subprocess, not
+a security sandbox; see [Python Executor Security](docs/python_executor_security.md).
 
 ### Evaluate And Review High-Risk Actions
 

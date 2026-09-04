@@ -1,6 +1,6 @@
 # LightAgent Roadmap
 
-Last updated: 2026-08-15
+Last updated: 2026-09-05
 
 LightAgent should continue to evolve as a lightweight, low-dependency agent
 framework rather than a broad replacement for LangChain, LangGraph, CrewAI, or
@@ -63,13 +63,17 @@ workflows + OpenAI-compatible model ecosystem.**
   validation contract, two credential-free examples, expanded Python executor
   adversarial checks, an opt-in real Mem0 Graph security matrix, and the first
   public API compatibility inventory for the v1.0 stabilization line.
+- **v0.10.0**: Released the unified event-sourced Agent Runtime with durable
+  Sessions, native async entry points, Capability Registry and Policy,
+  Inbox/Goals/Budgets, compaction and recovery, Jobs/subagents, standardized
+  Skills/MCP adapters, SQLite FTS5 retrieval, and compatibility adapters for
+  the v0.9.x APIs.
 
 ### In Development
 
-- **v0.10.0**: Deliver the unified event-sourced Agent Runtime, combining
-  durable Sessions, native async execution, Capability Registry and Policy,
-  Inbox/Goals/Budgets, compaction and recovery, multi-Agent Jobs/Workflow, and
-  standardized Memory/Skills/MCP/RAG Providers while preserving v0.9.x APIs.
+- **v0.10.1**: Security Boundary and Runtime Hardening. This is the immediate
+  P0 release line for the Python Executor security disclosure in #100 and the
+  security controls described in the post-v0.10 roadmap.
 
 ### Completed Milestone Details
 
@@ -127,6 +131,14 @@ result = flow.run("Analyze this company")
 ### Active Issues
 
 Immediate security-governance work:
+
+- **#100 Python Executor sandbox escape disclosure**: reproduce in an isolated
+  environment, determine the actual framework/configuration boundary, and
+  create a private Security Advisory before declaring affected versions or a
+  fully patched release. The default runtime must not treat AST filtering and
+  a subprocess as a security sandbox.
+
+P1 security validation work:
 
 - **#39 Shared graph memory security disclosure**: evaluate a private GitHub
   Security Advisory and possible CVE scope without declaring affected versions
@@ -686,13 +698,13 @@ integrations.
 
 ### v0.10.0: Unified Event-Sourced Agent Runtime
 
-Status: implementation candidate completed on `codex/develop-v0.10.0`;
-release validation is in progress.
+Status: released as `v0.10.0`; post-release security and provider validation
+continues under the v0.10.1 and later stabilization plans.
 
 Goal: deliver one coherent runtime release that combines the previously
 planned v0.10.0-v0.15.0 capabilities without breaking v0.9.x applications.
-The work remains ordered as six internal milestones, but there are no separate
-public v0.11.0-v0.15.0 releases in this plan.
+This goal is complete. The remaining work is tracked as post-v0.10 security
+and stabilization releases rather than as an unfinished v0.10.0 milestone.
 
 Implementation delivered in the v0.10.0 development PR:
 
@@ -714,7 +726,7 @@ Implementation delivered in the v0.10.0 development PR:
 - Focused v0.10 protocol, persistence, corruption, policy, runtime, async,
   compatibility, and retrieval tests plus complete legacy regression testing.
 
-External validation still required before release:
+Post-release validation and follow-up work:
 
 - Python 3.10-3.13 GitHub Actions, package build/install, and real provider
   smoke tests.
@@ -855,10 +867,145 @@ External validation still required before release:
   with replay, migration, corruption, fault-injection, long-task, concurrency,
   security, package-build, and import tests.
 
+### v0.10.1: Security Boundary And Runtime Hardening
+
+Status: planned as the immediate security patch release for the v0.10 runtime.
+
+Goal: ensure that every capability call is checked by identity, capability,
+policy, approval, resource, environment, and credential boundaries. This
+release prioritizes the P0 Python Executor disclosure in #100 and must not be
+delayed by unrelated feature work.
+
+#### Python Executor boundary
+
+- Stop auto-registering arbitrary Python, Python-file, and streaming execution
+  tools by default.
+- Preserve the public imports for compatibility, but require explicit
+  capability and policy opt-in for trusted-code execution.
+- Add a safe expression mode based on a strict AST allowlist for arithmetic,
+  comparisons, literals, and bounded containers.
+- Reject imports, attributes, reflection, dynamic dispatch, file access,
+  network access, process access, and dynamic dependency installation in safe
+  expression mode.
+- Do not fall back to host execution when a `SandboxProvider` is unavailable.
+- Treat Docker, a rootless container, or another isolated execution provider as
+  the boundary for arbitrary code. AST checks remain defense in depth only.
+- Keep `requirements` installation disabled by default and require explicit
+  policy approval when enabled.
+- Resolve the #95 JSON parsing regression without swallowing unrelated cleanup
+  exceptions.
+
+#### Unified capability security gate
+
+All Tool, Python, Shell, Terminal, MCP, Skill, Browser, Memory, subagent, and
+Job calls should follow the same conceptual path:
+
+```text
+Identity -> CapabilityRegistry -> PolicyEngine -> ApprovalVerifier
+         -> Provider -> Sandbox/Credential/Network gate -> execution
+```
+
+The model may propose a call, but must not be able to change permissions,
+approval state, sandbox policy, network policy, or credentials.
+
+#### Approval and secret safety
+
+- Bind approvals to the canonical capability arguments, workspace, agent,
+  session, policy version, risk level, expiry, and a one-time token.
+- Recompute and verify the approval binding immediately before execution.
+- Add `SecretRef` and resolve credentials only at the final Provider boundary.
+- Redact secrets from prompts, tool arguments, Sessions, traces, logs, SSE,
+  Memory, RAG, child-agent context, and error messages.
+- Ensure child Agents do not inherit raw credentials by default.
+
+#### Persistence and resource controls
+
+- Add atomic Session append with expected sequence checking.
+- Add atomic Inbox claims, leases, idempotency keys, and explicit completion
+  states.
+- Enforce model-call, tool-call, token, time, output-size, child-agent,
+  browser, container, and network-request budgets.
+- Distinguish policy denial, approval wait, provider failure, cancellation,
+  budget exhaustion, and context overflow with structured states and codes.
+
+#### v0.10.1 security release gates
+
+- Isolated reproduction and scope assessment for #100 through the Security
+  Advisory process; do not publish affected versions until verified.
+- Safe-expression, default-registration, policy-bypass, approval-substitution,
+  secret-redaction, and sandbox-unavailable tests.
+- Atomic Session/Inbox, idempotency, resource-limit, and restart tests.
+- Python 3.10, 3.11, 3.12, and 3.13 CI, package build, install, and import
+  checks.
+- Complete legacy compatibility suite, with `agent.run("hello")` and
+  `stream=True` behavior preserved where the security boundary permits it.
+
+### v0.10.2: LightFlow Runtime Hardening
+
+Goal: stabilize workflow failure, cancellation, timeout, and recovery behavior
+after the P0 security patch is released.
+
+- Normalize raised Agent exceptions so retry, fallback, and failed-step paths
+  behave consistently with returned `RunResult` errors.
+- Replace the shared sticky cancellation flag with an execution-scoped token
+  or generation captured by `run()`, `resume()`, and `rerun_step()`.
+- Define timeout as a soft timeout unless a terminable SandboxProvider is used;
+  avoid silently creating duplicate side effects during retry or fallback.
+- Ensure executor cleanup on success, timeout, and raised exceptions.
+- Add idempotency and cancellation propagation for Flow steps, Jobs, and child
+  Agents.
+- Rebase and combine the relevant work from #97, #98, and #99 only after the
+  interaction tests and full CI suite pass.
+
+### v0.11.0: Unified Security Context
+
+Goal: make security decisions explicit and consistent across all runtime
+capabilities.
+
+- Add `SecurityContext` carrying user, tenant, session, run, agent, parent
+  agent, capability, resource, permissions, network, sandbox, approval, and
+  deadline information.
+- Add `CapabilityGate` and route every sensitive Provider call through it.
+- Add versioned `ApprovalToken`, `ProviderManifest`, and event sensitivity
+  metadata.
+- Add immutable child-agent permission snapshots with narrowing-only
+  inheritance, independent sessions, workspaces, budgets, and credentials.
+- Add Job leases and cancellation tokens with parent-to-child propagation.
+
+### v0.12.0: Trusted Data And Supply Chain
+
+Goal: prevent external content and untrusted extensions from changing runtime
+authority.
+
+- Wrap web, RAG, PDF, uploaded files, Memory, Skills, MCP results, and child
+  reports as untrusted data rather than executable instructions.
+- Make Memory and RAG admission, provenance, trust, TTL, source hash, and
+  citation tracking default behavior.
+- Prevent low-trust facts from replacing high-trust facts without explicit
+  approval, and support rollback of unsafe writes.
+- Add Skill/MCP version locks, content digests, publisher metadata, capability
+  declarations, signature verification, and upgrade re-trust.
+- Add MCP namespace isolation, network egress allowlists, and default-deny
+  dynamic installation.
+
+### v0.13.0: Recovery And Adversarial Security
+
+Goal: validate security and recovery behavior under interruption, concurrency,
+malicious content, and resource pressure.
+
+- Add Session hash chains and integrity verification.
+- Add atomic Inbox claim/release and durable Job recovery.
+- Add prompt-injection, malicious MCP/Skill, child-agent privilege, resource
+  exhaustion, and concurrent-write test suites.
+- Verify that restart does not repeat side effects and that replay preserves
+  security decisions, approvals, citations, and provenance.
+- Publish sanitized security evaluation results and operational configuration
+  guidance.
+
 ### v1.0.0: Stable Runtime And Ecosystem
 
-Goal: freeze the runtime contracts only after they have survived multiple
-pre-1.0 releases and fault-oriented validation.
+Goal: freeze the runtime and security contracts only after v0.10.1-v0.13.0 have
+survived compatibility, fault, concurrency, and adversarial validation.
 
 Planned work:
 
@@ -878,8 +1025,8 @@ Planned work:
 
 Release gates:
 
-- Public contracts have passed the complete v0.10.0 milestone suite and at
-  least one release-candidate or stabilization-patch compatibility cycle.
+- Public contracts have passed the complete v0.10.0 milestone suite and the
+  v0.10.1-v0.13.0 security stabilization cycle.
 - Event schemas support forward migration and deterministic replay.
 - Long-task interruption recovery passes in deterministic test environments.
 - Multi-Agent, approval, compaction, MCP, and Provider lifecycle paths pass
@@ -925,8 +1072,11 @@ Suggested release cadence:
 
 | Version | Theme | Suggested cycle |
 | --- | --- | --- |
-| v0.10.0 | Unified event-sourced Agent Runtime | 24-36 weeks, milestone-driven |
-| v1.0.0 | API freeze and production hardening | After v0.10 stabilization gates |
+| v0.10.0 | Unified event-sourced Agent Runtime | Released |
+| v0.10.1 | Security boundary and runtime hardening | P0 patch release |
+| v0.10.2 | LightFlow runtime hardening | After v0.10.1 |
+| v0.11.0-v0.13.0 | Security context, trusted data, and recovery | Milestone-driven |
+| v1.0.0 | API freeze and production hardening | After security gates |
 | v1.1.0 | Optional enterprise integration | Post-v1.0 feedback-driven |
 
 ## Reference Directions From Other Agent Frameworks
@@ -1364,76 +1514,79 @@ compatibility, replay, recovery, security, and stabilization gates.
 
 ### Immediate P0
 
-- Respond to the #39 advisory/CVE request, move reproduction and version-scoping
-  details into a private security workflow, and avoid naming affected or fully
-  patched versions until the shared Graph Memory test matrix is complete.
-- Run the opt-in matrix against every maintained Mem0 Graph and storage
-  configuration before changing public remediation claims.
+- Complete the #100 Python Executor security assessment through a private
+  GitHub Security Advisory, and avoid naming affected or fully patched
+  versions until the report is reproduced and the boundary is verified.
+- Ship v0.10.1 with a safe default execution boundary, explicit SandboxProvider
+  requirements, approval binding, secret redaction, resource limits, and
+  security regression coverage.
 
 ### Next P1
 
-- Start **v0.10.0 Unified Event-Sourced Agent Runtime** with the smallest
-  stable Session event model and compatibility adapters, then advance through
-  all six internal milestones under the same public version.
-- Implement native `arun()` without changing `run()` or streaming behavior.
-- Add in-memory, JSONL, and optional SQLite Session stores with replay and
-  incomplete-Turn recovery tests.
-- Convert Trace into a projection of Session history while preserving current
-  Trace APIs and exporters.
-- Continue #39 backend validation as an independent security release gate.
+- Continue #39 shared Graph Memory validation as an independent security gate,
+  including the opt-in matrix against the exact Mem0 Graph version and storage
+  configuration used in production-like deployments.
+- Release v0.10.2 with LightFlow exception, cancellation, timeout, retry,
+  fallback, idempotency, and resource-cleanup hardening.
+- Keep `agent.run("hello")`, `stream=True`, existing Tools, Hooks, Memory,
+  LightSwarm, and LightFlow compatibility behavior stable.
 
 ### P2
 
-- Prepare the v0.10.0 Capability Registry milestone and Provider contract-test
-  fixtures in parallel, but do not route production execution through them
-  before Session invariants are stable.
-- Add fault-injection fixtures for interrupted model streams, tool timeout,
-  EventLog write failure, and concurrent Session recovery.
+- Implement v0.11.0 `SecurityContext`, `CapabilityGate`, versioned
+  `ApprovalToken`, `ProviderManifest`, child-agent permission snapshots, and
+  Job leases.
+- Add Provider contract tests for identity, policy, approval, sandbox,
+  credential, network, and cleanup behavior.
 - Keep external Provider examples focused, optional, credential-free in CI,
   and outside the required core dependency set.
 
 ### P3
 
-- Inbox, Goal, Budget, compaction, subagents, background Jobs, Workflow, MCP,
-  and RAG remain required v0.10.0 milestones and must land after their Session
-  and Provider prerequisites instead of accumulating in one unreviewable
-  change.
-- Visual trace UI and distributed worker coordination remain upper-layer or
-  post-protocol work.
+- Implement v0.12.0 trusted data and supply-chain controls for Prompt
+  Injection, Memory/RAG provenance, Skill/MCP signatures, namespaces, and
+  network egress.
+- Implement v0.13.0 Session integrity, atomic Inbox claims, Job recovery,
+  adversarial security tests, and resource-exhaustion tests.
+- Keep visual trace UI, distributed worker coordination, and hosted services
+  as upper-layer or post-protocol work.
 
 ## Next Development Recommendation
 
-The next development target is **v0.10.0 Unified Event-Sourced Agent Runtime**.
-It includes the complete former v0.10.0-v0.15.0 scope. Implementation remains
-milestone-ordered, but the public version is released only after all six
-milestones and their combined quality gates pass.
+The next development target is **v0.10.1 Security Boundary And Runtime
+Hardening**. It is an intentionally focused patch release for the P0 Python
+Executor disclosure and the security controls required by the v0.10 runtime.
+
+After v0.10.1, v0.10.2 will harden LightFlow failure and cancellation behavior,
+then v0.11.0-v0.13.0 will introduce the unified security context, trusted data
+and supply-chain controls, and adversarial recovery validation.
 
 Reasoning:
 
-- Trace, Hooks, review, Memory, LightFlow, and streaming currently record
-  related lifecycle data through different surfaces; one durable EventLog is
-  required before reliable resume and context reconstruction can be promised.
-- Long-running Agent execution needs native async cancellation and recovery
-  semantics rather than additional wrappers around the current synchronous
-  loop.
-- Capability Registry and Policy unification depend on stable Session identity,
-  event ordering, and audit records, so milestone 1 must precede milestone 2
-  even though both ship in v0.10.0.
-- The six-milestone v0.10.0 plan reduces the risk of freezing immature
-  contracts in v1.0 while keeping development increments independently
-  reviewable and testable.
+- The Python Executor report is a direct security boundary concern and must be
+  resolved before adding more execution capabilities or declaring v1.0 ready.
+- The model must be able to propose a capability call, but it must not be able
+  to grant itself permission or alter approval, sandbox, credential, or network
+  policy.
+- Timeout, cancellation, retry, and fallback semantics must not create hidden
+  duplicate side effects in long-running workflows.
+- Security decisions need durable identity, policy version, approval binding,
+  provenance, and audit records so they remain verifiable after restart.
+- The staged v0.10.1-v0.13.0 plan keeps the lightweight core while making
+  security and recovery contracts independently reviewable and testable.
 - Optional stores and Providers preserve the lightweight core and let
   LightWorker or other products supply Browser, Docker, WebUI, and business
   workflow implementations.
 
-First v0.10.0 implementation slice:
+First v0.10.1 implementation slice:
 
-1. Publish versioned Session event dataclasses and an in-memory store.
-2. Record one non-streaming Agent run as balanced Session, Turn, Model, Tool,
-   and terminal events.
-3. Rebuild current Trace events and model context from that Session history.
-4. Add JSONL persistence, replay, incomplete-Turn detection, and corruption
-   tests.
-5. Add native `arun()` and prove `run()` plus `stream=True` compatibility.
-6. Add optional SQLite storage only after the store contract passes the same
-   replay and migration suite.
+1. Reproduce #100 in an isolated environment without adding exploit payloads
+   to the public test suite, and document the verified boundary privately.
+2. Make arbitrary Python execution opt-in and require a real SandboxProvider;
+   provide a strict safe-expression path for basic calculations.
+3. Add unified capability and approval checks with canonical argument hashes,
+   expiry, one-time use, and policy-version binding.
+4. Add centralized SecretRef resolution and redaction before persistence,
+   tracing, logging, streaming, and child-agent propagation.
+5. Add Session append conflict detection, resource ceilings, and security
+   regression tests across Python 3.10-3.13.
