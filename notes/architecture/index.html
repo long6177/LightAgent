@@ -33,29 +33,34 @@
   header .spacer{flex:1;}
   #themeBtn{border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer; box-shadow:var(--shadow);}
   #themeBtn:hover{border-color:var(--ink2);}
-  #wrap{max-width:1560px; margin:0 auto; padding:6px 12px 22px; position:relative;}
-  #map{width:100%; height:auto; display:block; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;}
+  #wrap{max-width:1700px; margin:0 auto; padding:6px 12px 10px; position:relative; height:calc(100vh - 150px); min-height:480px;}
+  #map{width:100%; height:100%; display:block; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;}
   #map.dragging{cursor:grabbing;}
   .ztool{display:flex; align-items:center; gap:6px;}
   .ztool button{border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; width:30px; height:30px; font-size:15px; line-height:1; cursor:pointer; box-shadow:var(--shadow);}
   .ztool button:hover{border-color:var(--ink2);}
   #zpct{min-width:46px; text-align:center; font-size:12px; color:var(--ink2); font-variant-numeric:tabular-nums;}
   .leaf{cursor:pointer;}
+  .subleaf .num{font-size:11px;}
+  .subleaf .title{font-size:14.5px;}
+  .subleaf .desc{font-size:11px;}
+  .subpill{fill:var(--panel); stroke:var(--accent); stroke-width:1.2;}
+  .subpillText{font-size:13px; font-weight:650; fill:var(--ink); text-anchor:middle;}
   .leaf rect.card{fill:var(--panel); stroke:var(--line); stroke-width:1.2; rx:10; transition:stroke .15s, transform .15s;}
   .leaf:hover rect.card{stroke:var(--accent); stroke-width:1.8;}
-  .leaf .num{font-size:11px; font-weight:700; fill:var(--accent); letter-spacing:.5px;}
-  .leaf .title{font-size:14.5px; font-weight:650; fill:var(--ink);}
-  .leaf .desc{font-size:11.5px; fill:var(--ink2);}
+  .leaf .num{font-size:13px; font-weight:700; fill:var(--accent); letter-spacing:.5px;}
+  .leaf .title{font-size:17px; font-weight:650; fill:var(--ink);}
+  .leaf .desc{font-size:13.5px; fill:var(--ink2);}
   .leaf .badge{font-size:10px; fill:var(--accent); stroke:var(--accent); stroke-width:.8; fill-opacity:.10; rx:6;}
-  .leaf .badgeText{font-size:9.5px; fill:var(--accent); font-weight:600;}
-  .branchLab{font-size:15px; font-weight:700; fill:var(--accent);}
-  .branchSub{font-size:11px; fill:var(--ink2);}
+  .leaf .badgeText{font-size:11px; fill:var(--accent); font-weight:600;}
+  .branchLab{font-size:18px; font-weight:700; fill:var(--accent);}
+  .branchSub{font-size:13px; fill:var(--ink2);}
   .link{fill:none; stroke:var(--accent); stroke-opacity:.42; stroke-width:1.6; transition:stroke-opacity .15s, stroke-width .15s;}
   .leaf:hover .link{stroke-opacity:.95; stroke-width:2.4;}
   .trunk{fill:none; stroke:var(--ink2); stroke-opacity:.4; stroke-width:2;}
   #centerGroup rect{fill:var(--center); rx:16;}
-  #centerGroup .ct{fill:var(--center-ink); font-size:21px; font-weight:750; text-anchor:middle; letter-spacing:1px;}
-  #centerGroup .cs{fill:var(--center-ink); opacity:.75; font-size:12px; text-anchor:middle;}
+  #centerGroup .ct{fill:var(--center-ink); font-size:26px; font-weight:750; text-anchor:middle; letter-spacing:1px;}
+  #centerGroup .cs{fill:var(--center-ink); opacity:.75; font-size:15px; text-anchor:middle;}
   footer{max-width:1560px; margin:0 auto; padding:0 28px 20px; color:var(--ink2); font-size:12px; line-height:1.8;}
   footer b{color:var(--ink);}
 </style>
@@ -63,7 +68,7 @@
 <body>
 <header>
   <h1>LightAgent 架构图集</h1>
-  <span class="sub">19 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
+  <span class="sub">24 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
   <span class="spacer"></span>
   <span class="ztool" aria-label="缩放控制">
     <button id="zout" aria-label="缩小" title="缩小（-）">−</button>
@@ -83,7 +88,14 @@
 const DATA = [
   { id:'flow', name:'核心流程', sub:'跑起来的每一步', color:'var(--emerald)', side:'right', items:[
     {file:'03-main-loop.html', num:'03', title:'一次对话的完整流程', desc:'agent.run() 主循环 · 工具循环 · 三道安全门', type:'workflow'},
-    {file:'04-tool-call.html', num:'04', title:'工具从注册到执行', desc:'tool_info 约定 → ToolRegistry → dispatch()', type:'workflow'},
+    {file:'04-tool-call.html', num:'04', title:'工具从注册到执行', desc:'tool_info 约定 → ToolRegistry → dispatch()', type:'workflow',
+      sub:{ name:'工具深潜 · 5 张', items:[
+        {file:'20-dispatch-pipeline.html', num:'20', title:'dispatch 执行管线', desc:'参数校验 · 四路执行 · 同步桥接', type:'workflow'},
+        {file:'21-registry-schema.html', num:'21', title:'登记与 schema 生成', desc:'tool_info → 两张表 → 随请求下发', type:'dataflow'},
+        {file:'22-python-executor-sandbox.html', num:'22', title:'python_executor 沙箱', desc:'import 审查 · 封禁 · 超时保护', type:'workflow'},
+        {file:'23-tool-lifecycle.html', num:'23', title:'一个工具的一生', desc:'登记 → 在岗 → 覆盖 / 断开 / 退役', type:'lifecycle'},
+        {file:'24-skill-tools.html', num:'24', title:'Skill 工具桥接层', desc:'四件套包装 · 沙箱执行 · 路径校验', type:'architecture'}
+      ]}},
     {file:'05-mcp.html', num:'05', title:'接入外部 MCP 工具', desc:'stdio / SSE / HTTP 三通道 · 懒重连', type:'workflow'},
     {file:'06-swarm.html', num:'06', title:'多智能体协作转交', desc:'LightSwarm 意图判断 · on_handoff 钩子', type:'workflow'},
     {file:'07-lightflow.html', num:'07', title:'LightFlow 多步工作流', desc:'拓扑执行 · 断点续跑 · 人工审批', type:'workflow'},
@@ -113,8 +125,8 @@ const DATA = [
 ];
 
 const TYPE_ZH = {architecture:'架构', workflow:'流程', sequence:'时序', dataflow:'数据流', lifecycle:'状态'};
-const LEAF_W = 330, LEAF_H = 52, PITCH = 60, BRANCH_GAP = 40, MARGIN_TOP = 34, MARGIN_X = 96;
-const CENTER = {x:0, y:0, w:250, h:96};
+const LEAF_W = 330, LEAF_H = 56, PITCH = 64, BRANCH_GAP = 40, MARGIN_TOP = 34, MARGIN_X = 96;
+const CENTER = {x:0, y:0, w:280, h:110};
 
 // 计算两侧布局
 function layoutSide(side){
@@ -131,7 +143,7 @@ function layoutSide(side){
 }
 const L = layoutSide('left'), R = layoutSide('right');
 const H = Math.max(L.height, R.height);
-const W = 1560;
+const W = 2560;
 const cx = W/2, cy = H/2;
 
 const svg = document.getElementById('map');
@@ -179,8 +191,8 @@ function renderSide(sideData, dir){
       // 类型徽标
       const bw = 46;
       const bx = dir===1 ? cardX+LEAF_W-bw-10 : cardX+10;
-      el('rect', {x:bx, y:cy2+8, width:bw, height:16, class:'badge', rx:6}, lg);
-      const bt = el('text', {x:bx+bw/2, y:cy2+19.5, class:'badgeText', 'text-anchor':'middle'}, lg);
+      el('rect', {x:bx, y:cy2+7, width:bw, height:18, class:'badge', rx:6}, lg);
+      const bt = el('text', {x:bx+bw/2, y:cy2+20.5, class:'badgeText', 'text-anchor':'middle'}, lg);
       bt.textContent = TYPE_ZH[leaf.type]||leaf.type;
       // 编号 + 标题 + 描述（左右对称：文字锚点与徽标位置随方向镜像）
       const anchor = dir===1 ? 'start' : 'end';
@@ -197,6 +209,35 @@ function renderSide(sideData, dir){
       lg.setAttribute('tabindex','0');
       lg.setAttribute('role','link');
       lg.setAttribute('aria-label', leaf.num+' '+leaf.title);
+      // 子树：更深一层的导读（如 04 的工具模块深潜）
+      if(leaf.sub){
+        const sg = el('g', {class:'subtree'}, lg);
+        sg.style.setProperty('--accent', branch.color);
+        const pcx = cx + 830, pcy = leaf.y, pw = 118, ph = 44;
+        el('path', {d:bezier(cx+750, leaf.y, pcx-pw/2, pcy), class:'trunk'}, sg);
+        el('rect', {x:pcx-pw/2, y:pcy-ph/2, width:pw, height:ph, rx:10, class:'subpill'}, sg);
+        const pt = el('text', {x:pcx, y:pcy+4, class:'subpillText'}, sg);
+        pt.textContent = leaf.sub.name;
+        leaf.sub.items.forEach((it, i)=>{
+          const y = leaf.y - 2*58 + 40 + i*58;
+          const sxx = cx + 900;
+          const sgg = el('g', {class:'leaf subleaf', 'data-file':it.file}, sg);
+          sgg.style.setProperty('--accent', branch.color);
+          el('path', {d:bezier(pcx+pw/2, pcy, sxx, y), class:'link'}, sgg);
+          el('rect', {x:sxx, y:y-25, width:300, height:50, class:'card', rx:9}, sgg);
+          const n2 = el('text', {x:sxx+12, y:y+4, class:'num', 'text-anchor':'start'}, sgg);
+          n2.textContent = it.num;
+          const t2 = el('text', {x:sxx+44, y:y+5, class:'title', 'text-anchor':'start'}, sgg);
+          t2.textContent = it.title;
+          const d2 = el('text', {x:sxx+12, y:y+21, class:'desc', 'text-anchor':'start'}, sgg);
+          d2.textContent = it.desc;
+          sgg.addEventListener('click', ev=>{ ev.stopPropagation(); window.open(it.file, '_blank'); });
+          sgg.addEventListener('keydown', ev=>{ if(ev.key==='Enter'){ ev.stopPropagation(); window.open(it.file,'_blank'); } });
+          sgg.setAttribute('tabindex','0');
+          sgg.setAttribute('role','link');
+          sgg.setAttribute('aria-label', it.num+' '+it.title);
+        });
+      }
     }
     g.appendChild(pillG);
   }
@@ -207,10 +248,10 @@ renderSide(L, -1);
 // 中心节点
 const cg = el('g', {id:'centerGroup'});
 el('rect', {x:cx-CENTER.w/2, y:cy-CENTER.h/2, width:CENTER.w, height:CENTER.h, rx:16, style:'filter:drop-shadow(0 8px 22px rgba(10,40,80,.35))'}, cg);
-const ct = el('text', {x:cx, y:cy-8, class:'ct'}, cg); ct.textContent = 'LightAgent';
-const ct2 = el('text', {x:cx, y:cy+18, class:'ct', style:'font-size:15px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
-const cs = el('text', {x:cx, y:cy+42, class:'cs'}, cg);
-cs.textContent = '5 类视角 · 19 张图 · 点击节点打开';
+const ct = el('text', {x:cx, y:cy-12, class:'ct'}, cg); ct.textContent = 'LightAgent';
+const ct2 = el('text', {x:cx, y:cy+22, class:'ct', style:'font-size:18px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
+const cs = el('text', {x:cx, y:cy+54, class:'cs'}, cg);
+cs.textContent = '5 类视角 · 24 张图 · 点击节点打开';
 
 // ===== 缩放与平移：以 viewBox 方式实现，任何倍率下文字都保持矢量清晰 =====
 (function(){
