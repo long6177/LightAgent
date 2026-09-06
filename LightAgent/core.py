@@ -35,6 +35,7 @@ from .protocol import (
 )
 from .logger import LoggerManager
 from .tools import ToolRegistry, ToolLoader, AsyncToolDispatcher
+from .cancellation import CancellationToken
 from .errors import format_error_code, format_lightagent_error
 from .result import RunResult, StreamEvent
 from .tracing import TraceRecorder, export_trace, normalize_usage, summarize_trace
@@ -491,6 +492,8 @@ class LightAgent:
             run_group_id: str | None = None,
             approval_id: str | None = None,
             session_id: str | None = None,
+            cancellation_token: CancellationToken | None = None,
+            idempotency_key: str | None = None,
     ) -> Union[Generator[str, None, None], str, RunResult]:
         """
         运行代理，处理用户输入。
@@ -511,6 +514,8 @@ class LightAgent:
         :param run_group_id: 可选运行组 ID，用于把多个 sibling traces 归到同一任务。
         :param approval_id: 可选人工审批请求 ID，仅传给运行期 hooks，不发送给模型服务。
         :param session_id: 可选持久化 Session ID。省略时每次调用创建独立的内存 Session。
+        :param cancellation_token: 可选协作式取消令牌，在模型和工具调用安全边界检查。
+        :param idempotency_key: 可选调用幂等键，记录到 Session 和 Trace 供上层执行器关联。
         :return: 代理的回复。
         """
         if result_format not in ("str", "object", "dict", "event"):
@@ -529,6 +534,8 @@ class LightAgent:
         self._current_run_id = uuid4().hex
         self._current_user_id = str(user_id)
         self._current_run_metadata = dict(metadata or {})
+        self._current_cancellation_token = cancellation_token
+        self._current_idempotency_key = idempotency_key
         if approval_id is not None:
             self._current_run_metadata["approval_id"] = str(approval_id)
         self._parent_trace_id = parent_trace_id
@@ -572,6 +579,7 @@ class LightAgent:
             "stream": stream,
             "result_format": result_format,
             "run_id": self._current_run_id,
+            "idempotency_key": idempotency_key,
         })
         before_run = self._run_hooks("before_run", {
             "query": query,
@@ -1062,7 +1070,20 @@ class LightAgent:
             details["reason"] = reason
         return format_error_code("LA-HOOK", details)
 
+    def _current_cancellation_error(self, stage: str) -> str | None:
+        token = getattr(self, "_current_cancellation_token", None)
+        if token is None or not token.cancelled:
+            return None
+        return format_error_code("LA-CANCELLED", {
+            "stage": stage,
+            "reason": token.reason or "cancellation requested",
+            "token_id": token.token_id,
+        })
+
     def _prepare_model_request(self) -> str | None:
+        cancellation_error = self._current_cancellation_error("before_model_request")
+        if cancellation_error:
+            return cancellation_error
         self._compact_model_context()
         decision = self._run_hooks("before_model_request", {"params": deepcopy(self.chat_params)})
         if decision.action == HOOK_BLOCK:
@@ -1244,6 +1265,9 @@ class LightAgent:
         return False
 
     def _prepare_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str | None]:
+        cancellation_error = self._current_cancellation_error("before_tool_call")
+        if cancellation_error:
+            return arguments, cancellation_error
         spec = CapabilitySpec(
             name=f"tool.{tool_name}",
             description=str(self.tool_registry.function_info.get(tool_name, {}).get("tool_description", "")),

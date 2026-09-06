@@ -55,6 +55,7 @@ from .guardrails import (
     privacy_input_guardrail,
     sensitive_tool_confirmation_guardrail,
 )
+from .cancellation import CancellationToken
 from .flow import JsonLightFlowStore, LightFlow, LightFlowResult, LightFlowStep, LightFlowStepResult
 from .shared_memory import SharedMemoryPool, SharedMemoryRecord
 from .logger import LoggerManager
@@ -215,6 +216,7 @@ __all__ = [
     "LightFlowResult",
     "LightFlowStep",
     "LightFlowStepResult",
+    "CancellationToken",
     "SharedMemoryPool",
     "SharedMemoryRecord",
     "LoggerManager",

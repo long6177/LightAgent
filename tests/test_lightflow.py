@@ -188,7 +188,13 @@ def test_lightflow_timeout_and_fallback_agent():
 
     slow = SlowAgent("slow", [])
     fallback = FakeAgent("fallback", ["fallback done"])
-    flow = LightFlow().step("work", agent=slow, timeout=0.01, fallback_agent=fallback)
+    flow = LightFlow().step(
+        "work",
+        agent=slow,
+        timeout=0.01,
+        fallback_agent=fallback,
+        allow_timeout_overlap=True,
+    )
 
     result = flow.run("hello")
 

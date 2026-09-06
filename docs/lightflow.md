@@ -72,7 +72,9 @@ The callable receives a context dictionary:
 
 ### Step Retries
 
-Each step can retry when the underlying agent returns a structured error.
+Each step can retry when the underlying agent returns a structured error or
+raises an ordinary `Exception`. Raised exception details are not copied into
+workflow results; the exception type and a stable flow error code are retained.
 
 ```python
 flow.step("research", agent=research_agent, max_retry=2)
@@ -107,6 +109,54 @@ flow.step(
     approval_handler=lambda step, context: True,
 )
 ```
+
+Step timeouts are soft wall-clock bounds because a Python worker thread cannot
+be forcefully terminated safely. By default, a timed-out call fails the step
+without starting a retry or fallback while that call may still be running. If
+the operation is idempotent and overlapping execution is acceptable, opt in
+explicitly:
+
+```python
+flow.step(
+    "review",
+    agent=review_agent,
+    timeout=30,
+    max_retry=2,
+    fallback_agent=fallback_review_agent,
+    allow_timeout_overlap=True,
+)
+```
+
+With this option enabled, timeout retries and fallback have at-least-once
+semantics and may overlap. A terminable external SandboxProvider should be used
+when strict process termination is required.
+
+### Cancellation
+
+`flow.cancel()` cancels every execution currently active on that `LightFlow`
+instance. Pass a `run_id` to target one active run. Calling it when no execution
+is active is a no-op and does not poison future `run()`, `resume()`, or
+`rerun_step()` calls.
+
+For independent ownership, pass an explicit cooperative token:
+
+```python
+from LightAgent import CancellationToken
+
+token = CancellationToken(run_id="report-001")
+result = flow.run(
+    "Analyze this company",
+    run_id="report-001",
+    cancellation_token=token,
+)
+
+# From another thread or controller:
+token.cancel("operator stopped the workflow")
+```
+
+Cancellation is checked before each step and propagated to agents that accept
+a `cancellation_token` keyword. It does not forcefully stop a model call already
+in progress.
 
 v0.9.6 approval handlers may also return `ApprovalDecision.approve()`,
 `reject()`, `edit({"query": "..."})`, or `respond("...")`. Boolean handlers
@@ -202,9 +252,17 @@ result = flow.rerun_step("report-001", "write")
 
 Use `get_run(run_id)` and `list_runs()` to build front-end execution views.
 
+An explicit `run_id` is also the local idempotency boundary. Calling `run()`
+again with a run ID already present in the configured store returns the saved
+checkpoint with `idempotent_replay == True`; it does not execute agents again.
+Use `resume()` or `rerun_step()` when execution is intentional. Each step also
+receives a stable `<run_id>:<step_name>` idempotency key when its agent accepts
+the `idempotency_key` keyword.
+
 ### Current Scope
 
-The v0.9.0 implementation provides lightweight JSON checkpoints and run
-records. Production deployments that need database-backed locking,
-distributed workers, or strong idempotency should provide a stronger run-store
-adapter around the same record shape.
+The v0.10.2 implementation provides execution-scoped cancellation, local
+run-ID idempotency, and lightweight JSON checkpoints. Production deployments
+that need cross-process locking, distributed workers, hard process termination,
+or globally consistent idempotency should provide stronger Provider and
+run-store implementations around the same contracts.
