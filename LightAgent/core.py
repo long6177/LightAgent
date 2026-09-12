@@ -65,9 +65,11 @@ from .session import (
 from .builtin_tools.python_executor import (
     execute_python_code,
     execute_python_file,
-    execute_python_code_stream
+    execute_python_code_stream,
+    UNSAFE_PYTHON_TOOL_NAMES,
 )
 from .builtin_tools.nos import upload_file_to_oss
+from .builtin_tools.safe_expression import safe_expression
 
 
 # TypeVar for generic coroutine return type
@@ -131,6 +133,7 @@ class LightAgent:
             filter_tools: bool = True,  # 是否启用工具过滤
             self_learning: bool = False,  # 是否启用agent自我学习
             tools: List[Union[str, Callable]] = None,  # 支持工具混合输入
+            enable_unsafe_python: bool = False,  # 显式启用需沙箱的任意 Python 执行工具
             skills_directories: List[str] = None,  # 支持技能混合输入
             auto_discover_skills: bool = True,  # 是否自动发现技能
             input_guardrails: List[Callable[..., Any]] | None = None,  # 输入安全策略
@@ -168,6 +171,7 @@ class LightAgent:
         :param tot_base_url: API 的基础 URL。
         :param filter_tools: 是否启用工具过滤。
         :param tools: 工具列表，支持函数名称（字符串）或函数对象。
+        :param enable_unsafe_python: 是否显式注册任意 Python 执行工具；启用后仍要求 SandboxProvider。
         :param input_guardrails: 输入安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止运行。
         :param tool_guardrails: 工具调用安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止工具执行。
         :param output_guardrails: 输出安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止非流式输出。
@@ -257,13 +261,16 @@ class LightAgent:
         if self.tools:
             self.load_tools(self.tools)
 
-        # 自动注册内置工具
-        builtin_tools = [
-            execute_python_code,
-            execute_python_file,
-            execute_python_code_stream,
-            upload_file_to_oss
-        ]
+        # Safe expression evaluation is available by default. Arbitrary Python
+        # execution is opt-in and is rejected later unless a SandboxProvider is
+        # registered for the current runtime.
+        builtin_tools = [safe_expression, upload_file_to_oss]
+        if enable_unsafe_python:
+            builtin_tools.extend([
+                execute_python_code,
+                execute_python_file,
+                execute_python_code_stream,
+            ])
 
         for tool_func in builtin_tools:
             self.tool_registry.register_tool(tool_func)
@@ -1223,6 +1230,19 @@ class LightAgent:
         })
         return arguments, error_msg
 
+    def _sandbox_available(self) -> bool:
+        """Return whether an explicit SandboxProvider is mounted for this agent."""
+        context = getattr(getattr(self, "runtime", None), "context", None)
+        for provider in self.capability_registry.list(context):
+            if provider.get("name") == "sandbox":
+                return True
+            if any(
+                str(capability.get("name", "")).startswith("sandbox.")
+                for capability in provider.get("capabilities", [])
+            ):
+                return True
+        return False
+
     def _prepare_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str | None]:
         spec = CapabilitySpec(
             name=f"tool.{tool_name}",
@@ -1230,7 +1250,18 @@ class LightAgent:
             execute=True,
             risk=CapabilityRisk.SENSITIVE,
             cancellable=True,
+            requires_sandbox=tool_name in UNSAFE_PYTHON_TOOL_NAMES,
         )
+        if spec.requires_sandbox and not self._sandbox_available():
+            reason = f"tool `{tool_name}` requires an explicit SandboxProvider"
+            self._record_session_event("policy.decision", {
+                "provider": "tools",
+                "capability": spec.name,
+                "allowed": False,
+                "requires_sandbox": True,
+                "reason": reason,
+            })
+            return arguments, format_error_code("LA-SANDBOX", reason)
         policy_decision = self.capability_registry.policy_engine.evaluate_sync(PolicyRequest(
             capability=spec,
             provider_name="tools",

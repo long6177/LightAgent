@@ -103,7 +103,7 @@
 | 能力层 | `CapabilityRegistry`、`PolicyEngine` | 分层 Provider、权限快照、生命周期、策略与审计。 |
 | 多 Agent 路由 | `LightSwarm` | 在多个专业 Agent 之间进行角色化委托。 |
 | 确定性工作流 | `LightFlow` | DAG 工作流、重试、checkpoint、持久化审批、resume 和 rerun。 |
-| 工具与集成 | `tools`、`ToolRegistry`、MCP | Python 工具、生成工具、运行时加载工具或 MCP 工具服务。 |
+| 工具与集成 | `tools`、`ToolRegistry`、MCP | Python 工具、生成工具、运行时加载工具或 MCP 工具服务。任意 Python 执行默认关闭，并要求显式沙箱边界。 |
 | 记忆边界 | `MemoryPolicy`、`MemoryScope` | 租户隔离、来源、可信度、过期和写入准入控制。 |
 | 共享记忆原型 | `SharedMemoryPool` | 多 Agent 共享记忆实验。 |
 | 安全控制 | `input_guardrails`、`tool_guardrails`、`output_guardrails` | 隐私拦截、敏感工具确认、高风险参数校验和输出脱敏。 |
@@ -131,6 +131,22 @@ LightAgent 保持默认调用路径简单，同时允许逐步加入生产级控
 | 工作流 | `LightFlow().step(...).run(query)` | 用于确定性多步骤执行。 |
 | 持久化 Session | `agent.run(query, session_id="project-42")` | 延续并回放持久化会话。 |
 | 异步调用 | `await agent.arun(query)` | 避免阻塞 asyncio 应用。 |
+
+### 安全工具默认行为
+
+从 v0.10.1 开始，任意 Python 执行工具默认不会注册。对于受限的算术和
+数据表达式，请使用内置的 `safe_expression` 工具：
+
+```python
+from LightAgent import safe_expression
+
+print(safe_expression("45 * 9827"))
+```
+
+启用 `execute_python_code`、`execute_python_file` 或
+`execute_python_code_stream` 需要设置 `enable_unsafe_python=True`，并注册显式
+的 `SandboxProvider`。执行器只是受控子进程，并不是安全沙箱；详见
+[Python 执行器安全说明](docs/python_executor_security.md)。
 
 ### 评测并审核高风险动作
 

@@ -37,6 +37,11 @@ _DANGEROUS_BUILTINS = frozenset({"__import__", "compile", "eval", "exec", "input
 _DANGEROUS_ATTRIBUTES = frozenset({"compile", "eval", "exec", "popen", "system"})
 _PROCESS_ATTRIBUTES = frozenset({"Popen", "call", "check_call", "check_output", "run"})
 _DANGEROUS_DYNAMIC_ATTRIBUTES = _DANGEROUS_BUILTINS | _DANGEROUS_ATTRIBUTES | _PROCESS_ATTRIBUTES
+UNSAFE_PYTHON_TOOL_NAMES = frozenset({
+    "execute_python_code",
+    "execute_python_file",
+    "execute_python_code_stream",
+})
 
 
 def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:

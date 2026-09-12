@@ -374,22 +374,35 @@ are loaded.
 
 ### Built-in Tools
 
-LightAgent automatically registers a set of built-in tools at startup:
+LightAgent automatically registers safe built-in tools at startup. Arbitrary
+Python execution tools require explicit opt-in:
 
 | Tool Name | Description |
 | --- | --- |
-| `execute_python_code` | Execute a Python code snippet in a sandboxed subprocess. |
-| `execute_python_file` | Execute a Python script file and return the output. |
-| `execute_python_code_stream` | Execute Python code and stream the output line by line. |
+| `safe_expression` | Evaluate a bounded arithmetic/data expression without Python runtime access. |
+| `execute_python_code` | Execute a Python code snippet in a controlled subprocess; not a security sandbox. |
+| `execute_python_file` | Execute a Python script file in a controlled subprocess; not a security sandbox. |
+| `execute_python_code_stream` | Execute Python code in a controlled subprocess and stream output; not a security sandbox. |
 | `upload_file_to_oss` | Upload a file to object storage (OSS); requires optional `boto3`. |
 
-These are always available unless the agent's tool registry is explicitly
-overridden.
+`safe_expression` and `upload_file_to_oss` are registered by default. The
+arbitrary Python tools are disabled by default in v0.10.1. To register them,
+pass `enable_unsafe_python=True` and mount an explicit capability provider named
+`sandbox` (or one exposing a `sandbox.*` capability); otherwise model tool calls
+are rejected with `LA-SANDBOX`.
 
 The Python executor utilities use an AST denylist and a temporary working
-directory, but they are not complete sandboxes. Review the
+directory, but they are not security sandboxes. Review the
 [Python Executor Security](python_executor_security.md) guide before exposing
 them to untrusted input or enabling runtime dependency installation.
+
+For data-only calculations, use the default safe tool directly:
+
+```python
+from LightAgent import safe_expression
+
+print(safe_expression("45 * 9827"))
+```
 
 `upload_file_to_oss` is registered without importing `boto3`. Install
 `LightAgent[oss]`, `LightAgent[nos]`, or `boto3>=1.34.0` only when you use this
