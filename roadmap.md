@@ -1,6 +1,6 @@
 # LightAgent Roadmap
 
-Last updated: 2026-09-05
+Last updated: 2026-09-14
 
 LightAgent should continue to evolve as a lightweight, low-dependency agent
 framework rather than a broad replacement for LangChain, LangGraph, CrewAI, or
@@ -68,13 +68,29 @@ workflows + OpenAI-compatible model ecosystem.**
   Inbox/Goals/Budgets, compaction and recovery, Jobs/subagents, standardized
   Skills/MCP adapters, SQLite FTS5 retrieval, and compatibility adapters for
   the v0.9.x APIs.
+- **v0.10.1**: Removed arbitrary Python execution tools from the default Agent
+  registration path, added the bounded `safe_expression` tool, and required an
+  explicit `SandboxProvider` for model-triggered use of the opt-in compatibility
+  executors.
+- **v0.10.2**: Hardened LightFlow with execution-scoped cancellation, normalized
+  Agent exceptions, safe soft-timeout behavior, explicit overlap opt-in,
+  executor cleanup, idempotent replay, and cancellation/idempotency propagation
+  through Flow, Job, and child-Agent boundaries.
 
 ### In Development
 
-- **v0.10.2**: LightFlow Runtime Hardening. This release normalizes raised
-  Agent exceptions, scopes cancellation to active executions, defines safe
-  soft-timeout behavior, and propagates cancellation and idempotency contracts
-  through workflow, Job, and child-Agent boundaries.
+- **v0.11.0**: Dynamic DAG Multi-Agent and Unified Security Context. This is
+  the next development target after the v0.10.2 runtime-hardening release.
+
+### Next Feature Release
+
+- **v0.11.0 (planned)**: Dynamic DAG Multi-Agent and Unified Security Context.
+  Add an opt-in `LightDAG` layer for persistent task graphs, runtime
+  decomposition, bounded concurrent workers, verified artifacts, and restart
+  recovery while retaining the existing v0.11.0 security requirements.
+  The implementation guide is
+  [LightDAG v0.11.0 development plan (Chinese)](docs/lightdag_v011_development_plan.zh-CN.md).
+  This plan does not change package versions or mark unreleased work complete.
 
 ### Completed Milestone Details
 
@@ -133,40 +149,33 @@ result = flow.run("Analyze this company")
 
 Immediate security-governance work:
 
-- **#100 Python Executor sandbox escape disclosure**: reproduce in an isolated
-  environment, determine the actual framework/configuration boundary, and
-  create a private Security Advisory before declaring affected versions or a
-  fully patched release. The default runtime must not treat AST filtering and
-  a subprocess as a security sandbox.
+- **#100 Python Executor sandbox escape disclosure**: v0.10.1 removed the
+  unsafe default registration path and introduced the bounded
+  `safe_expression` replacement. Keep the public tracker open until the private
+  Security Advisory confirms the affected configuration/version range and
+  reporter attribution. The compatibility executor remains a controlled
+  subprocess, not a security sandbox.
 
 P1 security validation work:
 
-- **#39 Shared graph memory security disclosure**: evaluate a private GitHub
-  Security Advisory and possible CVE scope without declaring affected versions
-  or a fully patched release before backend-level reproduction is complete.
-  v0.9.5 provides framework-level mitigation primitives, not proof that shared
-  graph mutation is fully contained.
-
-P1 engineering work:
-
-- **#39 Shared graph memory security disclosure**: v0.9.6 adds a fake-backend
-  adversarial cross-user regression, explicit fail-closed write admission, and
-  retrieval-filter audit counts. The remaining acceptance criterion is an
-  opt-in test against the exact Mem0 Graph version and storage configuration
-  used in production.
-- **#1 Enhanced memory management for multi-agent systems**: keep shared-memory
-  adapter hardening active until durable graph/vector backends have explicit
-  tenant, provenance, conflict, and trust-boundary tests.
+- **#39 Shared graph memory security disclosure**: the framework-level policy,
+  admission, promotion, retrieval-filtering, audit, and fake-backend controls
+  are shipped. Keep the issue open until the opt-in matrix is run against the
+  exact isolated Mem0 Graph version and production-like storage configuration,
+  then complete private advisory/CVE scoping from that evidence.
 
 P2 issues:
 
-- **#26 External API tool bundle**: accept only focused, provider-owned tool
-  examples with no secrets, live CI calls, or required core dependencies.
-- **#50 Nautilus A2A registry/discovery proposal**: keep vendor registration,
-  wallets, and token economics in an external optional connector.
+- **#102 Optional MemCode memory integration**: accept a focused,
+  provider-owned adapter only if it remains outside core dependencies, fails
+  closed on missing identity/scope, preserves MemoryPolicy metadata, supports
+  retention and deletion, and includes credential-free fake-client tests.
 
 Resolved or ready to close:
 
+- **#1 Enhanced memory management for multi-agent systems**: closed as
+  completed after the shared-memory, policy, promotion, and adapter hardening
+  work shipped.
 - **#5 Custom plugin/integration development**: v0.9.7 delivered the optional,
   dependency-free Connector manifest, offline validator, examples, and
   contributor documentation without adding a marketplace runtime.
@@ -175,6 +184,10 @@ Resolved or ready to close:
 
 Not planned for the core repository:
 
+- **#26 External API tool bundle**: closed as not planned; accept only focused,
+  provider-owned examples outside required core dependencies.
+- **#50 Nautilus A2A registry/discovery proposal**: closed as not planned; keep
+  vendor registration, wallets, and token economics in an external connector.
 - Broad marketplace, hosted review UI, hosted observability dashboard, or
   external API bundle in the default package.
 
@@ -808,6 +821,10 @@ Post-release validation and follow-up work:
   completion notifications.
 - Evolve LightFlow into the common Workflow Provider for fixed DAGs, dynamic
   model-planned workflows, checkpoints, approvals, reruns, and parallel steps.
+- Scope clarification (2026-09-14): the dynamic graph and dependency-parallel
+  portions above remain planned, not shipped v0.10.0 capabilities. They move
+  to the opt-in v0.11.0 `LightDAG` layer; existing LightFlow execution semantics
+  remain compatible.
 - Add optional persistent Terminal and LSP Providers without making them core
   dependencies.
 
@@ -946,7 +963,7 @@ approval state, sandbox policy, network policy, or credentials.
 
 ### v0.10.2: LightFlow Runtime Hardening
 
-Status: in development.
+Status: released on 2026-09-14 through PR #103.
 
 Goal: stabilize workflow failure, cancellation, timeout, and recovery behavior
 after the P0 security patch is released.
@@ -963,7 +980,7 @@ after the P0 security patch is released.
 - Rebase and combine the relevant work from #97, #98, and #99 only after the
   interaction tests and full CI suite pass.
 
-Implemented on the v0.10.2 development branch:
+Released in v0.10.2:
 
 - Added execution-scoped `CancellationToken` handling for `run()`, `resume()`,
   and `rerun_step()`, including targeted `run_id` cancellation and non-sticky
@@ -980,10 +997,33 @@ Implemented on the v0.10.2 development branch:
 - Combined the relevant behavior from #97, #98, and #99 with interaction and
   compatibility tests.
 
-### v0.11.0: Unified Security Context
+### v0.11.0: Dynamic DAG Multi-Agent And Unified Security Context
 
-Goal: make security decisions explicit and consistent across all runtime
-capabilities.
+Status: planned next feature release after v0.10.2.
+
+Goal: add persistent, dynamically decomposed, verification-driven multi-agent
+execution and make security decisions explicit across runtime capabilities.
+The existing security work below remains required. Detailed contracts,
+implementation stages, and release gates are defined in the
+[LightDAG development plan](docs/lightdag_v011_development_plan.zh-CN.md).
+
+Dynamic DAG work:
+
+- Add opt-in `LightDAG`, a SQLite task graph store, transactional graph
+  mutations, cycle detection, versioned task attempts, and durable DAG events.
+- Schedule independent tasks concurrently through isolated Worker factories;
+  retain LightFlow's existing fixed-workflow behavior.
+- Distinguish decomposition acceptance, candidate submission, and verified
+  completion; require parent integration verification after dependencies finish.
+- Add immutable artifact manifests, verification reports bound to input and
+  content hashes, retrieval adapters, and bounded local task context.
+- Implement single-host scheduler and task leases, stale-attempt rejection,
+  idempotent publication, budget reservations, and restart recovery.
+- Ship credential-free deterministic examples, compatibility coverage, and
+  process-level fault tests. Cross-machine workers, WebUI, and domain toolchains
+  remain optional or future work.
+
+Unified security work:
 
 - Add `SecurityContext` carrying user, tenant, session, run, agent, parent
   agent, capability, resource, permissions, network, sandbox, approval, and
@@ -1098,7 +1138,8 @@ Suggested release cadence:
 | v0.10.0 | Unified event-sourced Agent Runtime | Released |
 | v0.10.1 | Security boundary and runtime hardening | P0 patch release |
 | v0.10.2 | LightFlow runtime hardening | After v0.10.1 |
-| v0.11.0-v0.13.0 | Security context, trusted data, and recovery | Milestone-driven |
+| v0.11.0 | Dynamic DAG Multi-Agent and unified security context | After v0.10.2; gated by the development plan |
+| v0.12.0-v0.13.0 | Trusted data, supply chain, and broader recovery hardening | Milestone-driven |
 | v1.0.0 | API freeze and production hardening | After security gates |
 | v1.1.0 | Optional enterprise integration | Post-v1.0 feedback-driven |
 
@@ -1540,27 +1581,24 @@ compatibility, replay, recovery, security, and stabilization gates.
 - Complete the #100 Python Executor security assessment through a private
   GitHub Security Advisory, and avoid naming affected or fully patched
   versions until the report is reproduced and the boundary is verified.
-- Ship v0.10.1 with a safe default execution boundary, explicit SandboxProvider
-  requirements, approval binding, secret redaction, resource limits, and
-  security regression coverage.
 
 ### Next P1
 
 - Continue #39 shared Graph Memory validation as an independent security gate,
   including the opt-in matrix against the exact Mem0 Graph version and storage
   configuration used in production-like deployments.
-- Release v0.10.2 with LightFlow exception, cancellation, timeout, retry,
-  fallback, idempotency, and resource-cleanup hardening.
+- Begin v0.11.0 with the shared `SecurityContext`, capability-gating contracts,
+  and the opt-in persistent LightDAG foundation described in the development
+  plan.
 - Keep `agent.run("hello")`, `stream=True`, existing Tools, Hooks, Memory,
   LightSwarm, and LightFlow compatibility behavior stable.
 
 ### P2
 
-- Implement v0.11.0 `SecurityContext`, `CapabilityGate`, versioned
-  `ApprovalToken`, `ProviderManifest`, child-agent permission snapshots, and
-  Job leases.
 - Add Provider contract tests for identity, policy, approval, sandbox,
   credential, network, and cleanup behavior.
+- Evaluate #102 as an optional MemCode adapter without adding a required core
+  dependency or bypassing MemoryPolicy and memory lifecycle hooks.
 - Keep external Provider examples focused, optional, credential-free in CI,
   and outside the required core dependency set.
 
@@ -1576,9 +1614,13 @@ compatibility, replay, recovery, security, and stabilization gates.
 
 ## Next Development Recommendation
 
-The current development target is **v0.10.2 LightFlow Runtime Hardening**.
-After v0.10.2, v0.11.0-v0.13.0 will introduce the unified security context,
-trusted data and supply-chain controls, and adversarial recovery validation.
+The current development target is **v0.11.0 Dynamic DAG Multi-Agent and Unified
+Security Context**, guided by the
+[development plan](docs/lightdag_v011_development_plan.zh-CN.md).
+It adds an opt-in persistent task-graph layer while retaining all previously
+planned v0.11.0 security gates. DAG-specific concurrency and recovery guarantees
+must ship with the feature. v0.12.0-v0.13.0 continue with broader trusted-data,
+supply-chain, and adversarial recovery work.
 
 Reasoning:
 
