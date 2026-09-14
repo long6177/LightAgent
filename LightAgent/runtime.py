@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Any, Awaitable, Callable, Iterable
 from uuid import uuid4
 
+from .cancellation import CancellationToken, accepts_keyword
 from .capabilities import CapabilityRegistry, PermissionSet, RuntimeContext
 from .session import InMemorySessionStore, Session, SessionCheckpoint, SessionStore, _utc_now
 
@@ -449,6 +450,8 @@ class JobRecord:
     completed_at: str | None = None
     result: Any = None
     error: str | None = None
+    idempotency_key: str | None = None
+    cancellation_token_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     output: list[Any] = field(default_factory=list)
 
@@ -468,40 +471,69 @@ class JobManager:
     ):
         self._records: dict[str, JobRecord] = {}
         self._tasks: dict[str, asyncio.Task[Any]] = {}
+        self._cancellations: dict[str, CancellationToken] = {}
+        self._idempotency_keys: dict[str, str] = {}
         self._event_sink = event_sink
         self._inbox = inbox
 
     def start(
             self,
             name: str,
-            operation: Callable[[], Any] | Awaitable[Any],
+            operation: Callable[..., Any] | Awaitable[Any],
             *,
             owner_agent_id: str | None = None,
             metadata: dict[str, Any] | None = None,
+            idempotency_key: str | None = None,
+            cancellation_token: CancellationToken | None = None,
     ) -> JobRecord:
         loop = asyncio.get_running_loop()
-        record = JobRecord(name=name, owner_agent_id=owner_agent_id, metadata=deepcopy(metadata or {}))
+        if idempotency_key is not None and not str(idempotency_key).strip():
+            raise ValueError("idempotency_key must not be empty")
+        if idempotency_key is not None and idempotency_key in self._idempotency_keys:
+            return deepcopy(self._records[self._idempotency_keys[idempotency_key]])
+        token = cancellation_token.child() if cancellation_token else CancellationToken()
+        record = JobRecord(
+            name=name,
+            owner_agent_id=owner_agent_id,
+            metadata=deepcopy(metadata or {}),
+            idempotency_key=idempotency_key,
+            cancellation_token_id=token.token_id,
+        )
         self._records[record.job_id] = record
+        self._cancellations[record.job_id] = token
+        if idempotency_key is not None:
+            self._idempotency_keys[idempotency_key] = record.job_id
         self._emit("job.created", record)
         self._tasks[record.job_id] = loop.create_task(self._execute(record.job_id, operation))
         return deepcopy(record)
 
-    async def _execute(self, job_id: str, operation: Callable[[], Any] | Awaitable[Any]) -> None:
+    async def _execute(self, job_id: str, operation: Callable[..., Any] | Awaitable[Any]) -> None:
         record = self._records[job_id]
+        token = self._cancellations[job_id]
         record.status = JobStatus.RUNNING
         record.started_at = _utc_now()
         self._emit("job.started", record)
         try:
-            value = operation() if callable(operation) else operation
+            if token.cancelled:
+                raise asyncio.CancelledError
+            if callable(operation):
+                if accepts_keyword(operation, "cancellation_token"):
+                    value = operation(cancellation_token=token)
+                else:
+                    value = operation()
+            else:
+                value = operation
             if inspect.isawaitable(value):
                 value = await value
+            if token.cancelled:
+                raise asyncio.CancelledError
             record.result = value
             record.status = JobStatus.SUCCESS
             record.completed_at = _utc_now()
             self._emit("job.completed", record)
         except asyncio.CancelledError:
             record.status = JobStatus.CANCELLED
-            record.error = "cancelled"
+            record.error = token.reason or "cancelled"
             record.completed_at = _utc_now()
             self._emit("job.cancelled", record)
             raise
@@ -532,11 +564,22 @@ class JobManager:
                 pass
         return deepcopy(self._records[job_id])
 
-    def cancel(self, job_id: str) -> bool:
+    def cancel(self, job_id: str, reason: str | None = None) -> bool:
         task = self._tasks.get(job_id)
         if task is None or task.done():
             return False
+        token = self._cancellations.get(job_id)
+        if token:
+            token.cancel(reason or "job cancellation requested")
         return task.cancel()
+
+    def cancellation_token(self, job_id: str) -> CancellationToken:
+        if job_id not in self._records:
+            raise KeyError(job_id)
+        token = self._cancellations.get(job_id)
+        if token is None:
+            raise RuntimeError(f"job `{job_id}` is not active")
+        return token
 
     def emit_output(self, job_id: str, value: Any) -> JobRecord:
         record = self._records.get(job_id)
@@ -575,6 +618,12 @@ class JobManager:
             records[record.job_id] = record
         self._records = records
         self._tasks = {}
+        self._cancellations = {}
+        self._idempotency_keys = {
+            record.idempotency_key: record.job_id
+            for record in records.values()
+            if record.idempotency_key is not None
+        }
 
     def _emit(self, event_type: str, record: JobRecord) -> None:
         if self._event_sink:
@@ -608,6 +657,7 @@ class SubagentManager:
         self._event_sink = event_sink
         self._agents: dict[str, tuple[Any, SubagentRecord]] = {}
         self._running = 0
+        self._cancellations: dict[str, set[CancellationToken]] = {}
 
     def register(
             self,
@@ -645,30 +695,70 @@ class SubagentManager:
         self._emit("subagent.created", record)
         return deepcopy(record)
 
-    async def run(self, agent_id: str, query: str, **kwargs: Any) -> Any:
+    async def run(
+            self,
+            agent_id: str,
+            query: str,
+            *,
+            cancellation_token: CancellationToken | None = None,
+            idempotency_key: str | None = None,
+            **kwargs: Any,
+    ) -> Any:
         if agent_id not in self._agents:
             raise KeyError(agent_id)
         agent, record = self._agents[agent_id]
         if self._running >= self.max_concurrency:
             raise RuntimeError("subagent concurrency limit reached")
+        token = cancellation_token.child() if cancellation_token else CancellationToken()
+        self._cancellations.setdefault(agent_id, set()).add(token)
         self._running += 1
         record.status = "running"
         self._emit("subagent.started", record)
         try:
+            if token.cancelled:
+                raise asyncio.CancelledError
             arun = getattr(agent, "arun", None)
             if callable(arun):
+                if accepts_keyword(arun, "cancellation_token"):
+                    kwargs["cancellation_token"] = token
+                if idempotency_key is not None and accepts_keyword(arun, "idempotency_key"):
+                    kwargs["idempotency_key"] = idempotency_key
                 result = await arun(query, **kwargs)
             else:
+                if accepts_keyword(agent.run, "cancellation_token"):
+                    kwargs["cancellation_token"] = token
+                if idempotency_key is not None and accepts_keyword(agent.run, "idempotency_key"):
+                    kwargs["idempotency_key"] = idempotency_key
                 result = await asyncio.to_thread(agent.run, query, **kwargs)
+            if token.cancelled:
+                raise asyncio.CancelledError
             record.status = "success"
             self._emit("subagent.completed", record, result=result)
             return result
+        except asyncio.CancelledError:
+            record.status = "cancelled"
+            self._emit("subagent.cancelled", record, error=token.reason or "cancelled")
+            raise
         except Exception as error:
             record.status = "failed"
             self._emit("subagent.failed", record, error=f"{type(error).__name__}: {error}")
             raise
         finally:
             self._running -= 1
+            active = self._cancellations.get(agent_id)
+            if active is not None:
+                active.discard(token)
+                if not active:
+                    self._cancellations.pop(agent_id, None)
+
+    def cancel(self, agent_id: str, reason: str | None = None) -> int:
+        if agent_id not in self._agents:
+            raise KeyError(agent_id)
+        active = tuple(self._cancellations.get(agent_id, ()))
+        return sum(
+            token.cancel(reason or "subagent cancellation requested")
+            for token in active
+        )
 
     def list(self) -> list[SubagentRecord]:
         return deepcopy([record for _, record in self._agents.values()])

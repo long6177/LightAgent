@@ -92,6 +92,13 @@ model/tool/token/time/cost budgets, progress-loop detection, cancellable Jobs,
 and bounded subagent registration with narrowing-only permission snapshots.
 Restoring a Session rebuilds Inbox, Goal, Budget, and interrupted Job state.
 
+As of v0.10.2, Jobs accept `idempotency_key` and `cancellation_token`. Reusing a
+Job idempotency key returns its existing record instead of scheduling duplicate
+work. Operations that accept a `cancellation_token` keyword receive a child
+token, so parent cancellation propagates without granting the child authority
+over the parent token. Subagent runs use the same cooperative token contract and
+forward an optional idempotency key when the child API supports it.
+
 ## Context And Knowledge
 
 `ContextBudget` and `ContextCompactor` provide deterministic trimming,

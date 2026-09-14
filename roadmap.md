@@ -71,9 +71,10 @@ workflows + OpenAI-compatible model ecosystem.**
 
 ### In Development
 
-- **v0.10.1**: Security Boundary and Runtime Hardening. This is the immediate
-  P0 release line for the Python Executor security disclosure in #100 and the
-  security controls described in the post-v0.10 roadmap.
+- **v0.10.2**: LightFlow Runtime Hardening. This release normalizes raised
+  Agent exceptions, scopes cancellation to active executions, defines safe
+  soft-timeout behavior, and propagates cancellation and idempotency contracts
+  through workflow, Job, and child-Agent boundaries.
 
 ### Completed Milestone Details
 
@@ -869,7 +870,10 @@ Post-release validation and follow-up work:
 
 ### v0.10.1: Security Boundary And Runtime Hardening
 
-Status: planned as the immediate security patch release for the v0.10 runtime.
+Status: released on 2026-09-05 as the immediate security patch for the v0.10
+runtime. It disabled automatic arbitrary-Python tool registration, added the
+bounded `safe_expression` path, and introduced fail-closed SandboxProvider
+gating. Broader unified security-context work continues in v0.11.0.
 
 Goal: ensure that every capability call is checked by identity, capability,
 policy, approval, resource, environment, and credential boundaries. This
@@ -942,6 +946,8 @@ approval state, sandbox policy, network policy, or credentials.
 
 ### v0.10.2: LightFlow Runtime Hardening
 
+Status: in development.
+
 Goal: stabilize workflow failure, cancellation, timeout, and recovery behavior
 after the P0 security patch is released.
 
@@ -956,6 +962,23 @@ after the P0 security patch is released.
   Agents.
 - Rebase and combine the relevant work from #97, #98, and #99 only after the
   interaction tests and full CI suite pass.
+
+Implemented on the v0.10.2 development branch:
+
+- Added execution-scoped `CancellationToken` handling for `run()`, `resume()`,
+  and `rerun_step()`, including targeted `run_id` cancellation and non-sticky
+  reuse of a `LightFlow` instance.
+- Normalized raised Agent and fallback exceptions into retryable failed-step
+  results without persisting raw exception details.
+- Fixed executor cleanup so soft timeouts return promptly on success, timeout,
+  and raised-exception paths.
+- Made timeout retry/fallback overlap explicit through
+  `allow_timeout_overlap=True`; the default fails without launching duplicate
+  in-flight work.
+- Added local run-ID idempotent replay, stable step idempotency keys, Job
+  idempotency, and cooperative cancellation propagation to Jobs and subagents.
+- Combined the relevant behavior from #97, #98, and #99 with interaction and
+  compatibility tests.
 
 ### v0.11.0: Unified Security Context
 
@@ -1553,13 +1576,9 @@ compatibility, replay, recovery, security, and stabilization gates.
 
 ## Next Development Recommendation
 
-The next development target is **v0.10.1 Security Boundary And Runtime
-Hardening**. It is an intentionally focused patch release for the P0 Python
-Executor disclosure and the security controls required by the v0.10 runtime.
-
-After v0.10.1, v0.10.2 will harden LightFlow failure and cancellation behavior,
-then v0.11.0-v0.13.0 will introduce the unified security context, trusted data
-and supply-chain controls, and adversarial recovery validation.
+The current development target is **v0.10.2 LightFlow Runtime Hardening**.
+After v0.10.2, v0.11.0-v0.13.0 will introduce the unified security context,
+trusted data and supply-chain controls, and adversarial recovery validation.
 
 Reasoning:
 
@@ -1578,7 +1597,7 @@ Reasoning:
   LightWorker or other products supply Browser, Docker, WebUI, and business
   workflow implementations.
 
-First v0.10.1 implementation slice:
+First v0.10.1 implementation slice (released):
 
 1. Reproduce #100 in an isolated environment without adding exploit payloads
    to the public test suite, and document the verified boundary privately.

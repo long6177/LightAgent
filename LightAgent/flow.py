@@ -13,9 +13,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from threading import Lock
 from typing import Any, Callable
 from uuid import uuid4
 
+from .cancellation import CancellationToken, accepts_keyword
+from .errors import format_error_code
 from .result import RunResult
 from .hooks import HOOK_BLOCK, HookContext, HookDecision, HookManager
 from .review import (
@@ -48,6 +51,7 @@ class LightFlowStep:
     tools: list[Any] | None = None
     max_retry: int = 1
     timeout: float | None = None
+    allow_timeout_overlap: bool = False
     fallback_agent: Any | None = None
     cancel_if: Callable[[dict[str, Any]], bool] | None = None
     requires_approval: bool = False
@@ -72,6 +76,9 @@ class LightFlowStepResult:
     output_summary: str | None = None
     retry_count: int = 0
     used_fallback: bool = False
+    timed_out: bool = False
+    timeout_mode: str | None = None
+    idempotency_key: str | None = None
     approval_request_id: str | None = None
     approval_decision: str | None = None
 
@@ -90,6 +97,7 @@ class LightFlowResult:
     error: str | None = None
     run_id: str | None = None
     status: str = FLOW_SUCCESS
+    idempotent_replay: bool = False
 
     @property
     def success(self) -> bool:
@@ -139,7 +147,8 @@ class LightFlow:
         self._records: dict[str, dict[str, Any]] = {}
         self._approval_decisions: dict[tuple[str, str], ApprovalDecision] = {}
         self._approval_request_ids: dict[tuple[str, str], str] = {}
-        self._cancelled = False
+        self._execution_lock = Lock()
+        self._active_cancellations: set[CancellationToken] = set()
 
     def step(
             self,
@@ -151,6 +160,7 @@ class LightFlow:
             tools: list[Any] | None = None,
             max_retry: int = 1,
             timeout: float | None = None,
+            allow_timeout_overlap: bool = False,
             fallback_agent: Any | None = None,
             cancel_if: Callable[[dict[str, Any]], bool] | None = None,
             requires_approval: bool = False,
@@ -170,6 +180,8 @@ class LightFlow:
             raise ValueError("max_retry must be at least 1")
         if timeout is not None and timeout <= 0:
             raise ValueError("timeout must be greater than 0")
+        if not isinstance(allow_timeout_overlap, bool):
+            raise ValueError("allow_timeout_overlap must be a boolean")
 
         self._steps.append(
             LightFlowStep(
@@ -180,6 +192,7 @@ class LightFlow:
                 tools=tools,
                 max_retry=max_retry,
                 timeout=timeout,
+                allow_timeout_overlap=allow_timeout_overlap,
                 fallback_agent=fallback_agent,
                 cancel_if=cancel_if,
                 requires_approval=requires_approval,
@@ -229,9 +242,37 @@ class LightFlow:
             errors.extend(warnings)
         return {"errors": errors, "warnings": warnings}
 
-    def cancel(self) -> None:
-        """Request cancellation before the next step starts."""
-        self._cancelled = True
+    def cancel(self, run_id: str | None = None, reason: str | None = None) -> int:
+        """Cancel active executions, optionally limited to one workflow run."""
+        with self._execution_lock:
+            active = tuple(self._active_cancellations)
+        cancelled = 0
+        for token in active:
+            if run_id is not None and token.run_id != run_id:
+                continue
+            if token.cancel(reason or "workflow cancellation requested"):
+                cancelled += 1
+        return cancelled
+
+    def _start_execution(
+            self,
+            run_id: str,
+            cancellation_token: CancellationToken | None,
+    ) -> CancellationToken:
+        token = cancellation_token or CancellationToken(run_id=run_id)
+        if token.run_id is None:
+            token.run_id = run_id
+        elif token.run_id != run_id:
+            raise ValueError("cancellation token run_id does not match the workflow run")
+        with self._execution_lock:
+            if any(active.run_id == run_id for active in self._active_cancellations):
+                raise ValueError(f"run `{run_id}` is already active")
+            self._active_cancellations.add(token)
+        return token
+
+    def _finish_execution(self, cancellation_token: CancellationToken) -> None:
+        with self._execution_lock:
+            self._active_cancellations.discard(cancellation_token)
 
     def run(
             self,
@@ -243,21 +284,32 @@ class LightFlow:
             run_id: str | None = None,
             parent_trace_id: str | None = None,
             run_group_id: str | None = None,
+            cancellation_token: CancellationToken | None = None,
     ) -> LightFlowResult | str | dict[str, Any]:
         """Run all registered steps once their dependencies are satisfied."""
         if result_format not in ("object", "str", "dict"):
             raise ValueError("result_format must be one of: object, str, dict")
-        ordered_steps = self._ordered_steps()
-        return self._execute(
-            query=query,
-            ordered_steps=ordered_steps,
-            user_id=user_id,
-            trace=trace,
-            result_format=result_format,
-            run_id=run_id or uuid4().hex,
-            parent_trace_id=parent_trace_id,
-            run_group_id=run_group_id,
-        )
+        resolved_run_id = run_id or uuid4().hex
+        token = self._start_execution(resolved_run_id, cancellation_token)
+        try:
+            if run_id is not None:
+                existing = self.get_run(resolved_run_id)
+                if existing is not None:
+                    return self._format_result(self._result_from_record(existing), result_format)
+            ordered_steps = self._ordered_steps()
+            return self._execute(
+                query=query,
+                ordered_steps=ordered_steps,
+                user_id=user_id,
+                trace=trace,
+                result_format=result_format,
+                run_id=resolved_run_id,
+                parent_trace_id=parent_trace_id,
+                run_group_id=run_group_id,
+                cancellation_token=token,
+            )
+        finally:
+            self._finish_execution(token)
 
     async def arun(self, query: str, **kwargs: Any) -> LightFlowResult | str | dict[str, Any]:
         """Run a workflow without blocking the caller's event loop."""
@@ -272,30 +324,36 @@ class LightFlow:
             result_format: str = "object",
             parent_trace_id: str | None = None,
             run_group_id: str | None = None,
+            cancellation_token: CancellationToken | None = None,
     ) -> LightFlowResult | str | dict[str, Any]:
         """Resume a failed or incomplete run from the last checkpoint."""
-        record = self.get_run(run_id)
-        if not record:
-            raise ValueError(f"run `{run_id}` not found")
-        self._restore_approval_decisions(run_id, record)
-        self._run_flow_hook("on_resume", {"run_id": run_id, "record": record})
-        completed = {
-            step["name"]: self._step_result_from_dict(step)
-            for step in record.get("steps", [])
-            if step.get("status") == FLOW_SUCCESS
-        }
-        ordered_steps = [step for step in self._ordered_steps() if step.name not in completed]
-        return self._execute(
-            query=record.get("query", ""),
-            ordered_steps=ordered_steps,
-            user_id=user_id,
-            trace=trace,
-            result_format=result_format,
-            run_id=run_id,
-            initial_completed=completed,
-            parent_trace_id=parent_trace_id,
-            run_group_id=run_group_id,
-        )
+        token = self._start_execution(run_id, cancellation_token)
+        try:
+            record = self.get_run(run_id)
+            if not record:
+                raise ValueError(f"run `{run_id}` not found")
+            self._restore_approval_decisions(run_id, record)
+            self._run_flow_hook("on_resume", {"run_id": run_id, "record": record})
+            completed = {
+                step["name"]: self._step_result_from_dict(step)
+                for step in record.get("steps", [])
+                if step.get("status") == FLOW_SUCCESS
+            }
+            ordered_steps = [step for step in self._ordered_steps() if step.name not in completed]
+            return self._execute(
+                query=record.get("query", ""),
+                ordered_steps=ordered_steps,
+                user_id=user_id,
+                trace=trace,
+                result_format=result_format,
+                run_id=run_id,
+                initial_completed=completed,
+                parent_trace_id=parent_trace_id,
+                run_group_id=run_group_id,
+                cancellation_token=token,
+            )
+        finally:
+            self._finish_execution(token)
 
     def rerun_step(
             self,
@@ -307,8 +365,36 @@ class LightFlow:
             result_format: str = "object",
             parent_trace_id: str | None = None,
             run_group_id: str | None = None,
+            cancellation_token: CancellationToken | None = None,
     ) -> LightFlowResult | str | dict[str, Any]:
         """Rerun one step and all downstream steps from a checkpoint."""
+        token = self._start_execution(run_id, cancellation_token)
+        try:
+            return self._rerun_step_execution(
+                run_id,
+                step_name,
+                user_id=user_id,
+                trace=trace,
+                result_format=result_format,
+                parent_trace_id=parent_trace_id,
+                run_group_id=run_group_id,
+                cancellation_token=token,
+            )
+        finally:
+            self._finish_execution(token)
+
+    def _rerun_step_execution(
+            self,
+            run_id: str,
+            step_name: str,
+            *,
+            user_id: str,
+            trace: bool,
+            result_format: str,
+            parent_trace_id: str | None,
+            run_group_id: str | None,
+            cancellation_token: CancellationToken,
+    ) -> LightFlowResult | str | dict[str, Any]:
         record = self.get_run(run_id)
         if not record:
             raise ValueError(f"run `{run_id}` not found")
@@ -338,6 +424,7 @@ class LightFlow:
             initial_completed=completed,
             parent_trace_id=parent_trace_id,
             run_group_id=run_group_id,
+            cancellation_token=cancellation_token,
         )
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
@@ -400,6 +487,7 @@ class LightFlow:
             initial_completed: dict[str, LightFlowStepResult] | None = None,
             parent_trace_id: str | None = None,
             run_group_id: str | None = None,
+            cancellation_token: CancellationToken,
     ) -> LightFlowResult | str | dict[str, Any]:
         trace_id = uuid4().hex
         run_group = run_group_id or run_id
@@ -424,11 +512,49 @@ class LightFlow:
         error = None
 
         for step in ordered_steps:
-            if self._cancelled or (step.cancel_if and step.cancel_if(context)):
-                result = self._skipped_result(step, "cancelled before execution")
-                step_results.append(result)
-                self._checkpoint(run_id, query, status=FLOW_SKIPPED, steps=step_results, error=result.error, all_steps=all_steps)
-                continue
+            if step.cancel_if and step.cancel_if(context):
+                cancellation_token.cancel(f"cancel_if triggered before step `{step.name}`")
+            if cancellation_token.cancelled:
+                cancellation_error = format_error_code(
+                    "LA-CANCELLED",
+                    cancellation_token.reason or "workflow cancellation requested",
+                )
+                step_results.extend(
+                    self._pending_skipped_results(all_steps, step_results, cancellation_error)
+                )
+                status = FLOW_SKIPPED
+                error = cancellation_error
+                self._checkpoint(
+                    run_id,
+                    query,
+                    status=status,
+                    steps=step_results,
+                    error=error,
+                    all_steps=all_steps,
+                )
+                recorder.record("flow_cancelled", {
+                    "run_id": run_id,
+                    "reason": cancellation_token.reason,
+                    "token_id": cancellation_token.token_id,
+                })
+                recorder.record("flow_end", {
+                    "success": False,
+                    "error": error,
+                    "status": status,
+                    "run_id": run_id,
+                })
+                return self._format_result(
+                    LightFlowResult(
+                        content=final_content,
+                        steps=step_results,
+                        trace_id=trace_id,
+                        trace=recorder.to_list(),
+                        error=error,
+                        run_id=run_id,
+                        status=status,
+                    ),
+                    result_format,
+                )
 
             step_query = self._build_step_query(step, query, context)
             step_hook = self._run_flow_hook(
@@ -449,6 +575,7 @@ class LightFlow:
                 continue
             if step_hook.payload and "query" in step_hook.payload:
                 step_query = str(step_hook.payload["query"])
+            idempotency_key = f"{run_id}:{step.name}"
 
             approval_request = ApprovalRequest(
                 action="flow_step",
@@ -462,7 +589,11 @@ class LightFlow:
                 arguments={"query": step_query},
                 source_agent=getattr(step.agent, "name", None),
                 reviewer_metadata={"user_id": user_id},
-                metadata={"step": step.name, "depends_on": list(step.depends_on)},
+                metadata={
+                    "step": step.name,
+                    "depends_on": list(step.depends_on),
+                    "idempotency_key": idempotency_key,
+                },
                 allowed_decisions=("approve", "reject", "edit", "respond"),
             )
             approval_decision = self._check_approval(
@@ -504,6 +635,7 @@ class LightFlow:
                 )
                 result.approval_request_id = approval_request.request_id
                 result.approval_decision = approval_decision.action
+                result.idempotency_key = idempotency_key
                 step_results.append(result)
                 self._checkpoint(
                     run_id,
@@ -523,6 +655,7 @@ class LightFlow:
                 )
                 result.approval_request_id = approval_request.request_id
                 result.approval_decision = approval_decision.action
+                result.idempotency_key = idempotency_key
                 step_results.append(result)
                 status = FLOW_FAILED
                 error = result.error
@@ -551,6 +684,7 @@ class LightFlow:
                     duration_ms=0.0,
                     input_summary=self._summarize(step_query),
                     output_summary=self._summarize(content),
+                    idempotency_key=idempotency_key,
                     approval_request_id=approval_request.request_id,
                     approval_decision=approval_decision.action,
                 )
@@ -564,6 +698,7 @@ class LightFlow:
                     "success": True,
                     "duration_ms": 0.0,
                     "human_response": True,
+                    "idempotency_key": idempotency_key,
                 })
                 self._checkpoint(
                     run_id,
@@ -590,6 +725,9 @@ class LightFlow:
                 trace=trace,
                 parent_trace_id=trace_id,
                 run_group_id=run_group,
+                run_id=run_id,
+                cancellation_token=cancellation_token,
+                idempotency_key=idempotency_key,
             )
             if step.requires_approval:
                 step_result.approval_request_id = approval_request.request_id
@@ -621,6 +759,9 @@ class LightFlow:
                 "input_summary": step_result.input_summary,
                 "output_summary": step_result.output_summary,
                 "used_fallback": step_result.used_fallback,
+                "timed_out": step_result.timed_out,
+                "timeout_mode": step_result.timeout_mode,
+                "idempotency_key": step_result.idempotency_key,
             })
 
             self._checkpoint(
@@ -632,9 +773,12 @@ class LightFlow:
                 all_steps=all_steps,
             )
             if step_result.error:
-                status = FLOW_FAILED
+                status = FLOW_SKIPPED if step_result.status == FLOW_SKIPPED else FLOW_FAILED
                 error = step_result.error
-                step_results.extend(self._remaining_skipped_results(step, all_steps, step_results))
+                if step_result.status == FLOW_SKIPPED:
+                    step_results.extend(self._pending_skipped_results(all_steps, step_results, error))
+                else:
+                    step_results.extend(self._remaining_skipped_results(step, all_steps, step_results))
                 self._checkpoint(run_id, query, status=status, steps=step_results, error=error, all_steps=all_steps)
                 recorder.record("flow_end", {"success": False, "error": error, "status": status, "run_id": run_id})
                 return self._format_result(
@@ -673,23 +817,47 @@ class LightFlow:
             trace: bool,
             parent_trace_id: str | None,
             run_group_id: str | None,
+            run_id: str,
+            cancellation_token: CancellationToken,
+            idempotency_key: str,
     ) -> LightFlowStepResult:
         started = time.perf_counter()
         last_result: LightFlowStepResult | None = None
+        last_timed_out = False
         for attempt in range(1, step.max_retry + 1):
-            raw_result, timed_out = self._call_agent(
-                step.agent,
-                step,
-                query,
-                user_id=user_id,
-                trace=trace,
-                parent_trace_id=parent_trace_id,
-                run_group_id=run_group_id,
-            )
-            content, error, step_trace = self._normalize_agent_result(raw_result)
-            if timed_out:
-                error = f"step `{step.name}` timed out after {step.timeout} seconds"
-                content = f"[LA-FLOW-TIMEOUT] {error}"
+            if cancellation_token.cancelled:
+                result = self._skipped_result(
+                    step,
+                    format_error_code(
+                        "LA-CANCELLED",
+                        cancellation_token.reason or "workflow cancellation requested",
+                    ),
+                )
+                result.idempotency_key = idempotency_key
+                return result
+            try:
+                raw_result, timed_out = self._call_agent(
+                    step.agent,
+                    step,
+                    query,
+                    user_id=user_id,
+                    trace=trace,
+                    parent_trace_id=parent_trace_id,
+                    run_group_id=run_group_id,
+                    cancellation_token=cancellation_token,
+                    idempotency_key=idempotency_key,
+                )
+            except Exception as exc:
+                raw_result, timed_out = None, False
+                error_code = str(getattr(exc, "code", "LA-FLOW-AGENT-ERROR"))
+                content = f"[{error_code}] step `{step.name}` agent raised {type(exc).__name__}"
+                error, step_trace = content, []
+            else:
+                content, error, step_trace = self._normalize_agent_result(raw_result)
+                if timed_out:
+                    error = f"step `{step.name}` timed out after {step.timeout} seconds"
+                    content = f"[LA-FLOW-TIMEOUT] {error}"
+            last_timed_out = timed_out
             ended = time.perf_counter()
             last_result = LightFlowStepResult(
                 name=step.name,
@@ -704,24 +872,56 @@ class LightFlow:
                 input_summary=self._summarize(query),
                 output_summary=self._summarize(content),
                 retry_count=attempt - 1,
+                timed_out=timed_out,
+                timeout_mode="soft" if timed_out else None,
+                idempotency_key=idempotency_key,
             )
             if error is None:
                 return last_result
+            if timed_out and not step.allow_timeout_overlap:
+                break
 
-        if last_result and last_result.error and step.fallback_agent is not None:
-            fallback_result, timed_out = self._call_agent(
-                step.fallback_agent,
-                step,
-                query,
-                user_id=user_id,
-                trace=trace,
-                parent_trace_id=parent_trace_id,
-                run_group_id=run_group_id,
-            )
-            content, error, step_trace = self._normalize_agent_result(fallback_result)
-            if timed_out:
-                error = f"fallback for step `{step.name}` timed out after {step.timeout} seconds"
-                content = f"[LA-FLOW-TIMEOUT] {error}"
+        if (
+            last_result
+            and last_result.error
+            and step.fallback_agent is not None
+            and (not last_timed_out or step.allow_timeout_overlap)
+        ):
+            if cancellation_token.cancelled:
+                result = self._skipped_result(
+                    step,
+                    format_error_code(
+                        "LA-CANCELLED",
+                        cancellation_token.reason or "workflow cancellation requested",
+                    ),
+                )
+                result.idempotency_key = idempotency_key
+                return result
+            try:
+                fallback_result, timed_out = self._call_agent(
+                    step.fallback_agent,
+                    step,
+                    query,
+                    user_id=user_id,
+                    trace=trace,
+                    parent_trace_id=parent_trace_id,
+                    run_group_id=run_group_id,
+                    cancellation_token=cancellation_token,
+                    idempotency_key=idempotency_key,
+                )
+            except Exception as exc:
+                fallback_result, timed_out = None, False
+                error_code = str(getattr(exc, "code", "LA-FLOW-AGENT-ERROR"))
+                content = (
+                    f"[{error_code}] fallback for step `{step.name}` agent raised "
+                    f"{type(exc).__name__}"
+                )
+                error, step_trace = content, []
+            else:
+                content, error, step_trace = self._normalize_agent_result(fallback_result)
+                if timed_out:
+                    error = f"fallback for step `{step.name}` timed out after {step.timeout} seconds"
+                    content = f"[LA-FLOW-TIMEOUT] {error}"
             ended = time.perf_counter()
             return LightFlowStepResult(
                 name=step.name,
@@ -737,6 +937,9 @@ class LightFlow:
                 output_summary=self._summarize(content),
                 retry_count=last_result.attempts - 1,
                 used_fallback=True,
+                timed_out=timed_out,
+                timeout_mode="soft" if timed_out else None,
+                idempotency_key=idempotency_key,
             )
         return last_result or LightFlowStepResult(name=step.name, content="", error="step did not run", status=FLOW_FAILED)
 
@@ -750,6 +953,8 @@ class LightFlow:
             trace: bool,
             parent_trace_id: str | None,
             run_group_id: str | None,
+            cancellation_token: CancellationToken,
+            idempotency_key: str,
     ) -> tuple[Any, bool]:
         kwargs = {
             "tools": step.tools,
@@ -761,15 +966,25 @@ class LightFlow:
             "parent_trace_id": parent_trace_id,
             "run_group_id": run_group_id,
         }
+        if accepts_keyword(agent.run, "cancellation_token"):
+            kwargs["cancellation_token"] = cancellation_token
+        if accepts_keyword(agent.run, "idempotency_key"):
+            kwargs["idempotency_key"] = idempotency_key
         if step.timeout is None:
             return agent.run(query, **kwargs), False
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(agent.run, query, **kwargs)
-            try:
-                return future.result(timeout=step.timeout), False
-            except TimeoutError:
-                future.cancel()
-                return None, True
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(agent.run, query, **kwargs)
+        try:
+            result = future.result(timeout=step.timeout)
+        except TimeoutError:
+            future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
+            return None, True
+        except BaseException:
+            executor.shutdown(wait=True, cancel_futures=True)
+            raise
+        executor.shutdown(wait=True)
+        return result, False
 
     def _run_flow_hook(
             self,
@@ -865,8 +1080,24 @@ class LightFlow:
                 "success": result.success,
                 "run_id": result.run_id,
                 "status": result.status,
+                "idempotent_replay": result.idempotent_replay,
             }
         return result
+
+    def _result_from_record(self, record: dict[str, Any]) -> LightFlowResult:
+        steps = [self._step_result_from_dict(step) for step in record.get("steps", [])]
+        completed_content = next(
+            (step.content for step in reversed(steps) if step.content),
+            "",
+        )
+        return LightFlowResult(
+            content=completed_content,
+            steps=steps,
+            error=record.get("error"),
+            run_id=record.get("run_id"),
+            status=record.get("status", FLOW_FAILED),
+            idempotent_replay=True,
+        )
 
     def _checkpoint(
             self,
@@ -917,6 +1148,19 @@ class LightFlow:
             if failed_step.name in step.depends_on or any(dep in seen for dep in step.depends_on):
                 skipped.append(self._skipped_result(step, f"skipped after `{failed_step.name}` failed"))
         return skipped
+
+    def _pending_skipped_results(
+            self,
+            all_steps: list[LightFlowStep],
+            step_results: list[LightFlowStepResult],
+            reason: str,
+    ) -> list[LightFlowStepResult]:
+        seen = {result.name for result in step_results}
+        return [
+            self._skipped_result(step, reason)
+            for step in all_steps
+            if step.name not in seen
+        ]
 
     @staticmethod
     def _skipped_result(step: LightFlowStep, reason: str, *, status: str = FLOW_SKIPPED) -> LightFlowStepResult:
