@@ -178,6 +178,8 @@ For lightweight shared memory experiments, see [SharedMemoryPool](docs/shared_me
 
 For optional ClawMem long-term memory adapter setup, see [ClawMem Memory Adapter](docs/clawmem_memory_adapter.md).
 
+For an optional, user-scoped Memcode v2 adapter with offline fake-client tests, see [Memcode Memory Adapter](docs/memcode_memory_adapter.md).
+
 For memory write admission, expiration-aware retrieval, and low-quality memory write blocking, see [Memory Admission And Mutation Controls](docs/memory_admission.md).
 
 For separating trace, user memory, self-reflection memory, and LightSwarm delegation state, see [Memory, Trace, And Swarm Boundaries](docs/memory_trace_swarm_boundaries.md).
