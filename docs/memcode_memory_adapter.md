@@ -12,7 +12,9 @@ fake client and make no network requests.
 pip install memcode-sdk
 ```
 
-Keep credentials outside source control:
+Keep credentials outside source control. Create the key from the
+[Memcode API-key dashboard](https://app.memcode.in/dashboard?section=api-keys&integration=lightagent) with **LightAgent**
+selected under integration attribution:
 
 ```bash
 export MEMCODE_API_URL=https://memory.memcode.in
@@ -78,6 +80,8 @@ agent = LightAgent(
   no delete method, and the v2 SDK adapter deliberately does not simulate one;
   use the authorized Memcode lifecycle API or console for deletion/forgetting.
 
-The SDK assigns integration attribution server-side. Do not add
+Memcode binds the `lightagent` identity when the key is issued. A generic key
+still works, but its requests are counted as generic direct API usage. The SDK
+never supplies attribution itself. Do not add
 `integration_id`, `integration_channel`, `attribution_status`, or
 `attribution_basis` to memory metadata.
