@@ -291,9 +291,9 @@ fetch_news.tool_info = {
 
 ### Streaming Tools
 
-Tools that return Python generators (synchronous) or async generators work with
-the streaming execution path. When the model calls a streaming tool in
-streaming mode, chunks are yielded as they are produced:
+Tools that return Python generators (synchronous) work with the streaming
+execution path. When the model calls a streaming tool in streaming mode,
+chunks are yielded as they are produced:
 
 ```python
 from typing import Generator
@@ -317,8 +317,9 @@ stream_results.tool_info = {
 }
 ```
 
-For async generators, the dispatcher returns the generator object directly
-without consuming it, allowing the caller to iterate at its own pace.
+Async generator tools are consumed by the dispatcher: all chunks are collected
+inside `dispatch()` and returned as a single serialized result. Only
+synchronous generator tools are passed through for chunk-by-chunk streaming.
 
 ### Dynamic Tool Loading
 
