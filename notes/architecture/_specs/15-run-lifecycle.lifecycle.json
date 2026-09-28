@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "单次运行（run）的生命周期",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 运行主线"
+    },
+    {
+      "id": "fail",
+      "label": "02 / 异常出口"
+    }
+  ],
+  "states": [
+    {
+      "id": "run_start",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "进入 run()",
+      "sublabel": "生成 traceid",
+      "tag": "core.py:480"
+    },
+    {
+      "id": "prepare",
+      "type": "active",
+      "lane": "main",
+      "col": 1,
+      "label": "准备与检查",
+      "sublabel": "开会话·钩子·护栏",
+      "tag": "core.py:852/598"
+    },
+    {
+      "id": "assemble",
+      "type": "active",
+      "lane": "main",
+      "col": 2,
+      "label": "组装上下文",
+      "sublabel": "记忆注入 + ToT",
+      "tag": "core.py:1436/2745"
+    },
+    {
+      "id": "loop",
+      "type": "active",
+      "lane": "main",
+      "col": 3,
+      "label": "模型与工具循环",
+      "sublabel": "create ↔ dispatch",
+      "tag": "core.py:726/2000"
+    },
+    {
+      "id": "finish",
+      "type": "success",
+      "lane": "main",
+      "col": 4,
+      "label": "正常收尾",
+      "sublabel": "_finish_run",
+      "tag": "core.py:995"
+    },
+    {
+      "id": "halted",
+      "type": "failure",
+      "lane": "fail",
+      "col": 1,
+      "label": "中止",
+      "sublabel": "拦截·预算·超限",
+      "tag": "core.py:589/1017"
+    },
+    {
+      "id": "modelfail",
+      "type": "failure",
+      "lane": "fail",
+      "col": 0,
+      "label": "模型调用失败",
+      "sublabel": "LA-4xx / LA-5xx",
+      "tag": "errors.py:154"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "run_start",
+      "to": "prepare",
+      "label": "参数校验",
+      "labelAt": [
+        224,
+        112
+      ]
+    },
+    {
+      "from": "prepare",
+      "to": "assemble",
+      "label": "检查通过",
+      "labelAt": [
+        378,
+        112
+      ]
+    },
+    {
+      "from": "assemble",
+      "to": "loop",
+      "label": "上下文就绪",
+      "labelAt": [
+        532,
+        112
+      ]
+    },
+    {
+      "from": "loop",
+      "to": "finish",
+      "label": "无工具调用",
+      "labelAt": [
+        686,
+        112
+      ]
+    },
+    {
+      "from": "loop",
+      "to": "modelfail",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelY": 240,
+      "labelAt": [
+        600,
+        196
+      ]
+    },
+    {
+      "from": "modelfail",
+      "to": "loop",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelY": 196,
+      "labelAt": [
+        340,
+        204
+      ],
+      "via": [
+        [
+          402,
+          230
+        ],
+        [
+          556,
+          230
+        ]
+      ]
+    },
+    {
+      "from": "prepare",
+      "to": "halted",
+      "label": "护栏/钩子拦截",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "channelY": 218,
+      "via": [
+        [
+          248,
+          400
+        ],
+        [
+          556,
+          400
+        ]
+      ],
+      "labelAt": [
+        380,
+        410
+      ]
+    },
+    {
+      "from": "loop",
+      "to": "halted",
+      "label": "预算耗尽 LA-BUDGET",
+      "labelAt": [
+        470,
+        205
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "主线对应的函数（core.py）",
+      "items": [
+        "run:480 总入口 → _begin_session_run:852 开会话并投影历史",
+        "_add_memory_context:1436 → run_thought:2745（ToT 可选）",
+        "_prepare_model_request:1072 每次模型调用前的统一闸门",
+        "_finish_run:995 收尾：on_error/after_run 钩子 + run_end + turn 事件"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "出口与陷阱",
+      "items": [
+        "非流式轮数由 max_retry 控制（:1918），重试用尽返回固定失败文案（:2107）",
+        "预算四维：seconds:1014 / model_calls:1082 / tokens:1137 / tool_calls:1294",
+        "run() 会重置实例状态（:531），并发/嵌套调用同一实例不安全"
+      ]
+    }
+  ]
+}

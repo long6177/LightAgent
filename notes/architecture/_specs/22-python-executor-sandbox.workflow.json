@@ -1,0 +1,214 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "python_executor 沙箱安全模型",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "gate",
+        "label": "框架门控",
+        "focus": [
+          "call",
+          "gate"
+        ],
+        "note": "注册与运行期双重开关"
+      },
+      {
+        "id": "exec",
+        "label": "审查与执行",
+        "focus": [
+          "scan",
+          "run",
+          "output"
+        ],
+        "note": "静态审查后的隔离执行"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "turn",
+      "label": "01 / Agent 回合"
+    },
+    {
+      "id": "check",
+      "label": "02 / 安全检查"
+    },
+    {
+      "id": "exec",
+      "label": "03 / 执行与输出"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "gate",
+    "entry",
+    "scan",
+    "run",
+    "output",
+    "ret"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "turn",
+      "col": 0,
+      "type": "cloud",
+      "label": "Agent 要跑代码",
+      "sublabel": "execute_python_code",
+      "tag": "python_executor.py:399",
+      "width": 156
+    },
+    {
+      "id": "gate",
+      "lane": "check",
+      "col": 1,
+      "type": "security",
+      "label": "双重门控",
+      "sublabel": "注册开关+SandboxProvider",
+      "tag": "core.py:272/1260",
+      "width": 156
+    },
+    {
+      "id": "entry",
+      "lane": "turn",
+      "col": 1,
+      "type": "backend",
+      "label": "三入口收口",
+      "sublabel": "code · file · stream",
+      "tag": "python_executor.py:399/525/563",
+      "width": 156
+    },
+    {
+      "id": "scan",
+      "lane": "check",
+      "col": 2,
+      "type": "security",
+      "label": "import 审查",
+      "sublabel": "AST 黑名单+别名还原",
+      "tag": "python_executor.py:280",
+      "width": 156
+    },
+    {
+      "id": "blocked",
+      "lane": "check",
+      "col": 2,
+      "type": "external",
+      "label": "拦截",
+      "sublabel": "危险模块/内置/动态派发",
+      "tag": "python_executor.py:22",
+      "width": 156,
+      "yOffset": 108
+    },
+    {
+      "id": "run",
+      "lane": "exec",
+      "col": 3,
+      "type": "backend",
+      "label": "受限执行",
+      "sublabel": "子进程·临时目录·超时",
+      "tag": "python_executor.py:493",
+      "width": 156
+    },
+    {
+      "id": "output",
+      "lane": "exec",
+      "col": 4,
+      "type": "backend",
+      "label": "输出捕获",
+      "sublabel": "stdout/stderr/退出码",
+      "tag": "python_executor.py:504",
+      "width": 156
+    },
+    {
+      "id": "ret",
+      "lane": "turn",
+      "col": 4,
+      "type": "external",
+      "label": "结果回模型",
+      "sublabel": "字符串输出",
+      "tag": "tools.py:345",
+      "width": 156
+    }
+  ],
+  "edges": [
+    {
+      "from": "call",
+      "to": "gate",
+      "role": "main",
+      "label": "UNSAFE_PYTHON 名单"
+    },
+    {
+      "from": "gate",
+      "to": "entry",
+      "role": "main",
+      "label": "门控通过"
+    },
+    {
+      "from": "gate",
+      "to": "blocked",
+      "role": "error",
+      "label": "无沙箱 LA-SANDBOX"
+    },
+    {
+      "from": "entry",
+      "to": "scan",
+      "role": "main",
+      "label": "先审后跑"
+    },
+    {
+      "from": "scan",
+      "to": "run",
+      "role": "main",
+      "label": "通过"
+    },
+    {
+      "from": "scan",
+      "to": "blocked",
+      "role": "error",
+      "label": "不通过"
+    },
+    {
+      "from": "run",
+      "to": "output",
+      "role": "main"
+    },
+    {
+      "from": "output",
+      "to": "ret",
+      "role": "return",
+      "label": "字符串结果"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "这是静态审查，不是容器沙箱",
+      "items": [
+        "AST 黑名单挡 import/eval/exec/getattr 逃逸（python_executor.py:280-345）",
+        "无 seccomp/namespace/资源限额，子进程与宿主共享内核",
+        "文件系统隔离仅限 cwd=临时目录，代码本身仍可触碰宿主路径（若绕过 open 黑名单）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "执行边界",
+      "items": [
+        "默认 30s 超时（tool_info 声明，模型可传）；流式版超时后 kill（:662）",
+        "有 requirements 时建临时 venv 且子进程 env={}（:452/500）",
+        "无 requirements 时继承完整宿主环境变量——注意 API key 暴露面"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "绕过与清洗的陷阱",
+      "items": [
+        "_clean_code_string 是有损清洗：字面 \n、Windows 路径可能被改坏（:95）",
+        "execute_python_file 无目录限制，可执行宿主任意 .py（:525）",
+        "与 safe_expression 互补：后者白名单零执行面，前者全功能需门控"
+      ]
+    }
+  ]
+}

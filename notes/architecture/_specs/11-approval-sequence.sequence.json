@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "人工审批时序（HumanApprovalHook）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "caller", "type": "external", "label": "调用方", "sublabel": "发起 run()" },
+    { "id": "core", "type": "backend", "label": "LightAgent", "sublabel": "before_tool_call 阶段" },
+    { "id": "hook", "type": "security", "label": "审批钩子", "sublabel": "HumanApprovalHook" },
+    { "id": "store", "type": "database", "label": "审批存储", "sublabel": "内存 / JSON" },
+    { "id": "human", "type": "external", "label": "审批人", "sublabel": "看一眼再决定" }
+  ],
+  "segments": [
+    { "from": 150, "to": 360, "label": "首次拦截" },
+    { "from": 360, "to": 680, "label": "人工介入" }
+  ],
+  "activations": [
+    { "participant": "caller", "from": 160, "to": 670 },
+    { "participant": "core", "from": 170, "to": 660 },
+    { "participant": "hook", "from": 205, "to": 335 },
+    { "participant": "store", "from": 245, "to": 300 },
+    { "participant": "hook", "from": 475, "to": 625 },
+    { "participant": "store", "from": 515, "to": 590 }
+  ],
+  "messages": [
+    { "from": "caller", "to": "core", "y": 175, "label": "run() 请求调工具" },
+    { "from": "core", "to": "hook", "y": 215, "label": "before_tool_call 拦截", "note": "core.py:1301" },
+    { "from": "hook", "to": "store", "y": 255, "label": "create_request 存待审", "note": "review.py:305" },
+    { "from": "hook", "to": "core", "y": 295, "label": "决策 pending → block", "variant": "return", "note": "fail-closed review.py:311" },
+    { "from": "core", "to": "caller", "y": 335, "label": "返回：等待审批 approval_id", "variant": "return", "note": "trace 记 approval_required" },
+    { "from": "human", "to": "store", "y": 405, "label": "批复 approve/edit/respond/reject", "note": "store.resolve review.py:145" },
+    { "from": "caller", "to": "core", "y": 445, "label": "带 approval_id 重试", "note": "core.py:496" },
+    { "from": "core", "to": "hook", "y": 485, "label": "钩子复查", "note": "core.py:1301" },
+    { "from": "hook", "to": "store", "y": 525, "label": "_matches 校验后取决策", "note": "review.py:386" },
+    { "from": "store", "to": "hook", "y": 565, "label": "返回决策", "variant": "return" },
+    { "from": "hook", "to": "core", "y": 605, "label": "放行 / 替换参数 / 注入答复", "variant": "return", "note": "review.py:428" },
+    { "from": "core", "to": "caller", "y": 645, "label": "继续执行并返回结果", "variant": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "rose", "title": "fail-closed 语义",
+      "items": [
+        "无 reviewer 时存为 pending 并 block——pending 也是拦截，不是等待（review.py:305-312）",
+        "reviewer 抛异常按 reject 处理，绝不让未审批动作通过（:317）",
+        "approval_id 与当前动作不匹配（哪怕参数差一个空格）都会再次 block（:386）"
+      ]
+    },
+    {
+      "dot": "cyan", "title": "四种批复的落地（review.py:428）",
+      "items": [
+        "approve → continue 放行原动作",
+        "edit → replace 替换 arguments 后继续（:432）",
+        "respond → block 并以人工答复文本代替动作结果",
+        "reject/pending → block，返回 LA-APPROVAL 风格文案"
+      ]
+    }
+  ]
+}

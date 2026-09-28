@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "MCP 连接的生命周期",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 连接主线"
+    },
+    {
+      "id": "alt",
+      "label": "02 / 重试与上报"
+    }
+  ],
+  "states": [
+    {
+      "id": "idle",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "已登记未连接",
+      "sublabel": "cleanup 后的常态",
+      "tag": "mcp_client_manager.py:162"
+    },
+    {
+      "id": "connecting",
+      "type": "active",
+      "lane": "main",
+      "col": 1,
+      "label": "建立连接",
+      "sublabel": "_create_session",
+      "tag": "mcp_client_manager.py:40"
+    },
+    {
+      "id": "registered",
+      "type": "active",
+      "lane": "main",
+      "col": 2,
+      "label": "清单就绪",
+      "sublabel": "initialize + list_tools",
+      "tag": "mcp_client_manager.py:78"
+    },
+    {
+      "id": "calling",
+      "type": "active",
+      "lane": "main",
+      "col": 3,
+      "label": "调用中",
+      "sublabel": "session.call_tool",
+      "tag": "mcp_client_manager.py:237"
+    },
+    {
+      "id": "fail",
+      "type": "failure",
+      "lane": "alt",
+      "col": 0,
+      "label": "连接失败",
+      "sublabel": "_record_error",
+      "tag": "mcp_client_manager.py:259"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "idle",
+      "to": "connecting",
+      "label": "call_tool 现连",
+      "labelAt": [
+        228,
+        112
+      ]
+    },
+    {
+      "from": "connecting",
+      "to": "registered",
+      "label": "initialize 完成",
+      "labelAt": [
+        382,
+        112
+      ]
+    },
+    {
+      "from": "connecting",
+      "to": "fail",
+      "label": "连不上",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelX": 240,
+      "labelAt": [
+        190,
+        268
+      ],
+      "channelY": 265
+    },
+    {
+      "from": "fail",
+      "to": "connecting",
+      "label": "重试 reconnect_attempts",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelX": 295,
+      "labelAt": [
+        380,
+        230
+      ],
+      "channelY": 238
+    },
+    {
+      "from": "registered",
+      "to": "calling",
+      "label": "执行远端工具",
+      "labelAt": [
+        536,
+        112
+      ]
+    },
+    {
+      "from": "calling",
+      "to": "idle",
+      "label": "用完即断 cleanup",
+      "labelAt": [
+        430,
+        392
+      ],
+      "route": "bottom-channel",
+      "channelY": 400
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一调一连一断",
+      "items": [
+        "注册期建的会话不保留：register_mcp_tool 结尾就 cleanup（mcp_client_manager.py:162）",
+        "call_tool 发现无会话就现连（:223），调用完无论成败都 cleanup（:238/246）",
+        "高频调用场景每次都付一次连接建立成本"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "错误处理",
+      "items": [
+        "失败按 reconnect_attempts 重试（:220），错误脱敏后进 last_mcp_errors（:259/280）",
+        "工具不存在时拼前 3 条 MCP 诊断，区分「不存在」与「连不上」（:268）",
+        "全失败抛 ValueError，由 core 转成 LA-TOOL 错误字符串"
+      ]
+    }
+  ]
+}

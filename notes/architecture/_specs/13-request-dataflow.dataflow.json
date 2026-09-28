@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "一次请求的数据流转",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1075,
+      640
+    ]
+  },
+  "stages": [
+    {
+      "label": "01 / 输入"
+    },
+    {
+      "label": "02 / 组装"
+    },
+    {
+      "label": "03 / 模型对话"
+    },
+    {
+      "label": "04 / 收尾检查"
+    },
+    {
+      "label": "05 / 产出"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input",
+      "type": "external",
+      "label": "用户问题",
+      "sublabel": "query · 会话 id",
+      "tag": "core.py:480",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "memory",
+      "type": "backend",
+      "label": "记忆接口",
+      "sublabel": "retrieve 注入偏好",
+      "tag": "core.py:1436",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "输入护栏",
+      "sublabel": "check_input 可改写",
+      "tag": "guardrails.py:38",
+      "stage": 1,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "messages",
+      "type": "backend",
+      "label": "messages 组装",
+      "sublabel": "system+history+user",
+      "tag": "core.py:680",
+      "stage": 1,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "llm",
+      "type": "cloud",
+      "label": "大模型",
+      "sublabel": "chat.completions",
+      "tag": "core.py:726",
+      "stage": 2,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "工具执行",
+      "sublabel": "四道闸门+dispatch",
+      "tag": "tools.py:294",
+      "stage": 2,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "outguard",
+      "type": "security",
+      "label": "输出护栏",
+      "sublabel": "check_output 仅非流式",
+      "tag": "guardrails.py:50",
+      "stage": 3,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "trace",
+      "type": "database",
+      "label": "会话与追踪",
+      "sublabel": "trace/session 双写",
+      "tag": "core.py:910",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "reply",
+      "type": "backend",
+      "label": "最终回复",
+      "sublabel": "str / RunResult / 流",
+      "tag": "result.py:14",
+      "stage": 4,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "usage",
+      "type": "database",
+      "label": "用量与日志",
+      "sublabel": "summarize_trace 汇总",
+      "tag": "tracing.py:152",
+      "stage": 4,
+      "row": 1,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "input",
+      "to": "guard",
+      "label": "原始 query"
+    },
+    {
+      "from": "guard",
+      "to": "messages",
+      "label": "放行",
+      "labelAt": [
+        315,
+        200
+      ]
+    },
+    {
+      "from": "memory",
+      "to": "messages",
+      "label": "偏好上下文"
+    },
+    {
+      "from": "messages",
+      "to": "llm",
+      "label": "messages 数组"
+    },
+    {
+      "from": "llm",
+      "to": "tools",
+      "label": "tool_calls",
+      "labelAt": [
+        530,
+        200
+      ]
+    },
+    {
+      "from": "tools",
+      "to": "messages",
+      "label": "结果回填",
+      "route": "bottom-channel"
+    },
+    {
+      "from": "llm",
+      "to": "outguard",
+      "label": "回复草稿"
+    },
+    {
+      "from": "outguard",
+      "to": "reply",
+      "label": "放行/脱敏后"
+    },
+    {
+      "from": "messages",
+      "to": "trace",
+      "label": "对话事件",
+      "variant": "dashed",
+      "route": "bottom-channel"
+    },
+    {
+      "from": "tools",
+      "to": "trace",
+      "label": "工具事件",
+      "variant": "dashed",
+      "route": "straight"
+    },
+    {
+      "from": "trace",
+      "to": "usage",
+      "label": "汇总统计"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "数据形态变化",
+      "items": [
+        "query 经 _add_memory_context 拼上记忆前缀（core.py:1483），再进 messages",
+        "messages 初始 = system + history + user（:682），工具轮在其上 append",
+        "工具结果一律转字符串回填 role:'tool'（tools.py:345、core.py:2060）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "旁路观测",
+      "items": [
+        "_record_trace 是双写枢纽：先 session 事件再 trace 事件（core.py:910-938）",
+        "事件写入时经 _json_safe 脱敏，敏感 key 变 [redacted]（session.py:83）",
+        "RunResult.trace 是事件 dict 列表，usage 是三键 dict（result.py:14）"
+      ]
+    }
+  ]
+}

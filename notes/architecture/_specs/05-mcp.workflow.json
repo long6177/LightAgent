@@ -1,0 +1,218 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "接入外部 MCP 工具",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "setup",
+        "label": "接入登记",
+        "focus": [
+          "setup",
+          "readcfg",
+          "connect",
+          "list",
+          "reg",
+          "cleanup"
+        ],
+        "note": "注册期一次性拉取与登记"
+      },
+      {
+        "id": "call",
+        "label": "按需调用",
+        "focus": [
+          "cleanup",
+          "calltool",
+          "result"
+        ],
+        "note": "对话期一调一连一断"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "user",
+      "label": "01 / 你的代码"
+    },
+    {
+      "id": "manager",
+      "label": "02 / MCP 客户端管理器"
+    },
+    {
+      "id": "server",
+      "label": "03 / MCP 服务器"
+    }
+  ],
+  "mainPath": [
+    "setup",
+    "readcfg",
+    "connect",
+    "list",
+    "reg",
+    "cleanup",
+    "calltool",
+    "result"
+  ],
+  "nodes": [
+    {
+      "id": "setup",
+      "lane": "user",
+      "col": 0,
+      "type": "external",
+      "label": "一行接入",
+      "sublabel": "await agent.setup_mcp()",
+      "tag": "core.py:460",
+      "width": 152
+    },
+    {
+      "id": "readcfg",
+      "lane": "manager",
+      "col": 1,
+      "type": "backend",
+      "label": "读服务器清单",
+      "sublabel": "stdio/SSE/HTTP 三通道",
+      "tag": "mcp_client_manager.py:40",
+      "width": 152
+    },
+    {
+      "id": "connect",
+      "lane": "manager",
+      "col": 2,
+      "type": "backend",
+      "label": "建立连接",
+      "sublabel": "_create_session → initialize",
+      "tag": "mcp_client_manager.py:40",
+      "width": 152
+    },
+    {
+      "id": "list",
+      "lane": "server",
+      "col": 3,
+      "type": "cloud",
+      "label": "上报工具清单",
+      "sublabel": "session.list_tools()",
+      "tag": "mcp_client_manager.py:101",
+      "width": 152
+    },
+    {
+      "id": "reg",
+      "lane": "manager",
+      "col": 3,
+      "type": "backend",
+      "label": "改名登记进工具箱",
+      "sublabel": "撞名加命名空间前缀",
+      "tag": "mcp_client_manager.py:189",
+      "width": 152
+    },
+    {
+      "id": "cleanup",
+      "lane": "manager",
+      "col": 4,
+      "type": "security",
+      "label": "先挂断备用",
+      "sublabel": "注册完即 cleanup 断连",
+      "tag": "mcp_client_manager.py:162",
+      "width": 152
+    },
+    {
+      "id": "calltool",
+      "lane": "manager",
+      "col": 5,
+      "type": "backend",
+      "label": "对话中按需调用",
+      "sublabel": "call_tool 现连现断",
+      "tag": "mcp_client_manager.py:207",
+      "width": 152
+    },
+    {
+      "id": "result",
+      "lane": "user",
+      "col": 5,
+      "type": "external",
+      "label": "返回文本结果",
+      "sublabel": "result.content[0].text",
+      "tag": "mcp_client_manager.py:242",
+      "width": 152
+    }
+  ],
+  "edges": [
+    {
+      "from": "setup",
+      "to": "readcfg",
+      "role": "main"
+    },
+    {
+      "from": "readcfg",
+      "to": "connect",
+      "role": "main",
+      "label": "逐服务器连接"
+    },
+    {
+      "from": "connect",
+      "to": "list",
+      "role": "main",
+      "label": "initialize 后要清单"
+    },
+    {
+      "from": "list",
+      "to": "reg",
+      "role": "return",
+      "label": "inputSchema→tool_info"
+    },
+    {
+      "from": "reg",
+      "to": "cleanup",
+      "role": "main",
+      "label": "登记完毕"
+    },
+    {
+      "from": "cleanup",
+      "to": "calltool",
+      "role": "main",
+      "label": "对话时才真正用"
+    },
+    {
+      "from": "calltool",
+      "to": "list",
+      "role": "branch",
+      "label": "重连后核对"
+    },
+    {
+      "from": "calltool",
+      "to": "result",
+      "role": "return",
+      "label": "取回结果"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三种连接通道（mcp_client_manager.py:40）",
+      "items": [
+        "stdio：command+args 拉起本地子进程管道（:67）",
+        "SSE：url+headers 远端事件流（:57）；streamable-http 新版协议（:50）",
+        "credential_provider 只对两个 HTTP 通道注入 headers（:42）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "登记时发生什么",
+      "items": [
+        "工具名撞名时加 {namespace}__ 前缀（:189）",
+        "inputSchema 的 properties/required 转 tool_info（:118）",
+        "直写注册表三视图，绕过 register_tool（:127-150）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "出错怎么办",
+      "items": [
+        "连接失败按 reconnect_attempts 重试（:220）",
+        "错误信息正则抹掉 Bearer/sk- 凭据（:280）",
+        "取不到工具时拼前 3 条 MCP 诊断区分「不存在」与「连不上」（:268）"
+      ]
+    }
+  ]
+}

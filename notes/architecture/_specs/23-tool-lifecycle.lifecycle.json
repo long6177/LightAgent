@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "一个工具的一生（工具生命周期）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 工具主线"
+    },
+    {
+      "id": "alt",
+      "label": "02 / 异常与更替"
+    }
+  ],
+  "states": [
+    {
+      "id": "defined",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "已定义",
+      "sublabel": "tool_info / MCP / 生成",
+      "tag": "tools.py:36"
+    },
+    {
+      "id": "registered",
+      "type": "active",
+      "lane": "main",
+      "col": 1,
+      "label": "已登记",
+      "sublabel": "进注册表三视图",
+      "tag": "tools.py:54"
+    },
+    {
+      "id": "live",
+      "type": "active",
+      "lane": "main",
+      "col": 2,
+      "label": "在岗可调用",
+      "sublabel": "dispatch 随时执行",
+      "tag": "tools.py:294"
+    },
+    {
+      "id": "removed",
+      "type": "neutral",
+      "lane": "main",
+      "col": 3,
+      "label": "退役",
+      "sublabel": "被覆盖 / 被移除",
+      "tag": "tools.py:81"
+    },
+    {
+      "id": "hotswap",
+      "type": "waiting",
+      "lane": "alt",
+      "col": 2,
+      "label": "同名覆盖中",
+      "sublabel": "load_tools 原地替换",
+      "tag": "tools.py:54"
+    },
+    {
+      "id": "invalid",
+      "type": "failure",
+      "lane": "alt",
+      "col": 0,
+      "label": "校验未过",
+      "sublabel": "tool_info 不合法",
+      "tag": "tools.py:97"
+    },
+    {
+      "id": "disconnected",
+      "type": "failure",
+      "lane": "alt",
+      "col": 1,
+      "label": "外部断开",
+      "sublabel": "MCP 会话挂断",
+      "tag": "mcp_client_manager.py:162"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "defined",
+      "to": "registered",
+      "label": "register_tool",
+      "labelAt": [
+        224,
+        112
+      ]
+    },
+    {
+      "from": "defined",
+      "to": "invalid",
+      "label": "缺 tool_info",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "channelX": 165,
+      "labelAt": [
+        150,
+        296
+      ],
+      "channelY": 240,
+      "via": [
+        [
+          94,
+          278
+        ],
+        [
+          339,
+          278
+        ]
+      ]
+    },
+    {
+      "from": "registered",
+      "to": "live",
+      "label": "schema 随请求下发",
+      "labelAt": [
+        378,
+        112
+      ]
+    },
+    {
+      "from": "live",
+      "to": "hotswap",
+      "label": "同名再注册",
+      "fromSide": "right",
+      "toSide": "top",
+      "channelX": 545,
+      "channelY": 228,
+      "via": [
+        [
+          485,
+          157
+        ],
+        [
+          485,
+          210
+        ],
+        [
+          710,
+          210
+        ]
+      ],
+      "labelAt": [
+        700,
+        178
+      ]
+    },
+    {
+      "from": "hotswap",
+      "to": "live",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelX": 500,
+      "channelY": 196
+    },
+    {
+      "from": "registered",
+      "to": "disconnected",
+      "label": "MCP 注册完断连",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelX": 300,
+      "labelAt": [
+        260,
+        250
+      ],
+      "channelY": 262
+    },
+    {
+      "from": "disconnected",
+      "to": "registered",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelX": 345,
+      "channelY": 214
+    },
+    {
+      "from": "live",
+      "to": "removed",
+      "label": "被同名工具覆盖",
+      "labelAt": [
+        532,
+        112
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "登记的两条通道",
+      "items": [
+        "常规通道：register_tool 校验 tool_info → 覆盖写三视图（tools.py:36-87）",
+        "MCP 通道：绕过 register_tool 直写三视图（mcp_client_manager.py:127-150）",
+        "同名注册静默覆盖并返回 True，只有 validate_tools 能事后诊断（:175）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "热替换与退役",
+      "items": [
+        "load_tools 按名字重新加载即原地替换（tools.py:239，core.py:3024）",
+        "MCP refresh_tools 先摘旧再重注册（mcp_client_manager.py:165）",
+        "schema 视图同步：先删同名旧 schema 再 append 新的（tools.py:81-86）"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "一个工具从注册到被执行",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "supply",
+        "label": "工具从哪来",
+        "focus": [
+          "define",
+          "mcp",
+          "loader",
+          "register"
+        ],
+        "note": "三种来源汇入同一个注册表"
+      },
+      {
+        "id": "invoke",
+        "label": "被模型调用",
+        "focus": [
+          "decide",
+          "prepare"
+        ],
+        "note": "从 schema 下发到结果回填"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "supply",
+      "label": "01 / 工具从哪来"
+    },
+    {
+      "id": "registry",
+      "label": "02 / 工具箱登记"
+    },
+    {
+      "id": "invoke",
+      "label": "03 / 被模型调用"
+    }
+  ],
+  "mainPath": [
+    "register",
+    "select",
+    "decide",
+    "prepare"
+  ],
+  "nodes": [
+    {
+      "id": "define",
+      "lane": "supply",
+      "col": 0,
+      "type": "external",
+      "label": "手写工具函数",
+      "sublabel": "函数 + tool_info 属性",
+      "tag": "tools.py:36",
+      "width": 120
+    },
+    {
+      "id": "mcp",
+      "lane": "supply",
+      "col": 1,
+      "type": "cloud",
+      "label": "MCP 服务器提供",
+      "sublabel": "setup_mcp 拉取",
+      "tag": "core.py:460",
+      "width": 120
+    },
+    {
+      "id": "loader",
+      "lane": "supply",
+      "col": 2,
+      "type": "backend",
+      "label": "tools/ 目录热加载",
+      "sublabel": "ToolLoader 动态 import",
+      "tag": "tools.py:239",
+      "width": 120
+    },
+    {
+      "id": "register",
+      "lane": "registry",
+      "col": 2,
+      "type": "backend",
+      "label": "统一登记造说明书",
+      "sublabel": "三视图 + OpenAI schema",
+      "tag": "tools.py:36",
+      "width": 120
+    },
+    {
+      "id": "select",
+      "lane": "registry",
+      "col": 3,
+      "type": "backend",
+      "label": "随请求发给模型",
+      "sublabel": "chat_params['tools']",
+      "tag": "core.py:700",
+      "width": 120
+    },
+    {
+      "id": "decide",
+      "lane": "invoke",
+      "col": 3,
+      "type": "cloud",
+      "label": "模型点名要工具",
+      "sublabel": "response.tool_calls",
+      "tag": "core.py:1920",
+      "width": 120
+    },
+    {
+      "id": "prepare",
+      "lane": "invoke",
+      "col": 4,
+      "type": "security",
+      "label": "检查通过再执行",
+      "sublabel": "四道闸门 → dispatch",
+      "tag": "core.py:1253",
+      "width": 120
+    }
+  ],
+  "edges": [
+    {
+      "from": "define",
+      "to": "register",
+      "role": "main"
+    },
+    {
+      "from": "mcp",
+      "to": "register",
+      "role": "main",
+      "label": "inputSchema 转换"
+    },
+    {
+      "from": "loader",
+      "to": "register",
+      "role": "main"
+    },
+    {
+      "from": "register",
+      "to": "select",
+      "role": "main",
+      "label": "生成工具说明书"
+    },
+    {
+      "from": "select",
+      "to": "decide",
+      "role": "main",
+      "label": "模型看到工具列表"
+    },
+    {
+      "from": "decide",
+      "to": "prepare",
+      "role": "main",
+      "label": "带参数调用"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "工具的三种来源",
+      "items": [
+        "自己写的函数：挂 tool_info 属性即可（tool_name/desc/params）",
+        "MCP：setup_mcp（core.py:460）→ register_mcp_tool（mcp_client_manager.py:88）",
+        "tools/ 目录：ToolLoader.load_tool（tools.py:239），LLM 还能自动生成（core.py:2932）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "执行前的四道闸门（core.py:1253）",
+      "items": [
+        "能力策略 PolicyEngine.evaluate_sync（capabilities.py:303，core.py:1272）",
+        "预算扣减 budget.consume(tool_calls)（core.py:1294）",
+        "工具护栏 check_tool（guardrails.py:41，core.py:1209）",
+        "before_tool_call 钩子（core.py:1301）——人工审批在此拦截"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "结果怎么回去",
+      "items": [
+        "dispatch 内 _serialize_result：dict/list→JSON，其余 str()（tools.py:345）",
+        "以 role:'tool' 消息 append 回 messages（core.py:2060/2445）",
+        "所有失败都返回 LA-TOOL 错误字符串，不抛异常（tools.py:342）"
+      ]
+    }
+  ]
+}

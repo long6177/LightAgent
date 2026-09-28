@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LightAgent 整体架构总览",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+    },
+    "views": [
+      {
+        "id": "mainline",
+        "label": "主线路",
+        "focus": [
+          "app",
+          "core",
+          "llm"
+        ],
+        "note": "一次 run() 的最短路径：组装上下文后调模型，直到产出回复"
+      },
+      {
+        "id": "toolpath",
+        "label": "工具路径",
+        "focus": [
+          "core",
+          "tools",
+          "mcp",
+          "mcps"
+        ],
+        "note": "模型点名工具后经 dispatch 执行，MCP 工具再转发远端"
+      },
+      {
+        "id": "governance",
+        "label": "治理与记忆",
+        "focus": [
+          "core",
+          "guard",
+          "memory",
+          "session",
+          "mem0"
+        ],
+        "note": "护栏/钩子/预算三道治理，记忆与事件日志在旁路读写"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "app",
+      "type": "external",
+      "label": "你的应用",
+      "sublabel": "构造并运行 LightAgent",
+      "pos": [
+        506,
+        40
+      ],
+      "size": [
+        156,
+        58
+      ],
+      "sources": [
+        {
+          "path": "example/01.single_agent.py",
+          "label": "agent.run(...)"
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "type": "backend",
+      "label": "多智能体与工作流",
+      "sublabel": "LightSwarm / LightFlow",
+      "tag": "core.py / flow.py",
+      "pos": [
+        210,
+        130
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/core.py",
+          "label": "LightSwarm"
+        },
+        {
+          "path": "LightAgent/flow.py",
+          "line": 132,
+          "label": "LightFlow"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "工具箱 ToolRegistry",
+      "sublabel": "三视图 · dispatch 分派",
+      "tag": "tools.py",
+      "pos": [
+        210,
+        250
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/tools.py",
+          "line": 26,
+          "label": "ToolRegistry"
+        },
+        {
+          "path": "LightAgent/tools.py",
+          "line": 294,
+          "label": "dispatch()"
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "安全治理",
+      "sublabel": "护栏 · 钩子 · 预算",
+      "tag": "guardrails / hooks / runtime",
+      "pos": [
+        210,
+        370
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/guardrails.py",
+          "line": 24,
+          "label": "GuardrailManager"
+        },
+        {
+          "path": "LightAgent/hooks.py",
+          "line": 95,
+          "label": "HookManager"
+        },
+        {
+          "path": "LightAgent/runtime.py",
+          "line": 323,
+          "label": "BudgetManager"
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "运行核心 LightAgent",
+      "sublabel": "run() 主循环 · 模型↔工具",
+      "tag": "core.py",
+      "pos": [
+        500,
+        250
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/core.py",
+          "line": 480,
+          "label": "run()"
+        },
+        {
+          "path": "LightAgent/core.py",
+          "line": 1253,
+          "label": "_prepare_tool_call"
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "type": "database",
+      "label": "会话与观测",
+      "sublabel": "Session · trace 双写",
+      "tag": "session.py / tracing.py",
+      "pos": [
+        790,
+        130
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/session.py",
+          "line": 195,
+          "label": "Session"
+        },
+        {
+          "path": "LightAgent/core.py",
+          "line": 910,
+          "label": "_record_trace"
+        },
+        {
+          "path": "LightAgent/tracing.py",
+          "line": 229,
+          "label": "TraceRecorder"
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP 客户端管理器",
+      "sublabel": "三通道 · 一调一连一断",
+      "tag": "mcp_client_manager.py",
+      "pos": [
+        790,
+        250
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/mcp_client_manager.py",
+          "line": 26,
+          "label": "MCPClientManager"
+        },
+        {
+          "path": "LightAgent/mcp_client_manager.py",
+          "line": 88,
+          "label": "register_mcp_tool"
+        },
+        {
+          "path": "LightAgent/mcp_client_manager.py",
+          "line": 207,
+          "label": "call_tool"
+        }
+      ]
+    },
+    {
+      "id": "memory",
+      "type": "backend",
+      "label": "记忆接口",
+      "sublabel": "MemoryProtocol 三道准入",
+      "tag": "protocol.py",
+      "pos": [
+        790,
+        370
+      ],
+      "size": [
+        168,
+        66
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/protocol.py",
+          "line": 16,
+          "label": "MemoryProtocol"
+        },
+        {
+          "path": "LightAgent/protocol.py",
+          "line": 232,
+          "label": "MemoryPolicy"
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "cloud",
+      "label": "大模型 API",
+      "sublabel": "chat.completions",
+      "pos": [
+        506,
+        470
+      ],
+      "size": [
+        156,
+        58
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/core.py",
+          "line": 726,
+          "label": "create() 调用点"
+        },
+        {
+          "path": "LightAgent/litellm_client.py",
+          "line": 33,
+          "label": "LiteLLMClient 替身"
+        }
+      ]
+    },
+    {
+      "id": "mcps",
+      "type": "external",
+      "label": "MCP 服务器",
+      "sublabel": "本地子进程 / 远端服务",
+      "pos": [
+        1060,
+        250
+      ],
+      "size": [
+        156,
+        58
+      ]
+    },
+    {
+      "id": "mem0",
+      "type": "database",
+      "label": "记忆后端（mem0 等）",
+      "sublabel": "经 MemoryProtocol 注入",
+      "pos": [
+        1060,
+        370
+      ],
+      "size": [
+        156,
+        58
+      ],
+      "sources": [
+        {
+          "path": "example/11.vector_memory_adapter.py",
+          "line": 51,
+          "label": "LocalVectorMemoryAdapter"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "你的代码",
+      "wraps": [
+        "app"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "LightAgent 框架（Python 包 LightAgent/）",
+      "wraps": [
+        "flow",
+        "tools",
+        "guard",
+        "core",
+        "session",
+        "mcp",
+        "memory"
+      ],
+      "pad": 18
+    },
+    {
+      "kind": "region",
+      "label": "外部服务",
+      "wraps": [
+        "llm",
+        "mcps",
+        "mem0"
+      ],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "from": "app",
+      "to": "core",
+      "label": "agent.run(query)",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 55
+    },
+    {
+      "from": "core",
+      "to": "llm",
+      "label": "chat.completions.create",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 105
+    },
+    {
+      "from": "core",
+      "to": "tools",
+      "label": "dispatch() 执行",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "from": "core",
+      "to": "mcp",
+      "label": "统一经 dispatch",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "mcp",
+      "to": "mcps",
+      "label": "三种传输通道"
+    },
+    {
+      "from": "core",
+      "to": "memory",
+      "label": "retrieve / store",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "memory",
+      "to": "mem0",
+      "label": "适配器接入",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDx": 18
+    },
+    {
+      "from": "core",
+      "to": "guard",
+      "label": "护栏 · 钩子 · 预算",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "core",
+      "to": "session",
+      "label": "trace/session 双写",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "flow",
+      "to": "core",
+      "label": "编排 run()",
+      "toSide": "top",
+      "labelDx": -24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "这张图怎么读",
+      "items": [
+        "三层边界：你的代码 → LightAgent 框架 → 外部服务，竖向中线是 run() 主线",
+        "节点副标题写职责，tag 标来源文件；点击节点可看 file:行号 源码锚点",
+        "连线文字是跨模块调用的方法名，可与源码对照",
+        "可插拔点：memory=(protocol.py:16)、session_store=(session.py:377)、provider=\"litellm\"(litellm_client.py:33)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "一次 run() 的主线（core.py）",
+      "items": [
+        "_begin_session_run:852 开会话投影历史 → check_input:598 输入护栏",
+        "_add_memory_context:1436 记忆注入 → create:726 调模型",
+        "有 tool_calls 时 _prepare_tool_call:1253 把关 → dispatch(tools.py:294) 执行",
+        "_finish_run:995 收尾：after_run 钩子 + run_end trace + turn 事件"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "容易误读的四处",
+      "items": [
+        "输出护栏只管非流式（core.py:2073），流式内容不经过它",
+        "max_tool_iterations 只约束流式（core.py:2400），非流式轮数看 max_retry（:1918）",
+        "MCP 注册完就断连，调用时现连（mcp_client_manager.py:162 / 238）",
+        "run() 会重置实例状态，同一实例并发调用不安全（core.py:531）"
+      ]
+    }
+  ]
+}

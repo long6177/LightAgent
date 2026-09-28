@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Skill 工具桥接层（create_skill_tools）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+    },
+    "views": [
+      { "id": "register", "label": "注册链路", "focus": ["skillsDir", "manager", "bridge", "four", "registry"], "note": "从扫描 SKILL.md 到四件套入注册表" },
+      { "id": "invoke", "label": "调用链路", "focus": ["agent", "registry", "manager", "sandbox", "skillref"], "note": "模型点名后如何落到脚本与文档" }
+    ]
+  },
+  "components": [
+    {
+      "id": "skillsDir", "type": "external", "label": "skills/ 目录",
+      "sublabel": "SKILL.md · scripts · assets",
+      "tag": "随仓库携带",
+      "pos": [170, 140], "size": [168, 62],
+      "sources": [{ "path": "LightAgent/skills.py", "line": 43, "label": "discover_skills" }]
+    },
+    {
+      "id": "skillref", "type": "external", "label": "技能资产",
+      "sublabel": "references 文档 · assets 资源",
+      "tag": "随仓库携带",
+      "pos": [170, 420], "size": [168, 62],
+      "sources": [
+        { "path": "LightAgent/skills.py", "line": 217, "label": "read_reference" },
+        { "path": "LightAgent/skills.py", "line": 240, "label": "read_asset" }
+      ]
+    },
+    {
+      "id": "manager", "type": "backend", "label": "SkillManager",
+      "sublabel": "发现 · 激活 · 执行 · 读取",
+      "tag": "skills.py",
+      "pos": [450, 280], "size": [172, 66],
+      "sources": [
+        { "path": "LightAgent/skills.py", "line": 34, "label": "SkillManager" },
+        { "path": "LightAgent/skills.py", "line": 142, "label": "activate_skill" },
+        { "path": "LightAgent/skills.py", "line": 177, "label": "execute_script" }
+      ]
+    },
+    {
+      "id": "sandbox", "type": "security", "label": "脚本沙箱",
+      "sublabel": "临时目录 cwd · 30s 超时",
+      "tag": "skills.py",
+      "pos": [450, 470], "size": [172, 62],
+      "sources": [{ "path": "LightAgent/skills.py", "line": 183, "label": "路径校验" }]
+    },
+    {
+      "id": "bridge", "type": "backend", "label": "create_skill_tools",
+      "sublabel": "闭包工厂 · tool_info 绑定",
+      "tag": "skill_tools.py",
+      "pos": [720, 280], "size": [172, 66],
+      "sources": [{ "path": "LightAgent/skill_tools.py", "line": 13, "label": "create_skill_tools" }]
+    },
+    {
+      "id": "four", "type": "backend", "label": "四件套工具",
+      "sublabel": "list · activate · exec · read",
+      "tag": "skill_tools.py",
+      "pos": [720, 110], "size": [172, 62],
+      "sources": [
+        { "path": "LightAgent/skill_tools.py", "line": 16, "label": "list_skills" },
+        { "path": "LightAgent/skill_tools.py", "line": 42, "label": "activate_skill" },
+        { "path": "LightAgent/skill_tools.py", "line": 67, "label": "execute_skill_script" }
+      ]
+    },
+    {
+      "id": "registry", "type": "backend", "label": "ToolRegistry",
+      "sublabel": "三视图登记 · 等同本地工具",
+      "tag": "tools.py",
+      "pos": [990, 110], "size": [172, 62],
+      "sources": [{ "path": "LightAgent/tools.py", "line": 36, "label": "register_tool" }]
+    },
+    {
+      "id": "agent", "type": "backend", "label": "Agent 运行时",
+      "sublabel": "构造期注册 · dispatch 调用",
+      "tag": "core.py",
+      "pos": [990, 330], "size": [172, 62],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 288, "label": "auto_discover_skills" },
+        { "path": "LightAgent/core.py", "line": 295, "label": "create_skill_tools 调用" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "你的技能资产（随仓库携带）", "wraps": ["skillsDir", "skillref"], "pad": 16 },
+    { "kind": "region", "label": "LightAgent 框架", "wraps": ["manager", "sandbox", "bridge", "four", "registry", "agent"], "pad": 18 }
+  ],
+  "connections": [
+    { "from": "skillsDir", "to": "manager", "label": "发现 SKILL.md 元数据", "fromSide": "right", "toSide": "left" },
+    { "from": "manager", "to": "skillref", "label": "read_reference / read_asset", "fromSide": "left", "toSide": "right" },
+    { "from": "manager", "to": "sandbox", "label": "execute_script", "fromSide": "bottom", "toSide": "top", "labelDy": 26 },
+    { "from": "manager", "to": "bridge", "label": "传入实例", "fromSide": "right", "toSide": "left" },
+    { "from": "bridge", "to": "four", "label": "产出闭包工具", "fromSide": "top", "toSide": "bottom" },
+    { "from": "four", "to": "registry", "label": "register_tool ×4", "fromSide": "right", "toSide": "left" },
+    { "from": "agent", "to": "registry", "label": "dispatch() 调用", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan", "title": "渐进式披露",
+      "items": [
+        "构造期只扫 SKILL.md 元数据（skills.py:43），正文不读",
+        "get_skills_xml 把技能清单注入 system prompt（core.py:659）",
+        "模型按需调 activate_skill 才载入全文指令（skills.py:142）"
+      ]
+    },
+    {
+      "dot": "emerald", "title": "四件套与行号",
+      "items": [
+        "list_skills:16 列元数据快照；activate_skill:42 装入正文",
+        "execute_skill_script:67 跑 scripts/；read_skill_reference:92 读 references/",
+        "read_asset（skills.py:240）没有工具包装——资源对模型不可直接读"
+      ]
+    },
+    {
+      "dot": "rose", "title": "沙箱边界与陷阱",
+      "items": [
+        "脚本路径 resolve 后必须在 scripts/ 根内（skills.py:183-188），cwd 是临时目录",
+        "30s 超时硬编码（skills.py:200）；同名技能后者赢（skills.py:69）",
+        "每个 Agent 构造都新建闭包与 ToolRegistry，跨实例不共享"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "记忆候选（MemoryCandidate）的状态变化",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 评审主线"
+    },
+    {
+      "id": "alt",
+      "label": "02 / 其他归宿"
+    }
+  ],
+  "states": [
+    {
+      "id": "pending",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "pending",
+      "sublabel": "内部记忆立候选",
+      "tag": "core.py:1679"
+    },
+    {
+      "id": "promoted",
+      "type": "success",
+      "lane": "main",
+      "col": 1,
+      "label": "promoted",
+      "sublabel": "写入正式记忆",
+      "tag": "core.py:1780"
+    },
+    {
+      "id": "blocked",
+      "type": "failure",
+      "lane": "alt",
+      "col": 0,
+      "label": "blocked",
+      "sublabel": "钩子拦截",
+      "tag": "core.py:1696"
+    },
+    {
+      "id": "rejected",
+      "type": "failure",
+      "lane": "alt",
+      "col": 1,
+      "label": "rejected",
+      "sublabel": "评审不通过",
+      "tag": "protocol.py:463"
+    },
+    {
+      "id": "kept",
+      "type": "neutral",
+      "lane": "alt",
+      "col": 2,
+      "label": "keep",
+      "sublabel": "留在候选池",
+      "tag": "protocol.py:212"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "pending",
+      "to": "promoted",
+      "label": "approve / rewrite",
+      "labelAt": [
+        170,
+        112
+      ],
+      "channelY": 225
+    },
+    {
+      "from": "pending",
+      "to": "rejected",
+      "label": "reject",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "channelX": 290,
+      "labelAt": [
+        250,
+        318
+      ],
+      "via": [
+        [
+          94,
+          345
+        ],
+        [
+          556,
+          345
+        ]
+      ]
+    },
+    {
+      "from": "pending",
+      "to": "blocked",
+      "label": "钩子拦截",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelX": 210,
+      "labelAt": [
+        200,
+        248
+      ],
+      "channelY": 240
+    },
+    {
+      "from": "pending",
+      "to": "kept",
+      "label": "keep",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "channelX": 370,
+      "labelAt": [
+        600,
+        380
+      ],
+      "via": [
+        [
+          94,
+          365
+        ],
+        [
+          710,
+          365
+        ]
+      ]
+    },
+    {
+      "from": "blocked",
+      "to": "pending",
+      "label": "候选保留",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelX": 170,
+      "labelAt": [
+        250,
+        211
+      ],
+      "channelY": 205
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四种决定（protocol.py:159）",
+      "items": [
+        "MemoryPromotionDecision：approve / reject / rewrite / keep",
+        "approve 与 rewrite 都算晋升（promotes 属性 :179），rewrite 会替换内容后落库",
+        "回调返回 dict 时：allowed=True 且 value≠原文 → 解释为 rewrite（:532）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么默认不可注入",
+      "items": [
+        "候选 injectable 默认 False（protocol.py:102）",
+        "未晋升的内部记忆在检索侧还会被 _blocks_prompt_injection 二次拦截（:352）",
+        "手动晋升 API：promote_memory_candidate / list_memory_candidates（core.py:407/400）"
+      ]
+    }
+  ]
+}
