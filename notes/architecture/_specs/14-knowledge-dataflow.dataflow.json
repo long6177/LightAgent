@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "记忆与知识检索数据流",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1000,
+      640
+    ]
+  },
+  "stages": [
+    {
+      "label": "01 / 来源"
+    },
+    {
+      "label": "02 / 加工"
+    },
+    {
+      "label": "03 / 存储"
+    },
+    {
+      "label": "04 / 消费"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "conv",
+      "type": "external",
+      "label": "对话内容",
+      "sublabel": "query 原样写入",
+      "tag": "core.py:1454",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "query",
+      "type": "external",
+      "label": "检索请求",
+      "sublabel": "用户 query / ToT",
+      "tag": "core.py:1514",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "docs",
+      "type": "external",
+      "label": "文档文件",
+      "sublabel": "本地文本入库",
+      "tag": "knowledge.py:145",
+      "stage": 0,
+      "row": 2
+    },
+    {
+      "id": "memp",
+      "type": "security",
+      "label": "记忆策略",
+      "sublabel": "准入+指纹去重",
+      "tag": "protocol.py:409",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "chunk",
+      "type": "backend",
+      "label": "滑窗切块",
+      "sublabel": "chunk_size-overlap",
+      "tag": "knowledge.py:277",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "mem0",
+      "type": "database",
+      "label": "mem0 / 向量库",
+      "sublabel": "经 MemoryProtocol",
+      "tag": "protocol.py:16",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "fts",
+      "type": "database",
+      "label": "SQLite FTS5 索引",
+      "sublabel": "bm25 排序·LIKE 降级",
+      "tag": "knowledge.py:109",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "ctx",
+      "type": "backend",
+      "label": "下次对话的上下文",
+      "sublabel": "query 前缀注入",
+      "tag": "core.py:1483",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "cite",
+      "type": "backend",
+      "label": "带引用的回答",
+      "sublabel": "citation_id 溯源",
+      "tag": "knowledge.py:283",
+      "stage": 3,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "from": "conv",
+      "to": "memp",
+      "label": "提炼候选记忆"
+    },
+    {
+      "from": "memp",
+      "to": "mem0",
+      "label": "store()"
+    },
+    {
+      "from": "mem0",
+      "to": "ctx",
+      "label": "retrieve()"
+    },
+    {
+      "from": "query",
+      "to": "fts",
+      "label": "MATCH 查询",
+      "route": "top-channel"
+    },
+    {
+      "from": "docs",
+      "to": "chunk",
+      "label": "读入文本"
+    },
+    {
+      "from": "chunk",
+      "to": "fts",
+      "label": "建倒排索引",
+      "route": "straight",
+      "labelDy": -20
+    },
+    {
+      "from": "fts",
+      "to": "cite",
+      "label": "MATCH 命中"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条独立管线",
+      "items": [
+        "记忆线：对话→策略准入→mem0/共享池→检索注入（core.py:1436-1536）",
+        "知识线：文档→滑窗切块→FTS5 双写→bm25 检索带 citation（knowledge.py:145-294）",
+        "两线互不依赖：knowledge.py 是能力 Provider，记忆走 MemoryProtocol"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "检索的陷阱",
+      "items": [
+        "FTS5 检索先超取 10 倍再按 scope/owner 过滤，可能凑不满 limit（knowledge.py:234）",
+        "用户 query 原样进 MATCH，特殊字符可能抛 sqlite3 错误（:219）",
+        "共享池检索是词面重叠打分，同义改写检索不到（shared_memory.py:191）"
+      ]
+    }
+  ]
+}

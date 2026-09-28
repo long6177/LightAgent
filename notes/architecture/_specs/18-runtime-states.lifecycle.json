@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "后台任务（Job）的生命周期",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 任务主线"
+    },
+    {
+      "id": "alt",
+      "label": "02 / 中断与失败"
+    }
+  ],
+  "states": [
+    {
+      "id": "queued",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "queued",
+      "sublabel": "JobManager.start",
+      "tag": "runtime.py:474"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "lane": "main",
+      "col": 1,
+      "label": "running",
+      "sublabel": "_execute 后台执行",
+      "tag": "runtime.py:489"
+    },
+    {
+      "id": "succeeded",
+      "type": "success",
+      "lane": "main",
+      "col": 2,
+      "label": "succeeded",
+      "sublabel": "通知进收件箱",
+      "tag": "runtime.py:516"
+    },
+    {
+      "id": "interrupted",
+      "type": "failure",
+      "lane": "alt",
+      "col": 0,
+      "label": "interrupted",
+      "sublabel": "进程中断待恢复",
+      "tag": "runtime.py:557"
+    },
+    {
+      "id": "failed",
+      "type": "failure",
+      "lane": "alt",
+      "col": 1,
+      "label": "failed / cancelled",
+      "sublabel": "执行失败或手动取消",
+      "tag": "runtime.py:507/535"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "queued",
+      "to": "running",
+      "label": "create_task",
+      "labelAt": [
+        230,
+        112
+      ]
+    },
+    {
+      "from": "running",
+      "to": "succeeded",
+      "label": "执行完成",
+      "labelAt": [
+        385,
+        112
+      ]
+    },
+    {
+      "from": "running",
+      "to": "failed",
+      "label": "异常 / cancel",
+      "labelAt": [
+        300,
+        272
+      ],
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelY": 262
+    },
+    {
+      "from": "running",
+      "to": "interrupted",
+      "label": "进程崩溃",
+      "labelAt": [
+        296,
+        248
+      ],
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelY": 240
+    },
+    {
+      "from": "interrupted",
+      "to": "queued",
+      "label": "重启后重新提交",
+      "note": "可恢复",
+      "labelAt": [
+        180,
+        350
+      ],
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "channelY": 340,
+      "via": [
+        [
+          402,
+          345
+        ],
+        [
+          94,
+          345
+        ],
+        [
+          94,
+          220
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "事件即持久化（runtime.py）",
+      "items": [
+        "Job 全程发 job.created/started/completed/cancelled/failed/interrupted 事件",
+        "事件经 AgentRuntime._append 写 Session 并落盘（:806），无独立存储",
+        "完成时向 inbox 塞一条 CONTEXT 通知（:516）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "恢复的边界",
+      "items": [
+        "open_session 回放 job.* 只重建档案，协程本体不恢复（:564/577）",
+        "恢复后未完结任务立即标 INTERRUPTED（:557）",
+        "JobManager.start 需要运行中的事件循环，同步上下文会 RuntimeError（:482）"
+      ]
+    }
+  ]
+}

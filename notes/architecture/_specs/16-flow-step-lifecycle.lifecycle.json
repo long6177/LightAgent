@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "LightFlow 步骤的状态变化",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "01 / 步骤主线"
+    },
+    {
+      "id": "alt",
+      "label": "02 / 失败与人工介入"
+    },
+    {
+      "id": "terminal",
+      "label": "03 / 终态"
+    }
+  ],
+  "states": [
+    {
+      "id": "pending",
+      "type": "start",
+      "lane": "main",
+      "col": 0,
+      "label": "pending",
+      "sublabel": "登记待跑",
+      "tag": "flow.py:32"
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "lane": "main",
+      "col": 1,
+      "label": "running",
+      "sublabel": "_run_step 执行",
+      "tag": "flow.py:667"
+    },
+    {
+      "id": "success",
+      "type": "success",
+      "lane": "main",
+      "col": 3,
+      "label": "success",
+      "sublabel": "结果存档",
+      "tag": "flow.py:626"
+    },
+    {
+      "id": "waiting",
+      "type": "waiting",
+      "lane": "alt",
+      "col": 0,
+      "label": "waiting_approval",
+      "sublabel": "审批门挂起",
+      "tag": "flow.py:518"
+    },
+    {
+      "id": "failed",
+      "type": "failure",
+      "lane": "alt",
+      "col": 1,
+      "label": "failed",
+      "sublabel": "异常 / 超时",
+      "tag": "flow.py:690"
+    },
+    {
+      "id": "skipped",
+      "type": "neutral",
+      "lane": "terminal",
+      "col": 2,
+      "label": "skipped",
+      "sublabel": "cancel_if / 上游连坐",
+      "tag": "flow.py:906"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "pending",
+      "to": "running",
+      "label": "轮到该步",
+      "labelAt": [
+        230,
+        112
+      ]
+    },
+    {
+      "from": "running",
+      "to": "success",
+      "label": "执行成功",
+      "labelAt": [
+        385,
+        112
+      ]
+    },
+    {
+      "from": "running",
+      "to": "waiting",
+      "label": "requires_approval",
+      "labelAt": [
+        145,
+        205
+      ],
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelY": 233
+    },
+    {
+      "from": "waiting",
+      "to": "running",
+      "label": "approve 续跑",
+      "note": "可恢复",
+      "labelAt": [
+        352,
+        176
+      ],
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelY": 210
+    },
+    {
+      "from": "running",
+      "to": "failed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "channelY": 240
+    },
+    {
+      "from": "failed",
+      "to": "running",
+      "note": "可恢复",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "channelY": 214
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "状态在哪里定义（flow.py）",
+      "items": [
+        "常量 FLOW_PENDING/RUNNING/SUCCESS/FAILED/SKIPPED/WAITING_APPROVAL（:32-37）",
+        "主循环 _execute:391：取消检查→构造输入→钩子→审批门→执行→checkpoint",
+        "审批 pending 是 break 半途退出，不是阻塞等待（:518）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "恢复语义",
+      "items": [
+        "resume() 重跑所有非 success 步骤（:266）",
+        "rerun_step() 只重跑指定步骤及其传递下游，并清空下游审批决定（:300/322）",
+        "超时用线程池模拟，超时后后台线程仍在跑，只是结果被丢弃（:766）",
+        "cancel_if 命中或上游失败会把步骤置为 skipped（flow.py:427/906）",
+        "waiting 批复后经 resume() 回到 running（flow.py:266）"
+      ]
+    }
+  ]
+}

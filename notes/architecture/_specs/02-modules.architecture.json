@@ -1,0 +1,544 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LightAgent 代码模块地图",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+    },
+    "views": [
+      {
+        "id": "hub",
+        "label": "以 core 为中心",
+        "focus": [
+          "core",
+          "tools",
+          "safety",
+          "memory",
+          "session"
+        ],
+        "note": "run() 主循环直接驱动的五个近邻"
+      },
+      {
+        "id": "suppliers",
+        "label": "工具供给方",
+        "focus": [
+          "skills",
+          "mcp",
+          "builtin",
+          "tools"
+        ],
+        "note": "三类来源全部汇入 ToolRegistry"
+      },
+      {
+        "id": "persistence",
+        "label": "持久化与观测",
+        "focus": [
+          "session",
+          "runtime",
+          "obs",
+          "knowledge"
+        ],
+        "note": "事件日志是 runtime 状态与跨会话检索的底座"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "flow",
+      "type": "backend",
+      "label": "工作流编排",
+      "sublabel": "LightFlow DAG · 审批",
+      "tag": "flow.py",
+      "pos": [
+        180,
+        110
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/flow.py",
+          "line": 132,
+          "label": "LightFlow"
+        },
+        {
+          "path": "LightAgent/flow.py",
+          "line": 102,
+          "label": "JsonLightFlowStore"
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "type": "backend",
+      "label": "技能发现",
+      "sublabel": "SkillManager · 四件套",
+      "tag": "skills.py / skill_tools.py",
+      "pos": [
+        180,
+        250
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/skills.py",
+          "line": 34,
+          "label": "SkillManager"
+        },
+        {
+          "path": "LightAgent/skill_tools.py",
+          "line": 13,
+          "label": "create_skill_tools"
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP 客户端",
+      "sublabel": "三通道 · 远端工具桥",
+      "tag": "mcp_client_manager.py",
+      "pos": [
+        180,
+        390
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/mcp_client_manager.py",
+          "line": 26,
+          "label": "MCPClientManager"
+        },
+        {
+          "path": "LightAgent/mcp_client_manager.py",
+          "line": 88,
+          "label": "register_mcp_tool"
+        }
+      ]
+    },
+    {
+      "id": "builtin",
+      "type": "backend",
+      "label": "内置工具",
+      "sublabel": "表达式 · OSS · 沙箱执行",
+      "tag": "builtin_tools/",
+      "pos": [
+        180,
+        530
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/builtin_tools/safe_expression.py",
+          "line": 149,
+          "label": "safe_expression"
+        },
+        {
+          "path": "LightAgent/builtin_tools/nos.py",
+          "line": 69,
+          "label": "upload_file_to_oss"
+        },
+        {
+          "path": "LightAgent/builtin_tools/python_executor.py",
+          "line": 399,
+          "label": "execute_python_code"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "工具箱",
+      "sublabel": "三视图 · dispatch 分派",
+      "tag": "tools.py",
+      "pos": [
+        470,
+        310
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/tools.py",
+          "line": 26,
+          "label": "ToolRegistry"
+        },
+        {
+          "path": "LightAgent/tools.py",
+          "line": 224,
+          "label": "ToolLoader"
+        },
+        {
+          "path": "LightAgent/tools.py",
+          "line": 294,
+          "label": "dispatch()"
+        }
+      ]
+    },
+    {
+      "id": "runtime",
+      "type": "backend",
+      "label": "运行时管家",
+      "sublabel": "收件箱·目标·预算·任务",
+      "tag": "runtime.py",
+      "pos": [
+        760,
+        110
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/runtime.py",
+          "line": 714,
+          "label": "AgentRuntime"
+        },
+        {
+          "path": "LightAgent/runtime.py",
+          "line": 323,
+          "label": "BudgetManager"
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "core.py 主入口",
+      "sublabel": "LightAgent · LightSwarm",
+      "tag": "core.py",
+      "pos": [
+        760,
+        310
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/core.py",
+          "line": 116,
+          "label": "LightAgent"
+        },
+        {
+          "path": "LightAgent/core.py",
+          "line": 480,
+          "label": "run()"
+        },
+        {
+          "path": "LightAgent/core.py",
+          "label": "LightSwarm"
+        }
+      ]
+    },
+    {
+      "id": "safety",
+      "type": "security",
+      "label": "安全三件套",
+      "sublabel": "护栏 · 钩子 · 审批",
+      "tag": "guardrails / hooks / review",
+      "pos": [
+        760,
+        470
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/guardrails.py",
+          "line": 24,
+          "label": "GuardrailManager"
+        },
+        {
+          "path": "LightAgent/hooks.py",
+          "line": 95,
+          "label": "HookManager"
+        },
+        {
+          "path": "LightAgent/review.py",
+          "line": 235,
+          "label": "HumanApprovalHook"
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "type": "database",
+      "label": "知识检索",
+      "sublabel": "FTS5 RAG · 会话搜索",
+      "tag": "knowledge.py",
+      "pos": [
+        1010,
+        110
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/knowledge.py",
+          "line": 78,
+          "label": "SqliteFTSRetrievalProvider"
+        },
+        {
+          "path": "LightAgent/knowledge.py",
+          "line": 302,
+          "label": "SessionSearchProvider"
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "type": "database",
+      "label": "会话事件日志",
+      "sublabel": "三种存储 · 投影压缩",
+      "tag": "session.py",
+      "pos": [
+        1010,
+        250
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/session.py",
+          "line": 195,
+          "label": "Session"
+        },
+        {
+          "path": "LightAgent/session.py",
+          "line": 377,
+          "label": "SessionStore"
+        },
+        {
+          "path": "LightAgent/session.py",
+          "line": 644,
+          "label": "ContextProjector"
+        }
+      ]
+    },
+    {
+      "id": "memory",
+      "type": "backend",
+      "label": "记忆策略",
+      "sublabel": "协议 · 共享池 · 晋升",
+      "tag": "protocol.py / shared_memory.py",
+      "pos": [
+        1010,
+        390
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/protocol.py",
+          "line": 16,
+          "label": "MemoryProtocol"
+        },
+        {
+          "path": "LightAgent/protocol.py",
+          "line": 232,
+          "label": "MemoryPolicy"
+        },
+        {
+          "path": "LightAgent/shared_memory.py",
+          "line": 40,
+          "label": "SharedMemoryPool"
+        }
+      ]
+    },
+    {
+      "id": "obs",
+      "type": "backend",
+      "label": "观测与错误码",
+      "sublabel": "Trace · LA-* · 日志",
+      "tag": "tracing / errors / logger",
+      "pos": [
+        1010,
+        530
+      ],
+      "size": [
+        172,
+        62
+      ],
+      "sources": [
+        {
+          "path": "LightAgent/tracing.py",
+          "line": 229,
+          "label": "TraceRecorder"
+        },
+        {
+          "path": "LightAgent/errors.py",
+          "line": 45,
+          "label": "ERROR_TAXONOMY"
+        },
+        {
+          "path": "LightAgent/logger.py",
+          "line": 14,
+          "label": "LoggerManager"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "flow",
+      "to": "core",
+      "label": "调 agent.run()",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDx": -40
+    },
+    {
+      "from": "skills",
+      "to": "tools",
+      "label": "注册四件套",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "from": "mcp",
+      "to": "tools",
+      "label": "MCP 入箱",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "builtin",
+      "to": "tools",
+      "label": "注册内置工具",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "from": "core",
+      "to": "tools",
+      "label": "dispatch()",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelDy": -16
+    },
+    {
+      "from": "core",
+      "to": "runtime",
+      "label": "构造与事件落库",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -26
+    },
+    {
+      "from": "core",
+      "to": "safety",
+      "label": "三检查点 · 钩子",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 26,
+      "labelDx": -50
+    },
+    {
+      "from": "core",
+      "to": "session",
+      "label": "会话双写",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "core",
+      "to": "memory",
+      "label": "读写记忆",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "core",
+      "to": "obs",
+      "label": "trace 事件",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          846,
+          440
+        ],
+        [
+          1000,
+          440
+        ],
+        [
+          1000,
+          561
+        ]
+      ]
+    },
+    {
+      "from": "session",
+      "to": "runtime",
+      "label": "restore 回放",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "from": "knowledge",
+      "to": "session",
+      "label": "跨会话搜索",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "这张图怎么读",
+      "items": [
+        "每个方块对应包内一组文件，tag 标出文件名，点击节点看类/方法行号",
+        "连线 = 谁调用谁，箭头指向被调用方",
+        "core.py 是唯一枢纽：其余模块都直接或间接为 run() 服务"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "工具的三条汇入路径",
+      "items": [
+        "手写函数 + tool_info → register_tool（tools.py:36，同名静默覆盖）",
+        "MCP 远端 → 直写注册表三视图（mcp_client_manager.py:127-150，绕过 register_tool）",
+        "tools/ 目录与技能四件套 → ToolLoader / create_skill_tools（tools.py:239、skill_tools.py:13）"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "独立的小世界",
+      "items": [
+        "flow.py / runtime.py / knowledge.py 各自成体系，经 Session 事件互通",
+        "runtime 不驱动对话循环，只是事件即持久化的状态管家（runtime.py:714）",
+        "knowledge 无向量库依赖，SQLite FTS5 就能跑，缺失时降级 LIKE（knowledge.py:222）"
+      ]
+    }
+  ]
+}

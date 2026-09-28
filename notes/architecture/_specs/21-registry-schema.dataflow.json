@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "工具登记与 schema 生成",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1075,
+      600
+    ]
+  },
+  "stages": [
+    {
+      "label": "01 / 工具从哪来"
+    },
+    {
+      "label": "02 / 登记造册"
+    },
+    {
+      "label": "03 / 两张表"
+    },
+    {
+      "label": "04 / 暴露"
+    },
+    {
+      "label": "05 / 剪枝"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "toolinfo",
+      "type": "external",
+      "label": "手写 tool_info",
+      "sublabel": "name·desc·params",
+      "tag": "tools.py:36",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "mcpin",
+      "type": "cloud",
+      "label": "MCP 上报",
+      "sublabel": "inputSchema 转换",
+      "tag": "mcp_client_manager.py:118",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "genfile",
+      "type": "backend",
+      "label": "LLM 生成落盘",
+      "sublabel": "tools/<name>.py",
+      "tag": "core.py:3019",
+      "stage": 0,
+      "row": 2
+    },
+    {
+      "id": "registry",
+      "type": "backend",
+      "label": "登记造册",
+      "sublabel": "register_tool 同名覆盖",
+      "tag": "tools.py:36",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "mappings",
+      "type": "database",
+      "label": "可调用体映射",
+      "sublabel": "function_mappings",
+      "tag": "tools.py:29",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "schemas",
+      "type": "database",
+      "label": "模型说明书",
+      "sublabel": "openai schemas",
+      "tag": "tools.py:58",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "chatparams",
+      "type": "backend",
+      "label": "随请求下发",
+      "sublabel": "chat_params['tools']",
+      "tag": "core.py:700",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "tot",
+      "type": "security",
+      "label": "按需剪枝",
+      "sublabel": "filter_tools 反思过滤",
+      "tag": "tools.py:198",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "modelseen",
+      "type": "cloud",
+      "label": "模型看到子集",
+      "sublabel": "仅 run_thought 场景",
+      "tag": "core.py:2830",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "from": "toolinfo",
+      "to": "registry",
+      "label": "tool_info 约定",
+      "labelAt": [
+        230,
+        208
+      ]
+    },
+    {
+      "from": "mcpin",
+      "to": "registry",
+      "label": "转写",
+      "labelAt": [
+        150,
+        222
+      ]
+    },
+    {
+      "from": "genfile",
+      "to": "registry",
+      "label": "热注册",
+      "labelAt": [
+        230,
+        322
+      ]
+    },
+    {
+      "from": "registry",
+      "to": "mappings",
+      "label": "function_mappings"
+    },
+    {
+      "from": "registry",
+      "to": "schemas",
+      "label": "openai schemas"
+    },
+    {
+      "from": "schemas",
+      "to": "chatparams",
+      "label": "工具清单"
+    },
+    {
+      "from": "chatparams",
+      "to": "modelseen",
+      "label": "全量下发"
+    },
+    {
+      "from": "chatparams",
+      "to": "tot",
+      "label": "ToT 场景"
+    },
+    {
+      "from": "tot",
+      "to": "modelseen",
+      "label": "剪枝后子集",
+      "labelAt": [
+        960,
+        200
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三视图同步（tools.py:36-87）",
+      "items": [
+        "function_mappings：名字→可调用体；MCP 工具的值是 partial 适配闭包",
+        "function_info：名字→tool_info 原文；openai_function_schemas：模型视图",
+        "同名注册直接覆盖三视图并返回 True，不报错——事后 validate_tools 才能诊断（:175）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "MCP 与生成的特殊路径",
+      "items": [
+        "MCP 工具绕过 register_tool 直写三视图（mcp_client_manager.py:127-150）",
+        "inputSchema 只取顶层 type/description，嵌套结构与 enum 会失真（:121）",
+        "ToT 的 runtime_tools 过滤是空实现，运行时工具原样返回（core.py:2823）"
+      ]
+    }
+  ]
+}

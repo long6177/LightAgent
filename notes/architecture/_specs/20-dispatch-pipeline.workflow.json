@@ -1,0 +1,215 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "工具执行的内部管线（dispatch）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "gates",
+        "label": "调用前关卡",
+        "focus": [
+          "call",
+          "prep",
+          "blocked"
+        ],
+        "note": "_prepare_tool_call 的四道闸门"
+      },
+      {
+        "id": "exec",
+        "label": "执行器内部",
+        "focus": [
+          "bridge",
+          "validate",
+          "route",
+          "serialize"
+        ],
+        "note": "AsyncToolDispatcher 的四路分派"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "model",
+      "label": "01 / 大模型"
+    },
+    {
+      "id": "core",
+      "label": "02 / LightAgent 主循环"
+    },
+    {
+      "id": "exec",
+      "label": "03 / 工具执行层"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "prep",
+    "bridge",
+    "validate",
+    "route",
+    "serialize",
+    "apply"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "model",
+      "col": 0,
+      "type": "cloud",
+      "label": "模型点名工具",
+      "sublabel": "response.tool_calls",
+      "tag": "core.py:1920",
+      "width": 150
+    },
+    {
+      "id": "prep",
+      "lane": "core",
+      "col": 1,
+      "type": "security",
+      "label": "四道关卡",
+      "sublabel": "_prepare_tool_call",
+      "tag": "core.py:1253",
+      "width": 150
+    },
+    {
+      "id": "blocked",
+      "lane": "core",
+      "col": 2,
+      "type": "external",
+      "label": "关卡拦下",
+      "sublabel": "LA- 错误返回",
+      "tag": "errors.py:206",
+      "width": 150
+    },
+    {
+      "id": "bridge",
+      "lane": "core",
+      "col": 3,
+      "type": "backend",
+      "label": "同步桥接",
+      "sublabel": "run_async_safely",
+      "tag": "core.py:79",
+      "width": 150
+    },
+    {
+      "id": "validate",
+      "lane": "exec",
+      "col": 3,
+      "type": "security",
+      "label": "参数校验",
+      "sublabel": "必填+类型宽容匹配",
+      "tag": "tools.py:354",
+      "width": 150
+    },
+    {
+      "id": "route",
+      "lane": "exec",
+      "col": 4,
+      "type": "backend",
+      "label": "四路执行分流",
+      "sublabel": "协程·异步生成·生成·同步",
+      "tag": "tools.py:294",
+      "width": 152
+    },
+    {
+      "id": "serialize",
+      "lane": "exec",
+      "col": 5,
+      "type": "backend",
+      "label": "结果序列化",
+      "sublabel": "dict/list→JSON 其余 str",
+      "tag": "tools.py:345",
+      "width": 150
+    },
+    {
+      "id": "apply",
+      "lane": "core",
+      "col": 5,
+      "type": "backend",
+      "label": "回填对话",
+      "sublabel": "after_tool_result 钩子",
+      "tag": "core.py:1313",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "from": "call",
+      "to": "prep",
+      "role": "main"
+    },
+    {
+      "from": "prep",
+      "to": "blocked",
+      "role": "error",
+      "label": "拦截"
+    },
+    {
+      "from": "prep",
+      "to": "bridge",
+      "role": "main",
+      "label": "放行"
+    },
+    {
+      "from": "bridge",
+      "to": "validate",
+      "role": "main",
+      "label": "进入 dispatch"
+    },
+    {
+      "from": "validate",
+      "to": "route",
+      "role": "main",
+      "label": "校验通过"
+    },
+    {
+      "from": "route",
+      "to": "serialize",
+      "role": "main"
+    },
+    {
+      "from": "serialize",
+      "to": "apply",
+      "role": "return",
+      "label": "结果上抛"
+    },
+    {
+      "from": "apply",
+      "to": "call",
+      "role": "return",
+      "label": "role:tool 回填"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "四道关卡（core.py:1253）",
+      "items": [
+        "能力策略 evaluate_sync（capabilities.py:303，core.py:1272）",
+        "预算 tool_calls 扣减（core.py:1294）",
+        "工具护栏 check_tool（guardrails.py:41）；before_tool_call 钩子（:1301）",
+        "沙箱工具额外要求 SandboxProvider，否则 LA-SANDBOX（core.py:1262）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "四路分派（tools.py:294）",
+      "items": [
+        "协程 await（:313）；异步生成器原样透传（:325）",
+        "同步生成器原样透传（:329）；普通函数直接调用（:336）",
+        "生成器不被 dispatch 消费——逐 chunk 拼接在 core.py:2014"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "错误约定",
+      "items": [
+        "找不到工具/参数不合法/执行异常都返回 LA-TOOL 错误字符串（tools.py:304/374/342）",
+        "错误不抛异常，工具循环不会中断",
+        "integer 校验会排除 bool，未知类型放行（tools.py:380）"
+      ]
+    }
+  ]
+}
