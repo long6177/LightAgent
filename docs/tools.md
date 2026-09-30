@@ -291,9 +291,9 @@ fetch_news.tool_info = {
 
 ### Streaming Tools
 
-Tools that return Python generators (synchronous) or async generators work with
-the streaming execution path. When the model calls a streaming tool in
-streaming mode, chunks are yielded as they are produced:
+Tools that return Python generators (synchronous) work with the streaming
+execution path. When the model calls a streaming tool in streaming mode,
+chunks are yielded as they are produced:
 
 ```python
 from typing import Generator
@@ -317,8 +317,9 @@ stream_results.tool_info = {
 }
 ```
 
-For async generators, the dispatcher returns the generator object directly
-without consuming it, allowing the caller to iterate at its own pace.
+Async generator tools are consumed by the dispatcher: all chunks are collected
+inside `dispatch()` and returned as a single serialized result. Only
+synchronous generator tools are passed through for chunk-by-chunk streaming.
 
 ### Dynamic Tool Loading
 
@@ -411,8 +412,8 @@ object-storage tool.
 ### MCP Integration
 
 LightAgent supports the Model Context Protocol (MCP) for connecting to external
-tool servers. MCP servers can provide tools over stdio or SSE (Server-Sent
-Events) transports.
+tool servers. MCP servers can provide tools over stdio, SSE (Server-Sent
+Events), or Streamable HTTP transports.
 
 #### Configuration
 
@@ -452,13 +453,37 @@ async def setup():
 asyncio.run(setup())
 ```
 
+#### Streamable HTTP
+
+For a Streamable HTTP endpoint, add an entry like this to `mcp_config` before
+calling `setup()`. Choose an unused server name to preserve existing entries:
+
+```python
+import os
+
+mcp_config["mcpServers"]["remote-http"] = {
+    "transport": "streamable-http",
+    "url": "https://mcp.example.com/mcp",
+    "headers": {"Authorization": "Bearer " + os.environ["MCP_API_TOKEN"]},
+}
+```
+
+Set `transport` explicitly: a server with a `url` but no transport selector
+uses SSE. The aliases `streamable_http` and `http` also select Streamable HTTP.
+The installed MCP SDK must provide `mcp.client.streamable_http.streamablehttp_client`;
+otherwise this transport reports that the installed SDK does not support it.
+
+Header values are sent literally. In this example, Python reads the environment
+variable; LightAgent does not expand environment placeholders inside the header.
+Keep real credentials out of source files, command-line arguments, and logs.
+
 #### How MCP Tool Registration Works
 
 The `MCPClientManager` connects to each configured server, lists available
 tools via the MCP `list_tools` request, and registers them into the agent's
 `ToolRegistry`:
 
-1. For each enabled server, a session is created (stdio or SSE).
+1. For each enabled server, a session is created (stdio, SSE, or Streamable HTTP).
 2. Tools are fetched using `session.list_tools()`.
 3. Each tool's name, description, and parameter schema are converted to the
    `tool_info` format and registered.
