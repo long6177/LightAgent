@@ -17,6 +17,7 @@ from LightAgent.builtin_tools import python_executor
 from LightAgent.builtin_tools.python_executor import (
     _MAX_CLEAN_DEPTH,
     _clean_code_string,
+    _parse_code_parameter,
     _try_json_loads,
 )
 
@@ -74,7 +75,7 @@ class TestDepthLimit:
         # after a deterministic number of unwraps.
         calls = {'n': 0}
 
-        def endless(parsed):
+        def endless(parsed, **kwargs):
             calls['n'] += 1
             return json.dumps({'code': 'level%d' % calls['n']})
 
@@ -85,6 +86,33 @@ class TestDepthLimit:
 
     def test_at_limit_returns_input(self):
         assert _clean_code_string('anything', _depth=_MAX_CLEAN_DEPTH) == 'anything'
+
+    def test_dictionary_nesting_beyond_limit_is_not_unwrapped(self):
+        payload = 'print(42)'
+        for _ in range(_MAX_CLEAN_DEPTH + 1):
+            payload = {'code': payload}
+        encoded = json.dumps(payload)
+        assert _clean_code_string(encoded) == encoded
+        with pytest.raises(ValueError, match='nesting'):
+            _parse_code_parameter(payload)
+
+    def test_dictionary_nesting_at_limit_still_extracts_code(self):
+        payload = 'print(42)'
+        for _ in range(_MAX_CLEAN_DEPTH):
+            payload = {'code': payload}
+        assert _parse_code_parameter(payload) == 'print(42)'
+        assert _clean_code_string(json.dumps(payload)) == 'print(42)'
+
+    def test_dictionary_limit_respects_existing_cleanup_depth(self):
+        encoded = json.dumps({'code': {'code': 'print(42)'}})
+        assert _clean_code_string(encoded, _depth=_MAX_CLEAN_DEPTH - 1) == encoded
+
+    @pytest.mark.parametrize('key', ['code', 'unknown'])
+    def test_cyclic_dictionary_fails_deterministically(self, key):
+        payload = {}
+        payload[key] = payload
+        with pytest.raises(ValueError, match='nesting|cyclic'):
+            _parse_code_parameter(payload)
 
 
 class TestProcessControlPropagation:

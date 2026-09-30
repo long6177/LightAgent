@@ -44,7 +44,15 @@ UNSAFE_PYTHON_TOOL_NAMES = frozenset({
 })
 
 
-def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
+# Both JSON cleanup and nested dictionary extraction use a bounded depth.
+_MAX_CLEAN_DEPTH = 5
+
+
+class _CodeNestingError(ValueError):
+    pass
+
+
+def _parse_code_parameter(code_param: Union[str, Dict, Any], _depth: int = 0) -> str:
     """
     解析可能包含在各种格式中的代码参数
 
@@ -60,6 +68,8 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
 
     # 如果是字典，尝试提取常见的键
     if isinstance(code_param, dict):
+        if _depth >= _MAX_CLEAN_DEPTH:
+            raise _CodeNestingError("Code parameter nesting exceeds the cleanup limit")
         # 尝试各种可能的键名
         possible_keys = ['code', 'script', 'python_code', 'source', 'content', 'program']
         for key in possible_keys:
@@ -69,7 +79,7 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
                     return value
                 elif isinstance(value, dict):
                     # 递归处理嵌套字典
-                    return _parse_code_parameter(value)
+                    return _parse_code_parameter(value, _depth + 1)
 
         # 如果字典只有一个值，可能是直接传入的
         if len(code_param) == 1:
@@ -78,7 +88,10 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
                 return value
 
         # 尝试将整个字典转换为字符串
-        return json.dumps(code_param, ensure_ascii=False)
+        try:
+            return json.dumps(code_param, ensure_ascii=False)
+        except (RecursionError, ValueError) as exc:
+            raise _CodeNestingError("Code parameter is too deeply nested or cyclic") from exc
 
     # 如果是列表，尝试连接或提取
     if isinstance(code_param, list):
@@ -90,10 +103,6 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
 
     # 其他类型直接转字符串
     return str(code_param)
-
-
-# 递归清理的确定性深度上限：嵌套的JSON包装超过该深度后按原样返回。
-_MAX_CLEAN_DEPTH = 5
 
 
 def _try_json_loads(candidate: str) -> Tuple[bool, Any]:
@@ -165,7 +174,10 @@ def _clean_code_string(code_str: str, _depth: int = 0) -> str:
     if ok:
         if isinstance(parsed, dict):
             # 查找常见的代码字段
-            code = _parse_code_parameter(parsed)
+            try:
+                code = _parse_code_parameter(parsed, _depth=_depth)
+            except _CodeNestingError:
+                return code_str
             if code != code_str:
                 return _clean_code_string(code, _depth + 1)  # 递归清理
         elif isinstance(parsed, str):
