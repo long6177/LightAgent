@@ -375,7 +375,7 @@ are loaded.
 ### Built-in Tools
 
 LightAgent automatically registers safe built-in tools at startup. Arbitrary
-Python execution tools require explicit opt-in:
+Python execution utilities and safe calculation:
 
 | Tool Name | Description |
 | --- | --- |
@@ -386,10 +386,13 @@ Python execution tools require explicit opt-in:
 | `upload_file_to_oss` | Upload a file to object storage (OSS); requires optional `boto3`. |
 
 `safe_expression` and `upload_file_to_oss` are registered by default. The
-arbitrary Python tools are disabled by default in v0.10.1. To register them,
-pass `enable_unsafe_python=True` and mount an explicit capability provider named
-`sandbox` (or one exposing a `sandbox.*` capability); otherwise model tool calls
-are rejected with `LA-SANDBOX`.
+arbitrary Python tools are disabled by default in v0.10.1.
+`enable_unsafe_python=True` retains registration compatibility only: model tool
+calls and dispatcher/provider invocation of these legacy utilities fail closed
+with `LA-SANDBOX`, regardless of sandbox provider registration or lifecycle.
+Trusted applications may call the utilities directly under their own isolation
+controls. For agent execution, supply a custom tool that actually delegates to
+an isolated worker or SandboxProvider; registration alone is not isolation.
 
 The Python executor utilities use an AST denylist and a temporary working
 directory, but they are not security sandboxes. Review the

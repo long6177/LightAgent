@@ -17,6 +17,7 @@ from copy import deepcopy
 from typing import List, Dict, Any, Callable, Union, Generator, AsyncGenerator
 
 from .errors import format_error_code, format_lightagent_error
+from .builtin_tools.python_executor import UNSAFE_PYTHON_TOOL_REASON, is_unsafe_python_tool
 
 
 _TOOL_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -258,6 +259,8 @@ class AsyncToolDispatcher:
             return format_error_code("LA-TOOL", f"Tool `{tool_name}` not found.")
 
         tool_call = self.function_mappings[tool_name]
+        if is_unsafe_python_tool(tool_name, tool_call):
+            return format_error_code("LA-SANDBOX", UNSAFE_PYTHON_TOOL_REASON)
         validation_error = self._validate_tool_params(tool_name, tool_params)
         if validation_error:
             return validation_error

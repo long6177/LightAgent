@@ -3,8 +3,13 @@
 `execute_python_code`, `execute_python_file`, and
 `execute_python_code_stream` are controlled utilities, not security sandboxes.
 As of v0.10.1, these arbitrary-code tools are not registered by default on a
-`LightAgent`. They require explicit `enable_unsafe_python=True` opt-in and an
-explicit `SandboxProvider` before a model tool call is allowed.
+`LightAgent`. The registration-only compatibility flag
+`enable_unsafe_python=True` does not authorize execution. Model tool calls,
+`AsyncToolDispatcher`, and `ToolProviderAdapter` now reject these legacy tools
+with `LA-SANDBOX`, even when a `SandboxProvider` is registered or started.
+Provider registration does not route the legacy subprocess through isolation.
+Direct calls from trusted application code remain available, but require
+application-managed isolation; they are not safe for untrusted input.
 
 For arithmetic and data-only calculations, use the default `safe_expression`
 tool or the `evaluate_safe_expression()` API. It evaluates a bounded AST
@@ -26,7 +31,9 @@ AST filtering is defense in depth. Python introspection and dynamic behavior
 cannot be made fully safe with a static denylist. New bypasses may exist, and
 accepted code can still consume CPU, memory, disk, or allowed network APIs.
 The `enable_unsafe_python` switch is an explicit compatibility opt-in, not a
-security boundary; arbitrary code must run inside a real SandboxProvider.
+security boundary. To execute arbitrary code, supply a custom tool whose own
+implementation delegates to a real isolated worker or SandboxProvider.
+LightAgent does not ship an isolated execution route for the legacy utilities.
 
 ### Production Controls
 

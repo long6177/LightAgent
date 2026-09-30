@@ -146,9 +146,11 @@ from LightAgent import safe_expression
 print(safe_expression("45 * 9827"))
 ```
 
-启用 `execute_python_code`、`execute_python_file` 或
-`execute_python_code_stream` 需要设置 `enable_unsafe_python=True`，并注册显式
-的 `SandboxProvider`。执行器只是受控子进程，并不是安全沙箱；详见
+旧的 `execute_python_code`、`execute_python_file` 和
+`execute_python_code_stream` 不允许通过模型或工具调度器执行，设置
+`enable_unsafe_python=True` 或注册 `SandboxProvider` 也不会解除阻断。
+可信应用代码仍可在自行隔离的环境中直接调用；Agent 执行代码应使用真正委托给
+沙箱的自定义工具。详见
 [Python 执行器安全说明](docs/python_executor_security.md)。
 
 ### 评测并审核高风险动作
