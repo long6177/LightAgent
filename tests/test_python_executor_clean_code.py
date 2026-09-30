@@ -42,16 +42,19 @@ class TestMalformedJson:
 class TestDeeplyNestedJson:
 
     def test_deeply_nested_json_fails_softly(self):
-        # Deep enough to raise RecursionError inside json.loads on CPython.
+        # Decoder recursion thresholds differ between Python versions.
         depth = sys.getrecursionlimit() * 2
         deeply_nested = '[' * depth + '1' + ']' * depth
         # Must not raise: RecursionError is handled at the parsing boundary.
         result = _clean_code_string(deeply_nested)
         assert isinstance(result, str)
 
-    def test_try_json_loads_catches_recursion_error(self):
-        depth = sys.getrecursionlimit() * 2
-        ok, value = _try_json_loads('[' * depth + '1' + ']' * depth)
+    def test_try_json_loads_catches_recursion_error(self, monkeypatch):
+        def too_deep(*args, **kwargs):
+            raise RecursionError('decoder recursion limit')
+
+        monkeypatch.setattr(python_executor.json, 'loads', too_deep)
+        ok, value = _try_json_loads('[1]')
         assert ok is False and value is None
 
 
