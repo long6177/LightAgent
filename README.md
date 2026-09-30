@@ -37,7 +37,7 @@ LightAgent is an ultra‑lightweight, open‑source framework that now natively 
 
 ---
 ## News
-- <img src="https://img.alicdn.com/imgextra/i3/O1CN01SFL0Gu26nrQBFKXFR_!!6000000007707-2-tps-500-500.png" alt="new" width="30" height="30"/>**[2026-09-14]** LightAgent v0.11.0 Development: Adds opt-in persistent Dynamic DAG multi-agent execution, verification-gated immutable artifacts, restart-safe leases and fencing, and a unified narrowing-only `SecurityContext` with capability and approval controls.
+- <img src="https://img.alicdn.com/imgextra/i3/O1CN01SFL0Gu26nrQBFKXFR_!!6000000007707-2-tps-500-500.png" alt="new" width="30" height="30"/>**[2026-10-01]** LightAgent v0.11.0 Released: Adds opt-in persistent Dynamic DAG multi-agent execution, verification-gated immutable artifacts, restart-safe leases and fencing, and a unified narrowing-only `SecurityContext` with capability and approval controls.
 - **[2026-08-15]** LightAgent v0.10.0 Released: Adds the unified event-sourced Agent Runtime with durable Sessions, async execution, Capability Registry and Policy, Inbox/Goals/Budgets, compaction and recovery, Jobs/subagents, standardized Skills/MCP adapters, and SQLite FTS5 retrieval.
 - **[2026-08-15]** LightAgent v0.9.7 Released: Adds a dependency-free Connector contract with offline validation and examples, expands Python executor security checks, introduces an opt-in Mem0 Graph security matrix, and adds a public API compatibility inventory for v1.0 stabilization.
 - **[2026-07-30]** LightAgent v0.9.6 Released: Adds production trace summaries and exporters, deterministic evaluation, durable human approval for tools, handoffs, and LightFlow, plus fail-closed shared Graph Memory admission and audit controls.
