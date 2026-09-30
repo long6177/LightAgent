@@ -60,7 +60,15 @@ def is_unsafe_python_tool(tool_name: str, tool_call: Any = None) -> bool:
     )
 
 
-def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
+# Both JSON cleanup and nested dictionary extraction use a bounded depth.
+_MAX_CLEAN_DEPTH = 5
+
+
+class _CodeNestingError(ValueError):
+    pass
+
+
+def _parse_code_parameter(code_param: Union[str, Dict, Any], _depth: int = 0) -> str:
     """
     解析可能包含在各种格式中的代码参数
 
@@ -76,6 +84,8 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
 
     # 如果是字典，尝试提取常见的键
     if isinstance(code_param, dict):
+        if _depth >= _MAX_CLEAN_DEPTH:
+            raise _CodeNestingError("Code parameter nesting exceeds the cleanup limit")
         # 尝试各种可能的键名
         possible_keys = ['code', 'script', 'python_code', 'source', 'content', 'program']
         for key in possible_keys:
@@ -85,7 +95,7 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
                     return value
                 elif isinstance(value, dict):
                     # 递归处理嵌套字典
-                    return _parse_code_parameter(value)
+                    return _parse_code_parameter(value, _depth + 1)
 
         # 如果字典只有一个值，可能是直接传入的
         if len(code_param) == 1:
@@ -94,7 +104,10 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
                 return value
 
         # 尝试将整个字典转换为字符串
-        return json.dumps(code_param, ensure_ascii=False)
+        try:
+            return json.dumps(code_param, ensure_ascii=False)
+        except (RecursionError, ValueError) as exc:
+            raise _CodeNestingError("Code parameter is too deeply nested or cyclic") from exc
 
     # 如果是列表，尝试连接或提取
     if isinstance(code_param, list):
@@ -108,16 +121,36 @@ def _parse_code_parameter(code_param: Union[str, Dict, Any]) -> str:
     return str(code_param)
 
 
-def _clean_code_string(code_str: str) -> str:
+def _try_json_loads(candidate: str) -> Tuple[bool, Any]:
+    """在解析边界上隔离 json.loads。
+
+    只捕获解析本身可能产生的异常（JSONDecodeError、TypeError，以及深度
+    嵌套输入触发的 RecursionError）。KeyboardInterrupt/SystemExit 与后续
+    清理逻辑的异常不在此捕获，正常向上传播。
+
+    Returns:
+        (True, 解析结果) 或 (False, None)
+    """
+    try:
+        return True, json.loads(candidate)
+    except (json.JSONDecodeError, TypeError, RecursionError):
+        return False, None
+
+
+def _clean_code_string(code_str: str, _depth: int = 0) -> str:
     """
     清理和修复代码字符串中的转义和格式问题
 
     Args:
         code_str: 原始代码字符串
+        _depth: 当前递归深度（内部参数，超过 _MAX_CLEAN_DEPTH 即停止）
 
     Returns:
         清理后的代码字符串
     """
+    if _depth >= _MAX_CLEAN_DEPTH:
+        return code_str if isinstance(code_str, str) else str(code_str)
+
     if not isinstance(code_str, str):
         code_str = str(code_str)
 
@@ -144,24 +177,27 @@ def _clean_code_string(code_str: str) -> str:
     # 步骤5: 移除可能存在的JSON包装
     # 有时代码可能被包装在JSON字符串中
     if code_str.startswith('"') and code_str.endswith('"'):
-        try:
-            code_str = json.loads(code_str)
-        except:
+        ok, unwrapped = _try_json_loads(code_str)
+        if ok:
+            code_str = unwrapped
+        else:
             code_str = code_str[1:-1]
 
     # 步骤6: 尝试解析为JSON并提取代码字段
-    try:
-        # 尝试将整个字符串解析为JSON
-        parsed = json.loads(code_str)
+    # 解析在 _try_json_loads 边界内完成；下面的清理逻辑不在任何 except
+    # 之中，其异常（包括 KeyboardInterrupt/SystemExit）正常传播。
+    ok, parsed = _try_json_loads(code_str)
+    if ok:
         if isinstance(parsed, dict):
             # 查找常见的代码字段
-            code = _parse_code_parameter(parsed)
+            try:
+                code = _parse_code_parameter(parsed, _depth=_depth)
+            except _CodeNestingError:
+                return code_str
             if code != code_str:
-                return _clean_code_string(code)  # 递归清理
+                return _clean_code_string(code, _depth + 1)  # 递归清理
         elif isinstance(parsed, str):
-            return _clean_code_string(parsed)  # 递归清理
-    except:
-        pass
+            return _clean_code_string(parsed, _depth + 1)  # 递归清理
 
     return code_str
 
