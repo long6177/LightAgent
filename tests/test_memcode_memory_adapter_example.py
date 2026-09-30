@@ -1,4 +1,5 @@
 import importlib.util
+from copy import deepcopy
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -157,3 +158,70 @@ def test_provider_errors_propagate_without_fallback():
 
     with pytest.raises(RuntimeError, match="provider unavailable"):
         adapter.retrieve("hello", "tenant:alice")
+
+
+class RoundTripMemcodeClient(FakeMemcodeClient):
+    def search(self, **payload):
+        self.search_calls.append(payload)
+        return SimpleNamespace(results=[
+            SimpleNamespace(
+                content=call["content"],
+                metadata=call["metadata"],
+                space=SimpleNamespace(id=call["space_id"]),
+                score=1.0,
+            )
+            for call in self.ingest_calls
+        ])
+
+
+class StaticCompletions:
+    def __init__(self):
+        self.calls = []
+
+    def create(self, **params):
+        self.calls.append(deepcopy(params))
+        message = SimpleNamespace(content="done", tool_calls=None)
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+
+@pytest.mark.parametrize("agent_name", ["lightagent", "travel-agent"])
+def test_build_agent_memory_roundtrip_preserves_identity_scope_and_hooks(agent_name):
+    module = load_example_module()
+    client = RoundTripMemcodeClient()
+    memory = module.MemcodeMemoryAdapter(
+        client,
+        space_id_for_user={"demo:alice": "space-alice", "demo:bob": "space-bob"}.__getitem__,
+        agent_name=agent_name,
+    )
+    agent = module.build_agent(memory)
+    completions = StaticCompletions()
+    agent.client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+    phases = []
+
+    def observe(context):
+        if context.phase in {"before_memory_retrieve", "after_memory_retrieve"}:
+            phases.append(context.phase)
+
+    agent.hooks.hooks.append(observe)
+    assert agent.name == agent_name
+    assert agent.memory_policy.allowed_agent_names == (agent_name,)
+
+    agent.run("Alice prefers quiet beach towns", user_id="alice")
+    stored = client.ingest_calls[0]
+    assert stored["space_id"] == "space-alice"
+    assert stored["metadata"]["user_id"] == "demo:alice"
+    assert stored["metadata"]["agent_name"] == agent_name
+
+    result = agent.run("What does Alice prefer?", user_id="alice", result_format="object", trace=True)
+    assert result.error is None
+    prompt = completions.calls[-1]["messages"][-1]["content"]
+    assert "Alice prefers quiet beach towns" in prompt
+    filtered = next(event for event in result.trace if event["type"] == "memory_retrieve_filter")
+    assert filtered["data"]["allowed_count"] >= 1
+
+    bob = agent.run("What do I prefer?", user_id="bob", result_format="object", trace=True)
+    assert bob.error is None
+    assert "Alice prefers quiet beach towns" not in completions.calls[-1]["messages"][-1]["content"]
+    assert client.search_calls[-1]["context_space_id"] == "space-bob"
+    assert client.ingest_calls[-1]["metadata"]["user_id"] == "demo:bob"
+    assert phases == ["before_memory_retrieve", "after_memory_retrieve"] * 3

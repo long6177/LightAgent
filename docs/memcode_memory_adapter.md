@@ -62,6 +62,9 @@ agent = LightAgent(
 
 ### Security and lifecycle behavior
 
+- Keep the agent name, adapter provenance name, and policy allowlist aligned.
+  The example's `build_agent(memory)` uses `memory.agent_name` for all three;
+  its space resolver receives namespaced IDs such as `demo:alice`.
 - The application owns API-key or OAuth storage. The adapter never reads a
   credential at import time and never returns credentials to the agent.
 - `space_id_for_user` and `actor_id_for_user` are evaluated for every call.

@@ -195,6 +195,7 @@ def build_agent(memory: MemcodeMemoryAdapter) -> Any:
     from LightAgent import LightAgent, MemoryPolicy
 
     return LightAgent(
+        name=memory.agent_name,
         role="You are LightAgent with optional Memcode long-term memory.",
         model="deepseek-chat",
         api_key="your_model_api_key",
@@ -205,7 +206,7 @@ def build_agent(memory: MemcodeMemoryAdapter) -> Any:
             allow_unattributed_results=False,
             allowed_sources=("user",),
             allowed_scopes=("user",),
-            allowed_agent_names=("lightagent",),
+            allowed_agent_names=(memory.agent_name,),
         ),
         tree_of_thought=False,
     )
