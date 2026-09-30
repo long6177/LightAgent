@@ -77,22 +77,27 @@ workflows + OpenAI-compatible model ecosystem.**
   executor cleanup, idempotent replay, and cancellation/idempotency propagation
   through Flow, Job, and child-Agent boundaries.
 
+- **v0.11.0**: Released persistent Dynamic DAG multi-agent execution and unified
+  security context, with verification-gated artifacts, leases and fencing,
+  async-generator tool handling, fail-closed legacy executor dispatch, and the
+  optional Memcode adapter. Release acceptance covers 365 passing tests, one
+  explicitly opt-in backend test, and Python 3.10-3.13 CI.
+
 ### In Development
 
-- **v0.11.0**: Dynamic DAG Multi-Agent and Unified Security Context. This is
-  implemented locally on `codex/develop-v0.11.0`; the offline example, full
-  local regression suite, and package build pass. PR CI and remaining release
-  gates are pending.
+- **v0.12.0**: Trusted Data and Supply Chain is the next planned feature line;
+  it has not been declared implemented or released.
 
 ### Current Feature Release
 
-- **v0.11.0 (pre-release)**: Dynamic DAG Multi-Agent and Unified Security Context.
-  Add an opt-in `LightDAG` layer for persistent task graphs, runtime
+- **v0.11.0 (released 2026-10-01)**: Dynamic DAG Multi-Agent and Unified Security Context.
+  Adds an opt-in `LightDAG` layer for persistent task graphs, runtime
   decomposition, bounded concurrent workers, verified artifacts, and restart
   recovery while retaining the existing v0.11.0 security requirements.
   The implementation guide is
   [LightDAG v0.11.0 development plan (Chinese)](docs/lightdag_v011_development_plan.zh-CN.md).
-  The branch uses package version 0.11.0 but does not mark the version released.
+  The release retains the single-host scope and does not include built-in code
+  sandboxing or distributed worker coordination.
 
 ### Completed Milestone Details
 
@@ -1004,7 +1009,8 @@ Released in v0.10.2:
 
 ### v0.11.0: Dynamic DAG Multi-Agent And Unified Security Context
 
-Status: implementation in progress on `codex/develop-v0.11.0`.
+Status: released on 2026-10-01; implementation merged through #105, with
+runtime and integration follow-ups in #108-#112.
 
 Goal: add persistent, dynamically decomposed, verification-driven multi-agent
 execution and make security decisions explicit across runtime capabilities.
@@ -1618,13 +1624,14 @@ compatibility, replay, recovery, security, and stabilization gates.
 
 ## Next Development Recommendation
 
-The current development target is **v0.11.0 Dynamic DAG Multi-Agent and Unified
-Security Context**, guided by the
-[development plan](docs/lightdag_v011_development_plan.zh-CN.md).
-It adds an opt-in persistent task-graph layer while retaining all previously
-planned v0.11.0 security gates. DAG-specific concurrency and recovery guarantees
-must ship with the feature. v0.12.0-v0.13.0 continue with broader trusted-data,
-supply-chain, and adversarial recovery work.
+After the v0.11.0 release, the next planned feature target is **v0.12.0 Trusted
+Data And Supply Chain**. Preserve LightDAG's single-host concurrency, recovery,
+verification, and security contracts while extending untrusted-content,
+Memory/RAG provenance, Skill/MCP trust, namespace, and egress controls.
+The v0.11.0 [development plan](docs/lightdag_v011_development_plan.zh-CN.md)
+remains the acceptance reference for the shipped DAG layer. v0.13.0 continues
+with broader adversarial recovery and integrity work; neither future milestone
+is declared implemented by the v0.11.0 release.
 
 Reasoning:
 
