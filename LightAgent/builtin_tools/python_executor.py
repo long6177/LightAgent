@@ -16,6 +16,7 @@ import subprocess
 import traceback
 import re
 import ast
+import inspect
 from typing import Dict, Any, List, Optional, Union, Tuple
 
 
@@ -42,6 +43,21 @@ UNSAFE_PYTHON_TOOL_NAMES = frozenset({
     "execute_python_file",
     "execute_python_code_stream",
 })
+UNSAFE_PYTHON_TOOL_REASON = (
+    "Legacy Python execution tools have no isolated execution route and are "
+    "blocked in tool dispatch. Registering a SandboxProvider does not isolate "
+    "them. Use safe_expression or a custom tool backed by a real sandbox."
+)
+
+
+def is_unsafe_python_tool(tool_name: str, tool_call: Any = None) -> bool:
+    if tool_name in UNSAFE_PYTHON_TOOL_NAMES:
+        return True
+    if tool_call is None:
+        return False
+    return inspect.unwrap(tool_call) in (
+        execute_python_code, execute_python_file, execute_python_code_stream,
+    )
 
 
 # Both JSON cleanup and nested dictionary extraction use a bounded depth.

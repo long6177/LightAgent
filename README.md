@@ -130,10 +130,12 @@ from LightAgent import safe_expression
 print(safe_expression("45 * 9827"))
 ```
 
-Enabling `execute_python_code`, `execute_python_file`, or
-`execute_python_code_stream` requires `enable_unsafe_python=True` and an
-explicit `SandboxProvider`. The executor remains a controlled subprocess, not
-a security sandbox; see [Python Executor Security](docs/python_executor_security.md).
+Legacy `execute_python_code`, `execute_python_file`, and
+`execute_python_code_stream` are blocked in model and dispatcher invocation,
+including with `enable_unsafe_python=True` or a registered `SandboxProvider`.
+Trusted application code may call them directly under its own isolation
+controls. Use a custom sandbox-backed tool for agent code execution; see
+[Python Executor Security](docs/python_executor_security.md).
 
 ### Evaluate And Review High-Risk Actions
 
