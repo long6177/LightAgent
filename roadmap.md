@@ -156,7 +156,10 @@ Immediate security-governance work:
   `safe_expression` replacement. Keep the public tracker open until the private
   Security Advisory confirms the affected configuration/version range and
   reporter attribution. The compatibility executor remains a controlled
-  subprocess, not a security sandbox.
+  subprocess, not a security sandbox. Follow-up hardening blocks legacy
+  executors in model, dispatcher, and tool-provider invocation, even with a
+  registered sandbox provider; direct trusted application calls remain under
+  application-managed isolation. Private Vulnerability Reporting is enabled.
 
 P1 security validation work:
 
