@@ -17,6 +17,7 @@ from copy import deepcopy
 from typing import List, Dict, Any, Callable, Union, Generator, AsyncGenerator
 
 from .errors import format_error_code, format_lightagent_error
+from .builtin_tools.python_executor import UNSAFE_PYTHON_TOOL_REASON, is_unsafe_python_tool
 
 
 _TOOL_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -252,12 +253,18 @@ class AsyncToolDispatcher:
         self.function_info = function_info or {}
 
     async def dispatch(self, tool_name: str, tool_params: Dict[str, Any]) -> Union[
-        str, Generator[str, None, None], AsyncGenerator[str, None]]:
-        """调用工具执行，支持同步/异步工具及流式输出"""
+        str, Generator[str, None, None]]:
+        """调用工具执行，支持同步/异步工具及流式输出。
+
+        异步生成器工具的结果在 dispatch 内收集并序列化为 str 返回；
+        同步生成器工具透传 Generator，由调用方消费以支持流式输出。
+        """
         if tool_name not in self.function_mappings:
             return format_error_code("LA-TOOL", f"Tool `{tool_name}` not found.")
 
         tool_call = self.function_mappings[tool_name]
+        if is_unsafe_python_tool(tool_name, tool_call):
+            return format_error_code("LA-SANDBOX", UNSAFE_PYTHON_TOOL_REASON)
         validation_error = self._validate_tool_params(tool_name, tool_params)
         if validation_error:
             return validation_error
@@ -266,19 +273,12 @@ class AsyncToolDispatcher:
             if inspect.iscoroutinefunction(tool_call):
                 # 异步函数 - 直接 await 获取结果
                 result = await tool_call(**tool_params)
-            # elif inspect.isasyncgenfunction(tool_call):
-                # 异步生成器 - 需要收集所有结果
-                # result = []
-                # async for chunk in tool_call(**tool_params):
-                #     result.append(chunk)
-                # # 如果只有一个结果，直接返回；否则返回列表
-                # if len(result) == 1:
-                #     result = result[0]
             elif inspect.isasyncgenfunction(tool_call):
-                # 返回异步生成器对象，不做消费
-                return tool_call(**tool_params)
+                # 异步生成器 - 收集所有结果（AsyncGenerator 无法由同步调用链消费）
+                chunks = [chunk async for chunk in tool_call(**tool_params)]
+                result = chunks[0] if len(chunks) == 1 else "".join(str(c) for c in chunks)
             elif inspect.isgeneratorfunction(tool_call):
-                # 同步生成器 - 收集所有结果
+                # 同步生成器 - 透传，由调用方消费（支持流式输出）
                 return tool_call(**tool_params)
                 # result = list(tool_call(**tool_params))
                 # if len(result) == 1:
