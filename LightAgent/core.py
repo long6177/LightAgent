@@ -35,6 +35,7 @@ from .protocol import (
 )
 from .logger import LoggerManager
 from .tools import ToolRegistry, ToolLoader, AsyncToolDispatcher
+from .cancellation import CancellationToken
 from .errors import format_error_code, format_lightagent_error
 from .result import RunResult, StreamEvent
 from .tracing import TraceRecorder, export_trace, normalize_usage, summarize_trace
@@ -66,7 +67,8 @@ from .builtin_tools.python_executor import (
     execute_python_code,
     execute_python_file,
     execute_python_code_stream,
-    UNSAFE_PYTHON_TOOL_NAMES,
+    UNSAFE_PYTHON_TOOL_REASON,
+    is_unsafe_python_tool,
 )
 from .builtin_tools.nos import upload_file_to_oss
 from .builtin_tools.safe_expression import safe_expression
@@ -133,7 +135,7 @@ class LightAgent:
             filter_tools: bool = True,  # 是否启用工具过滤
             self_learning: bool = False,  # 是否启用agent自我学习
             tools: List[Union[str, Callable]] = None,  # 支持工具混合输入
-            enable_unsafe_python: bool = False,  # 显式启用需沙箱的任意 Python 执行工具
+            enable_unsafe_python: bool = False,  # 兼容注册；旧执行器不能由模型调度
             skills_directories: List[str] = None,  # 支持技能混合输入
             auto_discover_skills: bool = True,  # 是否自动发现技能
             input_guardrails: List[Callable[..., Any]] | None = None,  # 输入安全策略
@@ -171,7 +173,7 @@ class LightAgent:
         :param tot_base_url: API 的基础 URL。
         :param filter_tools: 是否启用工具过滤。
         :param tools: 工具列表，支持函数名称（字符串）或函数对象。
-        :param enable_unsafe_python: 是否显式注册任意 Python 执行工具；启用后仍要求 SandboxProvider。
+        :param enable_unsafe_python: 是否兼容注册旧 Python 执行工具；模型调度始终阻断，应用可直接调用。
         :param input_guardrails: 输入安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止运行。
         :param tool_guardrails: 工具调用安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止工具执行。
         :param output_guardrails: 输出安全策略列表，返回 False、原因字符串、dict 或 GuardrailDecision 可阻止非流式输出。
@@ -262,8 +264,8 @@ class LightAgent:
             self.load_tools(self.tools)
 
         # Safe expression evaluation is available by default. Arbitrary Python
-        # execution is opt-in and is rejected later unless a SandboxProvider is
-        # registered for the current runtime.
+        # registration is retained for compatibility, but tool dispatch stays
+        # blocked until an actual isolated execution route is implemented.
         builtin_tools = [safe_expression, upload_file_to_oss]
         if enable_unsafe_python:
             builtin_tools.extend([
@@ -491,6 +493,8 @@ class LightAgent:
             run_group_id: str | None = None,
             approval_id: str | None = None,
             session_id: str | None = None,
+            cancellation_token: CancellationToken | None = None,
+            idempotency_key: str | None = None,
     ) -> Union[Generator[str, None, None], str, RunResult]:
         """
         运行代理，处理用户输入。
@@ -511,6 +515,8 @@ class LightAgent:
         :param run_group_id: 可选运行组 ID，用于把多个 sibling traces 归到同一任务。
         :param approval_id: 可选人工审批请求 ID，仅传给运行期 hooks，不发送给模型服务。
         :param session_id: 可选持久化 Session ID。省略时每次调用创建独立的内存 Session。
+        :param cancellation_token: 可选协作式取消令牌，在模型和工具调用安全边界检查。
+        :param idempotency_key: 可选调用幂等键，记录到 Session 和 Trace 供上层执行器关联。
         :return: 代理的回复。
         """
         if result_format not in ("str", "object", "dict", "event"):
@@ -529,6 +535,8 @@ class LightAgent:
         self._current_run_id = uuid4().hex
         self._current_user_id = str(user_id)
         self._current_run_metadata = dict(metadata or {})
+        self._current_cancellation_token = cancellation_token
+        self._current_idempotency_key = idempotency_key
         if approval_id is not None:
             self._current_run_metadata["approval_id"] = str(approval_id)
         self._parent_trace_id = parent_trace_id
@@ -572,6 +580,7 @@ class LightAgent:
             "stream": stream,
             "result_format": result_format,
             "run_id": self._current_run_id,
+            "idempotency_key": idempotency_key,
         })
         before_run = self._run_hooks("before_run", {
             "query": query,
@@ -1062,7 +1071,20 @@ class LightAgent:
             details["reason"] = reason
         return format_error_code("LA-HOOK", details)
 
+    def _current_cancellation_error(self, stage: str) -> str | None:
+        token = getattr(self, "_current_cancellation_token", None)
+        if token is None or not token.cancelled:
+            return None
+        return format_error_code("LA-CANCELLED", {
+            "stage": stage,
+            "reason": token.reason or "cancellation requested",
+            "token_id": token.token_id,
+        })
+
     def _prepare_model_request(self) -> str | None:
+        cancellation_error = self._current_cancellation_error("before_model_request")
+        if cancellation_error:
+            return cancellation_error
         self._compact_model_context()
         decision = self._run_hooks("before_model_request", {"params": deepcopy(self.chat_params)})
         if decision.action == HOOK_BLOCK:
@@ -1230,30 +1252,22 @@ class LightAgent:
         })
         return arguments, error_msg
 
-    def _sandbox_available(self) -> bool:
-        """Return whether an explicit SandboxProvider is mounted for this agent."""
-        context = getattr(getattr(self, "runtime", None), "context", None)
-        for provider in self.capability_registry.list(context):
-            if provider.get("name") == "sandbox":
-                return True
-            if any(
-                str(capability.get("name", "")).startswith("sandbox.")
-                for capability in provider.get("capabilities", [])
-            ):
-                return True
-        return False
-
     def _prepare_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str | None]:
+        cancellation_error = self._current_cancellation_error("before_tool_call")
+        if cancellation_error:
+            return arguments, cancellation_error
         spec = CapabilitySpec(
             name=f"tool.{tool_name}",
             description=str(self.tool_registry.function_info.get(tool_name, {}).get("tool_description", "")),
             execute=True,
             risk=CapabilityRisk.SENSITIVE,
             cancellable=True,
-            requires_sandbox=tool_name in UNSAFE_PYTHON_TOOL_NAMES,
+            requires_sandbox=is_unsafe_python_tool(
+                tool_name, self.tool_registry.function_mappings.get(tool_name),
+            ),
         )
-        if spec.requires_sandbox and not self._sandbox_available():
-            reason = f"tool `{tool_name}` requires an explicit SandboxProvider"
+        if spec.requires_sandbox:
+            reason = UNSAFE_PYTHON_TOOL_REASON
             self._record_session_event("policy.decision", {
                 "provider": "tools",
                 "capability": spec.name,

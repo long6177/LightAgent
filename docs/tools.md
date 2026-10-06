@@ -291,9 +291,9 @@ fetch_news.tool_info = {
 
 ### Streaming Tools
 
-Tools that return Python generators (synchronous) or async generators work with
-the streaming execution path. When the model calls a streaming tool in
-streaming mode, chunks are yielded as they are produced:
+Tools that return Python generators (synchronous) work with the streaming
+execution path. When the model calls a streaming tool in streaming mode,
+chunks are yielded as they are produced:
 
 ```python
 from typing import Generator
@@ -317,8 +317,9 @@ stream_results.tool_info = {
 }
 ```
 
-For async generators, the dispatcher returns the generator object directly
-without consuming it, allowing the caller to iterate at its own pace.
+Async generator tools are consumed by the dispatcher: all chunks are collected
+inside `dispatch()` and returned as a single serialized result. Only
+synchronous generator tools are passed through for chunk-by-chunk streaming.
 
 ### Dynamic Tool Loading
 
@@ -375,7 +376,7 @@ are loaded.
 ### Built-in Tools
 
 LightAgent automatically registers safe built-in tools at startup. Arbitrary
-Python execution tools require explicit opt-in:
+Python execution utilities and safe calculation:
 
 | Tool Name | Description |
 | --- | --- |
@@ -386,10 +387,13 @@ Python execution tools require explicit opt-in:
 | `upload_file_to_oss` | Upload a file to object storage (OSS); requires optional `boto3`. |
 
 `safe_expression` and `upload_file_to_oss` are registered by default. The
-arbitrary Python tools are disabled by default in v0.10.1. To register them,
-pass `enable_unsafe_python=True` and mount an explicit capability provider named
-`sandbox` (or one exposing a `sandbox.*` capability); otherwise model tool calls
-are rejected with `LA-SANDBOX`.
+arbitrary Python tools are disabled by default in v0.10.1.
+`enable_unsafe_python=True` retains registration compatibility only: model tool
+calls and dispatcher/provider invocation of these legacy utilities fail closed
+with `LA-SANDBOX`, regardless of sandbox provider registration or lifecycle.
+Trusted applications may call the utilities directly under their own isolation
+controls. For agent execution, supply a custom tool that actually delegates to
+an isolated worker or SandboxProvider; registration alone is not isolation.
 
 The Python executor utilities use an AST denylist and a temporary working
 directory, but they are not security sandboxes. Review the
@@ -411,8 +415,8 @@ object-storage tool.
 ### MCP Integration
 
 LightAgent supports the Model Context Protocol (MCP) for connecting to external
-tool servers. MCP servers can provide tools over stdio or SSE (Server-Sent
-Events) transports.
+tool servers. MCP servers can provide tools over stdio, SSE (Server-Sent
+Events), or Streamable HTTP transports.
 
 #### Configuration
 
@@ -452,13 +456,37 @@ async def setup():
 asyncio.run(setup())
 ```
 
+#### Streamable HTTP
+
+For a Streamable HTTP endpoint, add an entry like this to `mcp_config` before
+calling `setup()`. Choose an unused server name to preserve existing entries:
+
+```python
+import os
+
+mcp_config["mcpServers"]["remote-http"] = {
+    "transport": "streamable-http",
+    "url": "https://mcp.example.com/mcp",
+    "headers": {"Authorization": "Bearer " + os.environ["MCP_API_TOKEN"]},
+}
+```
+
+Set `transport` explicitly: a server with a `url` but no transport selector
+uses SSE. The aliases `streamable_http` and `http` also select Streamable HTTP.
+The installed MCP SDK must provide `mcp.client.streamable_http.streamablehttp_client`;
+otherwise this transport reports that the installed SDK does not support it.
+
+Header values are sent literally. In this example, Python reads the environment
+variable; LightAgent does not expand environment placeholders inside the header.
+Keep real credentials out of source files, command-line arguments, and logs.
+
 #### How MCP Tool Registration Works
 
 The `MCPClientManager` connects to each configured server, lists available
 tools via the MCP `list_tools` request, and registers them into the agent's
 `ToolRegistry`:
 
-1. For each enabled server, a session is created (stdio or SSE).
+1. For each enabled server, a session is created (stdio, SSE, or Streamable HTTP).
 2. Tools are fetched using `session.list_tools()`.
 3. Each tool's name, description, and parameter schema are converted to the
    `tool_info` format and registered.
