@@ -55,6 +55,7 @@ from .guardrails import (
     privacy_input_guardrail,
     sensitive_tool_confirmation_guardrail,
 )
+from .cancellation import CancellationToken
 from .flow import JsonLightFlowStore, LightFlow, LightFlowResult, LightFlowStep, LightFlowStepResult
 from .shared_memory import SharedMemoryPool, SharedMemoryRecord
 from .logger import LoggerManager
@@ -117,6 +118,33 @@ from .capabilities import (
     WebProvider,
     WorkflowProvider,
 )
+from .security import (
+    APPROVAL_TOKEN_SCHEMA_VERSION,
+    PROVIDER_MANIFEST_SCHEMA_VERSION,
+    SECURITY_CONTEXT_SCHEMA_VERSION,
+    ApprovalToken,
+    CapabilityGate,
+    ProviderManifest,
+    SecurityContext,
+    canonical_digest,
+)
+from .dag import (
+    DAG_SCHEMA_VERSION,
+    CallableVerifier,
+    DAGConfig,
+    DAGError,
+    DAGRunResult,
+    DAGRunStatus,
+    DAGTaskStatus,
+    DecompositionProposal,
+    LightDAG,
+    LightDAGProvider,
+    LocalArtifactStore,
+    SqliteTaskGraphStore,
+    TaskOutcome,
+    TaskSpec,
+    VerificationVerdict,
+)
 from .runtime import (
     AgentInbox,
     AgentRuntime,
@@ -147,6 +175,11 @@ from .knowledge import (
     SkillProviderAdapter,
     SqliteFTSRetrievalProvider,
     WorkflowProviderAdapter,
+)
+from .builtin_tools.safe_expression import (
+    SafeExpressionError,
+    evaluate_safe_expression,
+    safe_expression,
 )
 from .builtin_tools.python_executor import (
     execute_python_code,
@@ -210,6 +243,7 @@ __all__ = [
     "LightFlowResult",
     "LightFlowStep",
     "LightFlowStepResult",
+    "CancellationToken",
     "SharedMemoryPool",
     "SharedMemoryRecord",
     "LoggerManager",
@@ -267,6 +301,29 @@ __all__ = [
     "CapabilityRegistry",
     "ToolProviderAdapter",
     "MemoryProviderAdapter",
+    "SECURITY_CONTEXT_SCHEMA_VERSION",
+    "APPROVAL_TOKEN_SCHEMA_VERSION",
+    "PROVIDER_MANIFEST_SCHEMA_VERSION",
+    "SecurityContext",
+    "ApprovalToken",
+    "ProviderManifest",
+    "CapabilityGate",
+    "canonical_digest",
+    "DAG_SCHEMA_VERSION",
+    "DAGConfig",
+    "DAGError",
+    "DAGRunStatus",
+    "DAGTaskStatus",
+    "DAGRunResult",
+    "TaskSpec",
+    "TaskOutcome",
+    "DecompositionProposal",
+    "VerificationVerdict",
+    "SqliteTaskGraphStore",
+    "LocalArtifactStore",
+    "CallableVerifier",
+    "LightDAGProvider",
+    "LightDAG",
     "InboxMessageType",
     "InboxMessageStatus",
     "InboxMessage",
@@ -298,4 +355,7 @@ __all__ = [
     "execute_python_file",
     "execute_python_code_stream",
     "upload_file_to_oss",
+    "SafeExpressionError",
+    "evaluate_safe_expression",
+    "safe_expression",
 ]
