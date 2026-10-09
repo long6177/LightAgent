@@ -60,7 +60,7 @@
       "type": "cloud",
       "label": "模型点名工具",
       "sublabel": "response.tool_calls",
-      "tag": "core.py:1920",
+      "tag": "core.py:1965",
       "width": 150
     },
     {
@@ -70,7 +70,7 @@
       "type": "security",
       "label": "四道关卡",
       "sublabel": "_prepare_tool_call",
-      "tag": "core.py:1253",
+      "tag": "core.py:1298",
       "width": 150
     },
     {
@@ -80,7 +80,7 @@
       "type": "external",
       "label": "关卡拦下",
       "sublabel": "LA- 错误返回",
-      "tag": "errors.py:206",
+      "tag": "errors.py:211",
       "width": 150
     },
     {
@@ -90,7 +90,7 @@
       "type": "backend",
       "label": "同步桥接",
       "sublabel": "run_async_safely",
-      "tag": "core.py:79",
+      "tag": "core.py:83",
       "width": 150
     },
     {
@@ -110,7 +110,7 @@
       "type": "backend",
       "label": "四路执行分流",
       "sublabel": "协程·异步生成·生成·同步",
-      "tag": "tools.py:294",
+      "tag": "tools.py:255",
       "width": 152
     },
     {
@@ -130,7 +130,7 @@
       "type": "backend",
       "label": "回填对话",
       "sublabel": "after_tool_result 钩子",
-      "tag": "core.py:1313",
+      "tag": "core.py:1358",
       "width": 150
     }
   ],
@@ -185,30 +185,30 @@
   "cards": [
     {
       "dot": "rose",
-      "title": "四道关卡（core.py:1253）",
+      "title": "四道关卡（core.py:1298）",
       "items": [
-        "能力策略 evaluate_sync（capabilities.py:303，core.py:1272）",
-        "预算 tool_calls 扣减（core.py:1294）",
-        "工具护栏 check_tool（guardrails.py:41）；before_tool_call 钩子（:1301）",
-        "沙箱工具额外要求 SandboxProvider，否则 LA-SANDBOX（core.py:1262）"
+        "能力策略 evaluate_sync（capabilities.py:308，core.py:1279）",
+        "预算 tool_calls 扣减（core.py:1301）",
+        "工具护栏 check_tool（guardrails.py:41）；before_tool_call 钩子（:1308）",
+        "沙箱工具额外要求 SandboxProvider，否则 LA-SANDBOX（core.py:1278）"
       ]
     },
     {
       "dot": "emerald",
-      "title": "四路分派（tools.py:294）",
+      "title": "四路分派（tools.py:255）",
       "items": [
-        "协程 await（:313）；异步生成器原样透传（:325）",
-        "同步生成器原样透传（:329）；普通函数直接调用（:336）",
-        "生成器不被 dispatch 消费——逐 chunk 拼接在 core.py:2014"
+        "协程 await（:275）；异步生成器在 dispatch 内收集（:278）",
+        "同步生成器原样透传（:282）；普通函数直接调用（:288）",
+        "生成器不被 dispatch 消费——逐 chunk 拼接在 core.py:2059"
       ]
     },
     {
       "dot": "cyan",
       "title": "错误约定",
       "items": [
-        "找不到工具/参数不合法/执行异常都返回 LA-TOOL 错误字符串（tools.py:304/374/342）",
+        "找不到工具/参数不合法/执行异常都返回 LA-TOOL 错误字符串（tools.py:263/304/293）",
         "错误不抛异常，工具循环不会中断",
-        "integer 校验会排除 bool，未知类型放行（tools.py:380）"
+        "integer 校验会排除 bool，未知类型放行（tools.py:342）"
       ]
     }
   ]

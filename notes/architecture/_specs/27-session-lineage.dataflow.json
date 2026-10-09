@@ -23,7 +23,7 @@
     {
       "id": "writers", "type": "backend", "label": "写入调用点",
       "sublabel": "core + runtime 出口",
-      "tag": "core.py:877",
+      "tag": "core.py:893",
       "stage": 0, "row": 0, "width": 150, "height": 44
     },
     {
@@ -41,13 +41,13 @@
     {
       "id": "checkpoint", "type": "backend", "label": "checkpoint 快照",
       "sublabel": "照下当前 sequence",
-      "tag": "session.py:260",
+      "tag": "session.py:262",
       "stage": 2, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "fork", "type": "backend", "label": "fork 分叉",
       "sublabel": "按序列边界复制",
-      "tag": "session.py:271",
+      "tag": "session.py:273",
       "stage": 2, "row": 1, "width": 150, "height": 44
     },
     {
@@ -59,13 +59,13 @@
     {
       "id": "replay", "type": "backend", "label": "replay 重放",
       "sublabel": "完成 / 未完成 / 失败",
-      "tag": "session.py:311",
+      "tag": "session.py:313",
       "stage": 3, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "guard", "type": "security", "label": "读时把关",
       "sublabel": "validate · migrate",
-      "tag": "session.py:334",
+      "tag": "session.py:336",
       "stage": 3, "row": 1, "width": 150, "height": 44
     },
     {
@@ -97,15 +97,15 @@
     {
       "dot": "emerald", "title": "快照与分叉",
       "items": [
-        "checkpoint 记录当前 sequence 快照，并追加 session.checkpointed 事件（session.py:260-269）",
-        "fork(through_sequence) 复制 ≤ 边界事件，逐条挂 source_event_id / parent_event_id（:271-309）",
+        "checkpoint 记录当前 sequence 快照，并追加 session.checkpointed 事件（session.py:262-271）",
+        "fork(through_sequence) 复制 ≤ 边界事件，逐条挂 source_event_id / parent_event_id（:273-311）",
         "快照与分叉都不改写历史：日志 append-only，重放只读（:194）"
       ]
     },
     {
       "dot": "rose", "title": "读时把关",
       "items": [
-        "validate：sequence 必须从 1 连续无缺口、event_id 唯一（session.py:334-350）",
+        "validate：sequence 必须从 1 连续无缺口、event_id 唯一（session.py:336-352）",
         "from_dict 先 session_migrations.migrate 升级旧 schema_version 再重建（:46-75、:364）",
         "schema_version 超上限直接报错，不做降级（:49-52、:344-348）"
       ]

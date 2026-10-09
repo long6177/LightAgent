@@ -30,7 +30,7 @@
       "type": "external",
       "label": "对话内容",
       "sublabel": "query 原样写入",
-      "tag": "core.py:1454",
+      "tag": "core.py:1499",
       "stage": 0,
       "row": 0
     },
@@ -39,7 +39,7 @@
       "type": "external",
       "label": "检索请求",
       "sublabel": "用户 query / ToT",
-      "tag": "core.py:1514",
+      "tag": "core.py:1559",
       "stage": 0,
       "row": 1
     },
@@ -93,7 +93,7 @@
       "type": "backend",
       "label": "下次对话的上下文",
       "sublabel": "query 前缀注入",
-      "tag": "core.py:1483",
+      "tag": "core.py:1528",
       "stage": 3,
       "row": 0
     },
@@ -152,7 +152,7 @@
       "dot": "cyan",
       "title": "两条独立管线",
       "items": [
-        "记忆线：对话→策略准入→mem0/共享池→检索注入（core.py:1436-1536）",
+        "记忆线：对话→策略准入→mem0/共享池→检索注入（core.py:1481-1581）",
         "知识线：文档→滑窗切块→FTS5 双写→bm25 检索带 citation（knowledge.py:145-294）",
         "两线互不依赖：knowledge.py 是能力 Provider，记忆走 MemoryProtocol"
       ]

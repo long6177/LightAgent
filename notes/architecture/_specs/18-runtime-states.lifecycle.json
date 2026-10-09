@@ -24,7 +24,7 @@
       "col": 0,
       "label": "queued",
       "sublabel": "JobManager.start",
-      "tag": "runtime.py:474"
+      "tag": "runtime.py:484"
     },
     {
       "id": "running",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "running",
       "sublabel": "_execute 后台执行",
-      "tag": "runtime.py:489"
+      "tag": "runtime.py:525"
     },
     {
       "id": "succeeded",
@@ -42,7 +42,7 @@
       "col": 2,
       "label": "succeeded",
       "sublabel": "通知进收件箱",
-      "tag": "runtime.py:516"
+      "tag": "runtime.py:575"
     },
     {
       "id": "interrupted",
@@ -51,7 +51,7 @@
       "col": 0,
       "label": "interrupted",
       "sublabel": "进程中断待恢复",
-      "tag": "runtime.py:557"
+      "tag": "runtime.py:684"
     },
     {
       "id": "failed",
@@ -60,7 +60,7 @@
       "col": 1,
       "label": "failed / cancelled",
       "sublabel": "执行失败或手动取消",
-      "tag": "runtime.py:507/535"
+      "tag": "runtime.py:566/594"
     }
   ],
   "transitions": [
@@ -140,17 +140,17 @@
       "title": "事件即持久化（runtime.py）",
       "items": [
         "Job 全程发 job.created/started/completed/cancelled/failed/interrupted 事件",
-        "事件经 AgentRuntime._append 写 Session 并落盘（:806），无独立存储",
-        "完成时向 inbox 塞一条 CONTEXT 通知（:516）"
+        "事件经 AgentRuntime._append 写 Session 并落盘（:1000），无独立存储",
+        "完成时向 inbox 塞一条 CONTEXT 通知（:575）"
       ]
     },
     {
       "dot": "rose",
       "title": "恢复的边界",
       "items": [
-        "open_session 回放 job.* 只重建档案，协程本体不恢复（:564/577）",
-        "恢复后未完结任务立即标 INTERRUPTED（:557）",
-        "JobManager.start 需要运行中的事件循环，同步上下文会 RuntimeError（:482）"
+        "open_session 回放 job.* 只重建档案，协程本体不恢复（:700/713）",
+        "恢复后未完结任务立即标 INTERRUPTED（:684）",
+        "JobManager.start 需要运行中的事件循环，同步上下文会 RuntimeError（:495）"
       ]
     }
   ]

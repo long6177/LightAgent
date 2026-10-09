@@ -33,7 +33,7 @@
       "type": "external",
       "label": "手写 tool_info",
       "sublabel": "name·desc·params",
-      "tag": "tools.py:36",
+      "tag": "tools.py:37",
       "stage": 0,
       "row": 0
     },
@@ -51,7 +51,7 @@
       "type": "backend",
       "label": "LLM 生成落盘",
       "sublabel": "tools/<name>.py",
-      "tag": "core.py:3019",
+      "tag": "core.py:3064",
       "stage": 0,
       "row": 2
     },
@@ -60,7 +60,7 @@
       "type": "backend",
       "label": "登记造册",
       "sublabel": "register_tool 同名覆盖",
-      "tag": "tools.py:36",
+      "tag": "tools.py:37",
       "stage": 1,
       "row": 1
     },
@@ -69,7 +69,7 @@
       "type": "database",
       "label": "可调用体映射",
       "sublabel": "function_mappings",
-      "tag": "tools.py:29",
+      "tag": "tools.py:30",
       "stage": 2,
       "row": 0
     },
@@ -78,7 +78,7 @@
       "type": "database",
       "label": "模型说明书",
       "sublabel": "openai schemas",
-      "tag": "tools.py:58",
+      "tag": "tools.py:59",
       "stage": 2,
       "row": 2
     },
@@ -87,7 +87,7 @@
       "type": "backend",
       "label": "随请求下发",
       "sublabel": "chat_params['tools']",
-      "tag": "core.py:700",
+      "tag": "core.py:708",
       "stage": 3,
       "row": 1
     },
@@ -96,7 +96,7 @@
       "type": "security",
       "label": "按需剪枝",
       "sublabel": "filter_tools 反思过滤",
-      "tag": "tools.py:198",
+      "tag": "tools.py:180",
       "stage": 4,
       "row": 0
     },
@@ -105,7 +105,7 @@
       "type": "cloud",
       "label": "模型看到子集",
       "sublabel": "仅 run_thought 场景",
-      "tag": "core.py:2830",
+      "tag": "core.py:2875",
       "stage": 4,
       "row": 2
     }
@@ -176,11 +176,11 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "三视图同步（tools.py:36-87）",
+      "title": "三视图同步（tools.py:37-88）",
       "items": [
         "function_mappings：名字→可调用体；MCP 工具的值是 partial 适配闭包",
         "function_info：名字→tool_info 原文；openai_function_schemas：模型视图",
-        "同名注册直接覆盖三视图并返回 True，不报错——事后 validate_tools 才能诊断（:175）"
+        "同名注册直接覆盖三视图并返回 True，不报错——事后 validate_tools 才能诊断（:176）"
       ]
     },
     {
@@ -189,7 +189,7 @@
       "items": [
         "MCP 工具绕过 register_tool 直写三视图（mcp_client_manager.py:127-150）",
         "inputSchema 只取顶层 type/description，嵌套结构与 enum 会失真（:121）",
-        "ToT 的 runtime_tools 过滤是空实现，运行时工具原样返回（core.py:2823）"
+        "ToT 的 runtime_tools 过滤是空实现，运行时工具原样返回（core.py:2868）"
       ]
     }
   ]

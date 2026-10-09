@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/long6177/LightAgent",
-      "revision": "0f1c05aeb475dc98befce83865567af213265a70"
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
     },
     "views": [
       { "id": "eventflow", "label": "变更上行：事件即持久化", "focus": ["inbox", "budget", "runtime", "session", "store"], "note": "组件只改内存，事件经 _append 统一写进 Session 并落存储" },
@@ -22,9 +22,9 @@
       "tag": "core.py",
       "pos": [570, 96], "size": [186, 66],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 321, "label": "AgentRuntime 创建" },
-        { "path": "LightAgent/core.py", "line": 847, "label": "open_session 调用" },
-        { "path": "LightAgent/core.py", "line": 1068, "label": "budget.consume" }
+        { "path": "LightAgent/core.py", "line": 330, "label": "AgentRuntime 创建" },
+        { "path": "LightAgent/core.py", "line": 863, "label": "open_session 调用" },
+        { "path": "LightAgent/core.py", "line": 1097, "label": "budget.consume" }
       ]
     },
     {
@@ -33,9 +33,9 @@
       "tag": "runtime.py",
       "pos": [560, 256], "size": [206, 96],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 714, "label": "AgentRuntime" },
-        { "path": "LightAgent/runtime.py", "line": 737, "label": "open_session" },
-        { "path": "LightAgent/runtime.py", "line": 806, "label": "_append" }
+        { "path": "LightAgent/runtime.py", "line": 897, "label": "AgentRuntime" },
+        { "path": "LightAgent/runtime.py", "line": 920, "label": "open_session" },
+        { "path": "LightAgent/runtime.py", "line": 1000, "label": "_append" }
       ]
     },
     {
@@ -44,9 +44,9 @@
       "tag": "runtime.py",
       "pos": [64, 112], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 64, "label": "AgentInbox" },
-        { "path": "LightAgent/runtime.py", "line": 103, "label": "claim_next" },
-        { "path": "LightAgent/runtime.py", "line": 140, "label": "restore" }
+        { "path": "LightAgent/runtime.py", "line": 66, "label": "AgentInbox" },
+        { "path": "LightAgent/runtime.py", "line": 105, "label": "claim_next" },
+        { "path": "LightAgent/runtime.py", "line": 142, "label": "restore" }
       ]
     },
     {
@@ -55,9 +55,9 @@
       "tag": "runtime.py",
       "pos": [64, 184], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 206, "label": "GoalManager" },
-        { "path": "LightAgent/runtime.py", "line": 259, "label": "restore" },
-        { "path": "LightAgent/runtime.py", "line": 270, "label": "_transition" }
+        { "path": "LightAgent/runtime.py", "line": 208, "label": "GoalManager" },
+        { "path": "LightAgent/runtime.py", "line": 261, "label": "restore" },
+        { "path": "LightAgent/runtime.py", "line": 272, "label": "_transition" }
       ]
     },
     {
@@ -66,9 +66,9 @@
       "tag": "runtime.py",
       "pos": [64, 256], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 323, "label": "BudgetManager" },
-        { "path": "LightAgent/runtime.py", "line": 333, "label": "consume" },
-        { "path": "LightAgent/runtime.py", "line": 370, "label": "restore" }
+        { "path": "LightAgent/runtime.py", "line": 325, "label": "BudgetManager" },
+        { "path": "LightAgent/runtime.py", "line": 335, "label": "consume" },
+        { "path": "LightAgent/runtime.py", "line": 372, "label": "restore" }
       ]
     },
     {
@@ -77,9 +77,9 @@
       "tag": "runtime.py",
       "pos": [64, 328], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 461, "label": "JobManager" },
-        { "path": "LightAgent/runtime.py", "line": 474, "label": "start" },
-        { "path": "LightAgent/runtime.py", "line": 557, "label": "mark_interrupted" }
+        { "path": "LightAgent/runtime.py", "line": 468, "label": "JobManager" },
+        { "path": "LightAgent/runtime.py", "line": 484, "label": "start" },
+        { "path": "LightAgent/runtime.py", "line": 684, "label": "mark_interrupted" }
       ]
     },
     {
@@ -88,8 +88,8 @@
       "tag": "runtime.py",
       "pos": [64, 400], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 387, "label": "ProgressTracker" },
-        { "path": "LightAgent/runtime.py", "line": 402, "label": "record" }
+        { "path": "LightAgent/runtime.py", "line": 389, "label": "ProgressTracker" },
+        { "path": "LightAgent/runtime.py", "line": 404, "label": "record" }
       ]
     },
     {
@@ -98,9 +98,9 @@
       "tag": "runtime.py",
       "pos": [64, 472], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 596, "label": "SubagentManager" },
-        { "path": "LightAgent/runtime.py", "line": 612, "label": "register" },
-        { "path": "LightAgent/runtime.py", "line": 648, "label": "run" }
+        { "path": "LightAgent/runtime.py", "line": 738, "label": "SubagentManager" },
+        { "path": "LightAgent/runtime.py", "line": 755, "label": "register" },
+        { "path": "LightAgent/runtime.py", "line": 791, "label": "run" }
       ]
     },
     {
@@ -143,25 +143,25 @@
     {
       "dot": "cyan", "title": "事件即持久化",
       "items": [
-        "创建 runtime 并暴露 runtime.registry（core.py:321/326）",
-        "组件只持内存态；统一注入 _append 作 event_sink（:730-735）",
-        "变更 → _append（:806）→ Session.append + store.save，无独立存储"
+        "创建 runtime 并暴露 runtime.registry（core.py:330/335）",
+        "组件只持内存态；统一注入 _append 作 event_sink（:913-918）",
+        "变更 → _append（:1000）→ Session.append + store.save，无独立存储"
       ]
     },
     {
       "dot": "emerald", "title": "open_session 回放恢复",
       "items": [
-        "run 前打开/复用会话；仅新建时 append session.started（:748）",
-        "inbox/goals/budget/jobs 依次 restore（:754-757）；budget 取最后一条快照（:370）",
-        "jobs 只恢复档案（_tasks 清空 :577）；未完结任务标 INTERRUPTED（:557）"
+        "run 前打开/复用会话；仅新建时 append session.started（:932）",
+        "inbox/goals/budget/jobs 依次 restore（:948-951）；budget 取最后一条快照（:372）",
+        "jobs 只恢复档案（_tasks 清空 :713）；未完结任务标 INTERRUPTED（:684）"
       ]
     },
     {
       "dot": "rose", "title": "容易误读",
       "items": [
         "不驱动对话循环：run() 在 core.py，runtime 只是状态/治理管家",
-        "core.py 事件走 _record_session_event（:877），绕过 _append，双路径并存",
-        "JobManager.start 需运行中事件循环（:482）；预算超限 usage 不更新但事件已发（:349-358）"
+        "core.py 事件走 _record_session_event（:893），绕过 _append，双路径并存",
+        "JobManager.start 需运行中事件循环（:495）；预算超限 usage 不更新但事件已发（:351-360）"
       ]
     }
   ]

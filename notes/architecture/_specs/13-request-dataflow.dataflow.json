@@ -33,7 +33,7 @@
       "type": "external",
       "label": "用户问题",
       "sublabel": "query · 会话 id",
-      "tag": "core.py:480",
+      "tag": "core.py:489",
       "stage": 0,
       "row": 0,
       "width": 150
@@ -43,7 +43,7 @@
       "type": "backend",
       "label": "记忆接口",
       "sublabel": "retrieve 注入偏好",
-      "tag": "core.py:1436",
+      "tag": "core.py:1481",
       "stage": 0,
       "row": 1,
       "width": 150
@@ -63,7 +63,7 @@
       "type": "backend",
       "label": "messages 组装",
       "sublabel": "system+history+user",
-      "tag": "core.py:680",
+      "tag": "core.py:687",
       "stage": 1,
       "row": 1,
       "width": 150
@@ -73,7 +73,7 @@
       "type": "cloud",
       "label": "大模型",
       "sublabel": "chat.completions",
-      "tag": "core.py:726",
+      "tag": "core.py:742",
       "stage": 2,
       "row": 0,
       "width": 150
@@ -83,7 +83,7 @@
       "type": "backend",
       "label": "工具执行",
       "sublabel": "四道闸门+dispatch",
-      "tag": "tools.py:294",
+      "tag": "tools.py:255",
       "stage": 2,
       "row": 1,
       "width": 150
@@ -103,7 +103,7 @@
       "type": "database",
       "label": "会话与追踪",
       "sublabel": "trace/session 双写",
-      "tag": "core.py:910",
+      "tag": "core.py:926",
       "stage": 3,
       "row": 1,
       "width": 150
@@ -204,16 +204,16 @@
       "dot": "cyan",
       "title": "数据形态变化",
       "items": [
-        "query 经 _add_memory_context 拼上记忆前缀（core.py:1483），再进 messages",
-        "messages 初始 = system + history + user（:682），工具轮在其上 append",
-        "工具结果一律转字符串回填 role:'tool'（tools.py:345、core.py:2060）"
+        "query 经 _add_memory_context 拼上记忆前缀（core.py:1528），再进 messages",
+        "messages 初始 = system + history + user（:698），工具轮在其上 append",
+        "工具结果一律转字符串回填 role:'tool'（tools.py:345、core.py:1960）"
       ]
     },
     {
       "dot": "rose",
       "title": "旁路观测",
       "items": [
-        "_record_trace 是双写枢纽：先 session 事件再 trace 事件（core.py:910-938）",
+        "_record_trace 是双写枢纽：先 session 事件再 trace 事件（core.py:926-954）",
         "事件写入时经 _json_safe 脱敏，敏感 key 变 [redacted]（session.py:83）",
         "RunResult.trace 是事件 dict 列表，usage 是三键 dict（result.py:14）"
       ]

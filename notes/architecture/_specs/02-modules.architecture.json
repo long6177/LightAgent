@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/long6177/LightAgent",
-      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
     },
     "views": [
       {
@@ -64,12 +64,12 @@
       "sources": [
         {
           "path": "LightAgent/flow.py",
-          "line": 132,
+          "line": 140,
           "label": "LightFlow"
         },
         {
           "path": "LightAgent/flow.py",
-          "line": 102,
+          "line": 110,
           "label": "JsonLightFlowStore"
         }
       ]
@@ -155,7 +155,7 @@
         },
         {
           "path": "LightAgent/builtin_tools/python_executor.py",
-          "line": 399,
+          "line": 451,
           "label": "execute_python_code"
         }
       ]
@@ -177,17 +177,17 @@
       "sources": [
         {
           "path": "LightAgent/tools.py",
-          "line": 26,
+          "line": 27,
           "label": "ToolRegistry"
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 224,
+          "line": 200,
           "label": "ToolLoader"
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 294,
+          "line": 255,
           "label": "dispatch()"
         }
       ]
@@ -209,12 +209,12 @@
       "sources": [
         {
           "path": "LightAgent/runtime.py",
-          "line": 714,
+          "line": 897,
           "label": "AgentRuntime"
         },
         {
           "path": "LightAgent/runtime.py",
-          "line": 323,
+          "line": 325,
           "label": "BudgetManager"
         }
       ]
@@ -236,12 +236,12 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 116,
+          "line": 114,
           "label": "LightAgent"
         },
         {
           "path": "LightAgent/core.py",
-          "line": 480,
+          "line": 478,
           "label": "run()"
         },
         {
@@ -526,9 +526,9 @@
       "dot": "emerald",
       "title": "工具的三条汇入路径",
       "items": [
-        "手写函数 + tool_info → register_tool（tools.py:36，同名静默覆盖）",
+        "手写函数 + tool_info → register_tool（tools.py:37，同名静默覆盖）",
         "MCP 远端 → 直写注册表三视图（mcp_client_manager.py:127-150，绕过 register_tool）",
-        "tools/ 目录与技能四件套 → ToolLoader / create_skill_tools（tools.py:239、skill_tools.py:13）"
+        "tools/ 目录与技能四件套 → ToolLoader / create_skill_tools（tools.py:240、skill_tools.py:13）"
       ]
     },
     {
@@ -536,7 +536,7 @@
       "title": "独立的小世界",
       "items": [
         "flow.py / runtime.py / knowledge.py 各自成体系，经 Session 事件互通",
-        "runtime 不驱动对话循环，只是事件即持久化的状态管家（runtime.py:714）",
+        "runtime 不驱动对话循环，只是事件即持久化的状态管家（runtime.py:897）",
         "knowledge 无向量库依赖，SQLite FTS5 就能跑，缺失时降级 LIKE（knowledge.py:222）"
       ]
     }

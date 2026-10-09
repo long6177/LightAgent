@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/long6177/LightAgent",
-      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
     },
     "views": [
       {
@@ -87,7 +87,7 @@
         },
         {
           "path": "LightAgent/flow.py",
-          "line": 132,
+          "line": 140,
           "label": "LightFlow"
         }
       ]
@@ -109,12 +109,12 @@
       "sources": [
         {
           "path": "LightAgent/tools.py",
-          "line": 26,
+          "line": 27,
           "label": "ToolRegistry"
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 294,
+          "line": 255,
           "label": "dispatch()"
         }
       ]
@@ -146,7 +146,7 @@
         },
         {
           "path": "LightAgent/runtime.py",
-          "line": 323,
+          "line": 325,
           "label": "BudgetManager"
         }
       ]
@@ -168,12 +168,12 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 480,
+          "line": 478,
           "label": "run()"
         },
         {
           "path": "LightAgent/core.py",
-          "line": 1253,
+          "line": 1255,
           "label": "_prepare_tool_call"
         }
       ]
@@ -200,7 +200,7 @@
         },
         {
           "path": "LightAgent/core.py",
-          "line": 910,
+          "line": 912,
           "label": "_record_trace"
         },
         {
@@ -285,7 +285,7 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 726,
+          "line": 729,
           "label": "create() 调用点"
         },
         {
@@ -454,20 +454,20 @@
       "dot": "emerald",
       "title": "一次 run() 的主线（core.py）",
       "items": [
-        "_begin_session_run:852 开会话投影历史 → check_input:598 输入护栏",
-        "_add_memory_context:1436 记忆注入 → create:726 调模型",
-        "有 tool_calls 时 _prepare_tool_call:1253 把关 → dispatch(tools.py:294) 执行",
-        "_finish_run:995 收尾：after_run 钩子 + run_end trace + turn 事件"
+        "_begin_session_run:854 开会话投影历史 → check_input:603 输入护栏",
+        "_add_memory_context:1439 记忆注入 → create:729 调模型",
+        "有 tool_calls 时 _prepare_tool_call:1255 把关 → dispatch(tools.py:255) 执行",
+        "_finish_run:997 收尾：after_run 钩子 + run_end trace + turn 事件"
       ]
     },
     {
       "dot": "rose",
       "title": "容易误读的四处",
       "items": [
-        "输出护栏只管非流式（core.py:2073），流式内容不经过它",
-        "max_tool_iterations 只约束流式（core.py:2400），非流式轮数看 max_retry（:1918）",
+        "输出护栏只管非流式（core.py:2064），流式内容不经过它",
+        "max_tool_iterations 只约束流式（core.py:2375），非流式轮数看 max_retry（:1914）",
         "MCP 注册完就断连，调用时现连（mcp_client_manager.py:162 / 238）",
-        "run() 会重置实例状态，同一实例并发调用不安全（core.py:531）"
+        "run() 会重置实例状态，同一实例并发调用不安全（core.py:546）"
       ]
     }
   ]

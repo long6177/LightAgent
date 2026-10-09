@@ -59,7 +59,7 @@
       "type": "external",
       "label": "带 user_id 提问",
       "sublabel": "_add_memory_context",
-      "tag": "core.py:1436",
+      "tag": "core.py:1481",
       "width": 150
     },
     {
@@ -69,7 +69,7 @@
       "type": "backend",
       "label": "翻出相关记忆",
       "sublabel": "钩子包夹 retrieve()",
-      "tag": "core.py:1485",
+      "tag": "core.py:1530",
       "width": 150
     },
     {
@@ -90,7 +90,7 @@
       "type": "backend",
       "label": "拼进提示词",
       "sublabel": "作为 query 前缀",
-      "tag": "core.py:1483",
+      "tag": "core.py:1528",
       "width": 150
     },
     {
@@ -100,7 +100,7 @@
       "type": "backend",
       "label": "本轮对话也存一份",
       "sublabel": "_store_memory_with_policy",
-      "tag": "core.py:1536",
+      "tag": "core.py:1581",
       "width": 150,
       "yOffset": 0
     },
@@ -143,7 +143,7 @@
       "type": "database",
       "label": "写入 mem0 / 向量库",
       "sublabel": "store(data, user_id)",
-      "tag": "core.py:1864",
+      "tag": "core.py:1903",
       "width": 150
     }
   ],
@@ -219,15 +219,15 @@
       "items": [
         "memory= 注入任意 MemoryProtocol（protocol.py:16，两个方法即可）",
         "内置 SharedMemoryPool：词面重叠打分、无持久化（shared_memory.py:40）",
-        "core 不直接 import mem0——一切经协议与策略（core.py:1514/1864）"
+        "core 不直接 import mem0——一切经协议与策略（core.py:1559/1903）"
       ]
     },
     {
       "dot": "rose",
       "title": "容易误读",
       "items": [
-        "记忆注入改写的是用户 query，不是 system prompt（core.py:1483）",
-        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（:1640）",
+        "记忆注入改写的是用户 query，不是 system prompt（core.py:1528）",
+        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（:1685）",
         "候选默认 injectable=False，未晋升的内部记忆检索时也会被二次拦截（protocol.py:352）"
       ]
     }

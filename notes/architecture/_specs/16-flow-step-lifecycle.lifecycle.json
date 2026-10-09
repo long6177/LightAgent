@@ -28,7 +28,7 @@
       "col": 0,
       "label": "pending",
       "sublabel": "登记待跑",
-      "tag": "flow.py:32"
+      "tag": "flow.py:35"
     },
     {
       "id": "running",
@@ -37,7 +37,7 @@
       "col": 1,
       "label": "running",
       "sublabel": "_run_step 执行",
-      "tag": "flow.py:667"
+      "tag": "flow.py:811"
     },
     {
       "id": "success",
@@ -46,7 +46,7 @@
       "col": 3,
       "label": "success",
       "sublabel": "结果存档",
-      "tag": "flow.py:626"
+      "tag": "flow.py:764"
     },
     {
       "id": "waiting",
@@ -55,7 +55,7 @@
       "col": 0,
       "label": "waiting_approval",
       "sublabel": "审批门挂起",
-      "tag": "flow.py:518"
+      "tag": "flow.py:650"
     },
     {
       "id": "failed",
@@ -64,7 +64,7 @@
       "col": 1,
       "label": "failed",
       "sublabel": "异常 / 超时",
-      "tag": "flow.py:690"
+      "tag": "flow.py:857"
     },
     {
       "id": "skipped",
@@ -73,7 +73,7 @@
       "col": 2,
       "label": "skipped",
       "sublabel": "cancel_if / 上游连坐",
-      "tag": "flow.py:906"
+      "tag": "flow.py:1137"
     }
   ],
   "transitions": [
@@ -141,20 +141,20 @@
       "dot": "cyan",
       "title": "状态在哪里定义（flow.py）",
       "items": [
-        "常量 FLOW_PENDING/RUNNING/SUCCESS/FAILED/SKIPPED/WAITING_APPROVAL（:32-37）",
-        "主循环 _execute:391：取消检查→构造输入→钩子→审批门→执行→checkpoint",
-        "审批 pending 是 break 半途退出，不是阻塞等待（:518）"
+        "常量 FLOW_PENDING/RUNNING/SUCCESS/FAILED/SKIPPED/WAITING_APPROVAL（:35-40）",
+        "主循环 _execute:478：取消检查→构造输入→钩子→审批门→执行→checkpoint",
+        "审批 pending 是 break 半途退出，不是阻塞等待（:650）"
       ]
     },
     {
       "dot": "rose",
       "title": "恢复语义",
       "items": [
-        "resume() 重跑所有非 success 步骤（:266）",
-        "rerun_step() 只重跑指定步骤及其传递下游，并清空下游审批决定（:300/322）",
-        "超时用线程池模拟，超时后后台线程仍在跑，只是结果被丢弃（:766）",
-        "cancel_if 命中或上游失败会把步骤置为 skipped（flow.py:427/906）",
-        "waiting 批复后经 resume() 回到 running（flow.py:266）"
+        "resume() 重跑所有非 success 步骤（:318）",
+        "rerun_step() 只重跑指定步骤及其传递下游，并清空下游审批决定（:358/408）",
+        "超时用线程池模拟，超时后后台线程仍在跑，只是结果被丢弃（:975）",
+        "cancel_if 命中或上游失败会把步骤置为 skipped（flow.py:515/1137）",
+        "waiting 批复后经 resume() 回到 running（flow.py:318）"
       ]
     }
   ]

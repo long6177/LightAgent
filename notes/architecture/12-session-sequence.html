@@ -5070,7 +5070,7 @@
           <rect x="52.8" y="155" width="126.4" height="16" rx="3" class="c-mask"/>
           <text x="116" y="165" class="t-backend" font-size="9" text-anchor="middle">run(query, session_id)</text>
         </g>
-        <text data-detail="fine" x="81" y="193" class="t-dim" font-size="7">core.py:480</text>
+        <text data-detail="fine" x="81" y="193" class="t-dim" font-size="7">core.py:489</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="rt" data-edge-label="open_session()" data-edge-key="1">
@@ -5079,7 +5079,7 @@
           <rect x="181.6" y="195" width="84.8" height="16" rx="3" class="c-mask"/>
           <text x="224" y="205" class="t-backend" font-size="9" text-anchor="middle">open_session()</text>
         </g>
-        <text data-detail="fine" x="189" y="233" class="t-dim" font-size="7">core.py:861</text>
+        <text data-detail="fine" x="189" y="233" class="t-dim" font-size="7">core.py:877</text>
         </g>
 
         <g data-edge-from="rt" data-edge-to="store" data-edge-label="get(session_id)" data-edge-key="2">
@@ -5088,7 +5088,7 @@
           <rect x="341" y="235" width="90" height="16" rx="3" class="c-mask"/>
           <text x="386" y="245" class="t-backend" font-size="9" text-anchor="middle">get(session_id)</text>
         </g>
-        <text data-detail="fine" x="297" y="273" class="t-dim" font-size="7">runtime.py:737</text>
+        <text data-detail="fine" x="297" y="273" class="t-dim" font-size="7">runtime.py:920</text>
         </g>
 
         <g data-edge-from="store" data-edge-to="rt" data-edge-label="返回既有会话" data-edge-key="3">
@@ -5106,7 +5106,7 @@
           <rect x="171.2" y="315" width="105.60000000000001" height="16" rx="3" class="c-mask"/>
           <text x="224" y="325" class="t-muted" font-size="9" text-anchor="middle">回放事件恢复管理器</text>
         </g>
-        <text data-detail="fine" x="189" y="353" class="t-dim" font-size="7">runtime.py:754 inbox/goals/budget/jobs</text>
+        <text data-detail="fine" x="189" y="353" class="t-dim" font-size="7">runtime.py:948 inbox/goals/budget/jobs</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="session" data-edge-label="追加 turn.started / message.received" data-edge-key="5">
@@ -5115,7 +5115,7 @@
           <rect x="178.39999999999998" y="355" width="199.20000000000002" height="16" rx="3" class="c-mask"/>
           <text x="278" y="365" class="t-backend" font-size="9" text-anchor="middle">追加 turn.started / message.received</text>
         </g>
-        <text data-detail="fine" x="189" y="393" class="t-dim" font-size="7">core.py:876/881</text>
+        <text data-detail="fine" x="189" y="393" class="t-dim" font-size="7">core.py:878/883</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="store" data-edge-label="每条事件落盘" data-edge-key="6">
@@ -5124,7 +5124,7 @@
           <rect x="294.8" y="410" width="74.4" height="16" rx="3" class="c-mask"/>
           <text x="332" y="420" class="t-messagebus" font-size="9" text-anchor="middle">每条事件落盘</text>
         </g>
-        <text data-detail="fine" x="189" y="448" class="t-dim" font-size="7">core.py:896 save</text>
+        <text data-detail="fine" x="189" y="448" class="t-dim" font-size="7">core.py:912 save</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="session" data-edge-label="model.* / tool.* 持续记录" data-edge-key="7">
@@ -5133,7 +5133,7 @@
           <rect x="207" y="450" width="142" height="16" rx="3" class="c-mask"/>
           <text x="278" y="460" class="t-backend" font-size="9" text-anchor="middle">model.* / tool.* 持续记录</text>
         </g>
-        <text data-detail="fine" x="189" y="488" class="t-dim" font-size="7">映射表 core.py:913</text>
+        <text data-detail="fine" x="189" y="488" class="t-dim" font-size="7">映射表 core.py:914</text>
         </g>
 
         <g data-edge-from="app" data-edge-to="core" data-edge-label="checkpoint_session()" data-edge-key="8">
@@ -5142,7 +5142,7 @@
           <rect x="58" y="510" width="116" height="16" rx="3" class="c-mask"/>
           <text x="116" y="520" class="t-backend" font-size="9" text-anchor="middle">checkpoint_session()</text>
         </g>
-        <text data-detail="fine" x="81" y="548" class="t-dim" font-size="7">core.py:795</text>
+        <text data-detail="fine" x="81" y="548" class="t-dim" font-size="7">core.py:804</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="rt" data-edge-label="checkpoint()" data-edge-key="9">
@@ -5151,7 +5151,7 @@
           <rect x="186.8" y="545" width="74.4" height="16" rx="3" class="c-mask"/>
           <text x="224" y="555" class="t-backend" font-size="9" text-anchor="middle">checkpoint()</text>
         </g>
-        <text data-detail="fine" x="189" y="583" class="t-dim" font-size="7">runtime.py:761</text>
+        <text data-detail="fine" x="189" y="583" class="t-dim" font-size="7">runtime.py:955</text>
         </g>
 
         <g data-edge-from="rt" data-edge-to="session" data-edge-label="写入 SessionCheckpoint" data-edge-key="10">
@@ -5169,7 +5169,7 @@
           <rect x="47.599999999999994" y="615" width="136.8" height="16" rx="3" class="c-mask"/>
           <text x="116" y="625" class="t-backend" font-size="9" text-anchor="middle">新进程带 session_id 回来</text>
         </g>
-        <text data-detail="fine" x="81" y="653" class="t-dim" font-size="7">core.py:625 → open_session:861</text>
+        <text data-detail="fine" x="81" y="653" class="t-dim" font-size="7">core.py:641 → open_session:863</text>
         </g>
 
         <g data-edge-from="rt" data-edge-to="core" data-edge-label="ContextProjector 投影历史" data-edge-key="12">
@@ -5471,8 +5471,8 @@
         </div>
         <ul>
           <li>&bull; 整会话恢复：store.get → SessionEvent.from_dict → migrate（session.py:366）</li>
-          <li>&bull; 管理器状态恢复：open_session 按 inbox.*/goal.*/budget.*/job.* 命名空间回放（runtime.py:754）</li>
-          <li>&bull; Job 只恢复档案并标 INTERRUPTED，协程本体不恢复（runtime.py:564/557）</li>
+          <li>&bull; 管理器状态恢复：open_session 按 inbox.*/goal.*/budget.*/job.* 命名空间回放（runtime.py:948）</li>
+          <li>&bull; Job 只恢复档案并标 INTERRUPTED，协程本体不恢复（runtime.py:700/684）</li>
           <li>&bull; replay() 只统计 turn 完成度，不重放执行（session.py:313）</li>
         </ul>
       </div>
