@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AgentRuntime 长任务运行时（runtime.py）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "0f1c05aeb475dc98befce83865567af213265a70"
+    },
+    "views": [
+      { "id": "eventflow", "label": "变更上行：事件即持久化", "focus": ["inbox", "budget", "runtime", "session", "store"], "note": "组件只改内存，事件经 _append 统一写进 Session 并落存储" },
+      { "id": "restore", "label": "恢复回放：run 前开/复会话", "focus": ["agent", "runtime", "jobs", "budget"], "note": "open_session 回放各命名空间事件恢复组件；协程本体不恢复，未完结任务标记中断" },
+      { "id": "subagent-path", "label": "子代理接线", "focus": ["subagents", "inbox", "runtime"], "note": "register 限深限并发、收窄权限；run() 优先 arun()；send() 投目标子代理的 inbox" }
+    ]
+  },
+  "components": [
+    {
+      "id": "agent", "type": "backend", "label": "LightAgent 执行循环",
+      "sublabel": "run() 主线 · 收养 runtime",
+      "tag": "core.py",
+      "pos": [570, 96], "size": [186, 66],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 321, "label": "AgentRuntime 创建" },
+        { "path": "LightAgent/core.py", "line": 847, "label": "open_session 调用" },
+        { "path": "LightAgent/core.py", "line": 1068, "label": "budget.consume" }
+      ]
+    },
+    {
+      "id": "runtime", "type": "backend", "label": "AgentRuntime 管家",
+      "sublabel": "六大组件 + registry/context",
+      "tag": "runtime.py",
+      "pos": [560, 256], "size": [206, 96],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 714, "label": "AgentRuntime" },
+        { "path": "LightAgent/runtime.py", "line": 737, "label": "open_session" },
+        { "path": "LightAgent/runtime.py", "line": 806, "label": "_append" }
+      ]
+    },
+    {
+      "id": "inbox", "type": "backend", "label": "AgentInbox 收件箱",
+      "sublabel": "四类消息 · 幂等入队",
+      "tag": "runtime.py",
+      "pos": [64, 112], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 64, "label": "AgentInbox" },
+        { "path": "LightAgent/runtime.py", "line": 103, "label": "claim_next" },
+        { "path": "LightAgent/runtime.py", "line": 140, "label": "restore" }
+      ]
+    },
+    {
+      "id": "goals", "type": "backend", "label": "GoalManager 目标",
+      "sublabel": "状态机 · 终态守卫",
+      "tag": "runtime.py",
+      "pos": [64, 184], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 206, "label": "GoalManager" },
+        { "path": "LightAgent/runtime.py", "line": 259, "label": "restore" },
+        { "path": "LightAgent/runtime.py", "line": 270, "label": "_transition" }
+      ]
+    },
+    {
+      "id": "budget", "type": "backend", "label": "BudgetManager 预算",
+      "sublabel": "五维上限 · 超限熔断",
+      "tag": "runtime.py",
+      "pos": [64, 256], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 323, "label": "BudgetManager" },
+        { "path": "LightAgent/runtime.py", "line": 333, "label": "consume" },
+        { "path": "LightAgent/runtime.py", "line": 370, "label": "restore" }
+      ]
+    },
+    {
+      "id": "jobs", "type": "backend", "label": "JobManager 后台任务",
+      "sublabel": "协程可取消 · 中断恢复",
+      "tag": "runtime.py",
+      "pos": [64, 328], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 461, "label": "JobManager" },
+        { "path": "LightAgent/runtime.py", "line": 474, "label": "start" },
+        { "path": "LightAgent/runtime.py", "line": 557, "label": "mark_interrupted" }
+      ]
+    },
+    {
+      "id": "progress", "type": "backend", "label": "ProgressTracker 停滞检测",
+      "sublabel": "输出不变 / 重复工具调用",
+      "tag": "runtime.py",
+      "pos": [64, 400], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 387, "label": "ProgressTracker" },
+        { "path": "LightAgent/runtime.py", "line": 402, "label": "record" }
+      ]
+    },
+    {
+      "id": "subagents", "type": "backend", "label": "SubagentManager 子代理",
+      "sublabel": "限深 · 限并发 · 权限收窄",
+      "tag": "runtime.py",
+      "pos": [64, 472], "size": [168, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 596, "label": "SubagentManager" },
+        { "path": "LightAgent/runtime.py", "line": 612, "label": "register" },
+        { "path": "LightAgent/runtime.py", "line": 648, "label": "run" }
+      ]
+    },
+    {
+      "id": "session", "type": "database", "label": "Session 事件日志",
+      "sublabel": "唯一持久化介质 · 连续 sequence",
+      "tag": "session.py",
+      "pos": [1140, 240], "size": [182, 68],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 195, "label": "Session" },
+        { "path": "LightAgent/session.py", "line": 216, "label": "append" }
+      ]
+    },
+    {
+      "id": "store", "type": "database", "label": "SessionStore 存储后端",
+      "sublabel": "默认内存后端 · 可注入",
+      "tag": "session.py",
+      "pos": [1140, 410], "size": [182, 64],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore 协议" },
+        { "path": "LightAgent/session.py", "line": 394, "label": "InMemorySessionStore" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "六大治理组件（仅内存态）", "wraps": ["inbox", "goals", "budget", "jobs", "progress", "subagents"], "pad": 16 },
+    { "kind": "region", "label": "事件即持久化（唯一落盘路径）", "wraps": ["session", "store"], "pad": 16 }
+  ],
+  "connections": [
+    { "from": "agent", "to": "runtime", "label": "持有 · run 前 open_session", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "labelAt": [663, 209] },
+    { "from": "runtime", "to": "session", "label": "_append：append + save", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "from": "session", "to": "store", "label": "save / get（默认内存后端）", "fromSide": "bottom", "toSide": "top", "labelAt": [1231, 340] },
+    { "from": "inbox", "to": "runtime", "label": "inbox.*", "fromSide": "right", "toSide": "left", "labelAt": [300, 130] },
+    { "from": "goals", "to": "runtime", "label": "goal.*", "fromSide": "right", "toSide": "left", "labelAt": [300, 202] },
+    { "from": "budget", "to": "runtime", "label": "budget.*", "fromSide": "right", "toSide": "left", "labelAt": [300, 274] },
+    { "from": "jobs", "to": "runtime", "label": "job.*", "fromSide": "right", "toSide": "left", "labelAt": [300, 346] },
+    { "from": "progress", "to": "runtime", "label": "progress.stalled", "fromSide": "right", "toSide": "left", "labelAt": [300, 418] },
+    { "from": "subagents", "to": "runtime", "label": "subagent.*", "fromSide": "right", "toSide": "left", "labelAt": [300, 490] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan", "title": "事件即持久化",
+      "items": [
+        "创建 runtime 并暴露 runtime.registry（core.py:321/326）",
+        "组件只持内存态；统一注入 _append 作 event_sink（:730-735）",
+        "变更 → _append（:806）→ Session.append + store.save，无独立存储"
+      ]
+    },
+    {
+      "dot": "emerald", "title": "open_session 回放恢复",
+      "items": [
+        "run 前打开/复用会话；仅新建时 append session.started（:748）",
+        "inbox/goals/budget/jobs 依次 restore（:754-757）；budget 取最后一条快照（:370）",
+        "jobs 只恢复档案（_tasks 清空 :577）；未完结任务标 INTERRUPTED（:557）"
+      ]
+    },
+    {
+      "dot": "rose", "title": "容易误读",
+      "items": [
+        "不驱动对话循环：run() 在 core.py，runtime 只是状态/治理管家",
+        "core.py 事件走 _record_session_event（:877），绕过 _append，双路径并存",
+        "JobManager.start 需运行中事件循环（:482）；预算超限 usage 不更新但事件已发（:349-358）"
+      ]
+    }
+  ]
+}
