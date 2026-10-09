@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "事件流全景（Session / Trace / Hooks）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "0f1c05aeb475dc98befce83865567af213265a70"
+    },
+    "views": [
+      { "id": "event-trip", "label": "一次事件的旅程", "focus": ["agent", "trace", "session", "store"], "note": "调用点双写：先落 session 事件，再记 trace 事件" },
+      { "id": "hook-path", "label": "hook 决策如何变成事件", "focus": ["agent", "hooks", "trace", "session"], "note": "hook_decision / review 镜像成事件；hook_block → policy.blocked" },
+      { "id": "consume", "label": "回放与投影", "focus": ["session", "store", "replay", "projector"], "note": "replay 重放时间线；ContextProjector 把历史投影成下一轮 messages" }
+    ]
+  },
+  "components": [
+    {
+      "id": "agent", "type": "backend", "label": "LightAgent 执行循环",
+      "sublabel": "run() 全生命周期 · 双写",
+      "tag": "core.py",
+      "pos": [64, 110], "size": [190, 66],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 877, "label": "_record_session_event" },
+        { "path": "LightAgent/core.py", "line": 896, "label": "_record_trace" },
+        { "path": "LightAgent/core.py", "line": 927, "label": "_run_hooks" }
+      ]
+    },
+    {
+      "id": "hooks", "type": "security", "label": "HookManager 运行时钩子",
+      "sublabel": "相位回调 · 决策阻断",
+      "tag": "hooks.py",
+      "pos": [64, 250], "size": [176, 64],
+      "sources": [
+        { "path": "LightAgent/hooks.py", "line": 95, "label": "HookManager" },
+        { "path": "LightAgent/hooks.py", "line": 74, "label": "PolicyHook" },
+        { "path": "LightAgent/hooks.py", "line": 27, "label": "HookContext" }
+      ]
+    },
+    {
+      "id": "runtime", "type": "backend", "label": "AgentRuntime 管理器事件",
+      "sublabel": "分命名空间事件",
+      "tag": "runtime.py",
+      "pos": [64, 410], "size": [180, 64],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 806, "label": "_append" },
+        { "path": "LightAgent/runtime.py", "line": 714, "label": "AgentRuntime" }
+      ]
+    },
+    {
+      "id": "trace", "type": "backend", "label": "TraceRecorder 追踪器",
+      "sublabel": "TraceEvent · 摘要",
+      "tag": "tracing.py",
+      "pos": [480, 110], "size": [176, 64],
+      "sources": [
+        { "path": "LightAgent/tracing.py", "line": 229, "label": "TraceRecorder" },
+        { "path": "LightAgent/tracing.py", "line": 245, "label": "record" },
+        { "path": "LightAgent/tracing.py", "line": 18, "label": "TraceEvent" }
+      ]
+    },
+    {
+      "id": "exporter", "type": "backend", "label": "JsonlTraceExporter",
+      "sublabel": "逐行追加 jsonl",
+      "tag": "tracing.py",
+      "pos": [800, 110], "size": [176, 64],
+      "sources": [
+        { "path": "LightAgent/tracing.py", "line": 97, "label": "JsonlTraceExporter" },
+        { "path": "LightAgent/tracing.py", "line": 116, "label": "path.open 追加写" }
+      ]
+    },
+    {
+      "id": "dev", "type": "external", "label": "你：排障 / 审计",
+      "sublabel": "replay · 摘要 · jsonl",
+      "tag": "core.py",
+      "pos": [1120, 110], "size": [168, 62],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 775, "label": "replay_session" },
+        { "path": "LightAgent/core.py", "line": 769, "label": "export_session" }
+      ]
+    },
+    {
+      "id": "session", "type": "database", "label": "Session 事件日志",
+      "sublabel": "sequence 递增 · _json_safe",
+      "tag": "session.py",
+      "pos": [480, 330], "size": [190, 68],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 216, "label": "append" },
+        { "path": "LightAgent/session.py", "line": 83, "label": "_json_safe" }
+      ]
+    },
+    {
+      "id": "store", "type": "database", "label": "SessionStore 三类后端",
+      "sublabel": "InMemory / Jsonl / Sqlite",
+      "tag": "session.py",
+      "pos": [800, 330], "size": [186, 64],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore" },
+        { "path": "LightAgent/session.py", "line": 435, "label": "JsonlSessionStore" },
+        { "path": "LightAgent/session.py", "line": 521, "label": "SqliteSessionStore" }
+      ]
+    },
+    {
+      "id": "replay", "type": "backend", "label": "回放与恢复",
+      "sublabel": "replay 重放 · open_session 回放",
+      "tag": "session.py",
+      "pos": [1120, 330], "size": [176, 62],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 313, "label": "replay" },
+        { "path": "LightAgent/runtime.py", "line": 737, "label": "open_session" }
+      ]
+    },
+    {
+      "id": "projector", "type": "backend", "label": "ContextProjector 投影",
+      "sublabel": "事件历史 → messages",
+      "tag": "session.py",
+      "pos": [480, 470], "size": [190, 64],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 644, "label": "ContextProjector" },
+        { "path": "LightAgent/session.py", "line": 647, "label": "messages" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "持久化通道（Session 事件日志）", "wraps": ["session", "store"], "pad": 16 },
+    { "kind": "region", "label": "观测通道（Trace · jsonl 导出）", "wraps": ["trace", "exporter"], "pad": 16 }
+  ],
+  "connections": [
+    { "from": "agent", "to": "hooks", "label": "9 类相位回调", "fromSide": "bottom", "toSide": "top" },
+    { "from": "agent", "to": "trace", "label": "record(trace_type)", "fromSide": "right", "toSide": "left" },
+    { "from": "agent", "to": "session", "label": "事件写入 · trace 映射", "fromSide": "right", "toSide": "left" },
+    { "from": "runtime", "to": "session", "label": "命名空间事件（_append）", "fromSide": "right", "toSide": "left" },
+    { "from": "trace", "to": "exporter", "label": "export() 追加", "fromSide": "right", "toSide": "left" },
+    { "from": "exporter", "to": "dev", "label": "jsonl / 摘要", "fromSide": "right", "toSide": "left", "labelAt": [1000, 188] },
+    { "from": "session", "to": "store", "label": "save / get", "fromSide": "right", "toSide": "left", "labelAt": [735, 363] },
+    { "from": "store", "to": "replay", "label": "replay() 重放", "fromSide": "right", "toSide": "left", "labelAt": [1053, 363] },
+    { "from": "session", "to": "projector", "label": "投影下一轮上下文", "fromSide": "bottom", "toSide": "top", "labelAt": [575, 430] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan", "title": "双写枢纽",
+      "items": [
+        "_record_trace（core.py:896）先把 trace_type 映射成 session 类型，再记 trace",
+        "映射示例：run_start→run.started、tool_call→tool.requested、hook_block→policy.blocked（:900-910）",
+        "session 事件携带 turn_id / run_id / agent_id 与连续 sequence，可整条时间线回放"
+      ]
+    },
+    {
+      "dot": "emerald", "title": "三类后端与消费路径",
+      "items": [
+        "SessionStore 三实现：InMemory / Jsonl / Sqlite（session.py:394/435/521），可注入替换",
+        "回放：replay_session 重放事件流；open_session 用事件回放恢复管理器状态",
+        "投影与压缩：ContextProjector 生成下一轮 messages；compact_session 追加 context.compacted"
+      ]
+    },
+    {
+      "dot": "rose", "title": "容易误读",
+      "items": [
+        "hook 本身不写事件：决策由 core._run_hooks 镜像成 hook_decision / review / hook_block（core.py:951-957）",
+        "session 落盘异常不打断主流程：只记 _session_store_error（core.py:891-894）",
+        "trace 与 session 不是两份独立采集：同一调用点先写 session 再记 trace；导出器可自定义"
+      ]
+    }
+  ]
+}

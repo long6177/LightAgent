@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "会话事件溯源（session.py）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1075, 462],
+    "views": [
+      { "id": "write", "label": "写入与落盘", "focus": ["writers", "append", "fact", "store"], "note": "调用点 → append 分配 sequence → 不可变事实 → save 持久化" },
+      { "id": "timepoint", "label": "快照与分叉", "focus": ["fact", "checkpoint", "fork", "store"], "note": "快照照下当前 sequence；fork 在任意序列点派生新日志" },
+      { "id": "rebuild", "label": "读时重建", "focus": ["store", "guard", "replay", "projector"], "note": "migrate + validate 后回放重建；messages 是事件派生物" }
+    ]
+  },
+  "stages": [
+    { "label": "01 / 写入事实" },
+    { "label": "02 / 追加事件日志" },
+    { "label": "03 / 快照与落盘" },
+    { "label": "04 / 读时重建" },
+    { "label": "05 / 投影消费" }
+  ],
+  "nodes": [
+    {
+      "id": "writers", "type": "backend", "label": "写入调用点",
+      "sublabel": "core + runtime 出口",
+      "tag": "core.py:877",
+      "stage": 0, "row": 0, "width": 150, "height": 44
+    },
+    {
+      "id": "append", "type": "backend", "label": "Session.append",
+      "sublabel": "sequence 单调递增",
+      "tag": "session.py:216",
+      "stage": 1, "row": 0, "width": 150, "height": 44
+    },
+    {
+      "id": "fact", "type": "database", "label": "SessionEvent 事实",
+      "sublabel": "timestamp · 溯源 id",
+      "tag": "session.py:104",
+      "stage": 1, "row": 1, "width": 150, "height": 44
+    },
+    {
+      "id": "checkpoint", "type": "backend", "label": "checkpoint 快照",
+      "sublabel": "照下当前 sequence",
+      "tag": "session.py:260",
+      "stage": 2, "row": 0, "width": 150, "height": 44
+    },
+    {
+      "id": "fork", "type": "backend", "label": "fork 分叉",
+      "sublabel": "按序列边界复制",
+      "tag": "session.py:271",
+      "stage": 2, "row": 1, "width": 150, "height": 44
+    },
+    {
+      "id": "store", "type": "database", "label": "SessionStore",
+      "sublabel": "三类后端 · 可注入",
+      "tag": "session.py:435",
+      "stage": 2, "row": 2, "width": 150, "height": 44, "yOffset": -26
+    },
+    {
+      "id": "replay", "type": "backend", "label": "replay 重放",
+      "sublabel": "完成 / 未完成 / 失败",
+      "tag": "session.py:311",
+      "stage": 3, "row": 0, "width": 150, "height": 44
+    },
+    {
+      "id": "guard", "type": "security", "label": "读时把关",
+      "sublabel": "validate · migrate",
+      "tag": "session.py:334",
+      "stage": 3, "row": 1, "width": 150, "height": 44
+    },
+    {
+      "id": "projector", "type": "backend", "label": "ContextProjector",
+      "sublabel": "回放派生 messages",
+      "tag": "session.py:644",
+      "stage": 4, "row": 0, "width": 150, "height": 44
+    }
+  ],
+  "flows": [
+    { "from": "writers", "to": "append", "label": "逐条追加" },
+    { "from": "append", "to": "fact", "label": "生成不可变事实", "labelAt": [315, 200] },
+    { "from": "fact", "to": "checkpoint", "label": "checkpoint 快照" },
+    { "from": "fact", "to": "fork", "label": "按边界复制", "route": "straight", "labelAt": [530, 314] },
+    { "from": "fact", "to": "store", "label": "save 落盘" },
+    { "from": "store", "to": "replay", "label": "replay 重放" },
+    { "from": "store", "to": "guard", "label": "读回并重建", "labelAt": [598, 321] },
+    { "from": "guard", "to": "projector", "label": "投影下一轮 messages" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan", "title": "一条事实的溯源坐标",
+      "items": [
+        "每事件带 event_id、timestamp、单调 sequence（session.py:104-116）",
+        "turn_id / step_id / run_id / agent_id / parent_event_id 定位时间位置与父因果（:112-116）",
+        "增量回读用 page(after, limit) 游标翻页（:255）"
+      ]
+    },
+    {
+      "dot": "emerald", "title": "快照与分叉",
+      "items": [
+        "checkpoint 记录当前 sequence 快照，并追加 session.checkpointed 事件（session.py:260-269）",
+        "fork(through_sequence) 复制 ≤ 边界事件，逐条挂 source_event_id / parent_event_id（:271-309）",
+        "快照与分叉都不改写历史：日志 append-only，重放只读（:194）"
+      ]
+    },
+    {
+      "dot": "rose", "title": "读时把关",
+      "items": [
+        "validate：sequence 必须从 1 连续无缺口、event_id 唯一（session.py:334-350）",
+        "from_dict 先 session_migrations.migrate 升级旧 schema_version 再重建（:46-75、:364）",
+        "schema_version 超上限直接报错，不做降级（:49-52、:344-348）"
+      ]
+    }
+  ]
+}
