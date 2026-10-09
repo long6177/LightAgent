@@ -16,12 +16,12 @@
   ],
   "mainPath": ["need", "gen", "write", "load", "use"],
   "nodes": [
-    { "id": "need", "lane": "you", "col": 0, "type": "external", "label": "描述想要的能力", "sublabel": "create_tool(user_input)", "tag": "core.py:2932", "width": 150 },
-    { "id": "gen", "lane": "agent", "col": 1, "type": "cloud", "label": "让模型写工具代码", "sublabel": "生成 tool_name+tool_code", "tag": "core.py:2993", "width": 150 },
-    { "id": "failed", "lane": "agent", "col": 2, "type": "security", "label": "写不出来就报错", "sublabel": "JSON 解析失败返回", "tag": "core.py:2997", "width": 150 },
-    { "id": "write", "lane": "dir", "col": 2, "type": "database", "label": "落盘为 .py 文件", "sublabel": "写入 tools/<tool_name>.py", "tag": "core.py:3019", "width": 150 },
-    { "id": "load", "lane": "agent", "col": 3, "type": "backend", "label": "热注册立即生效", "sublabel": "load_tools([tool_name])", "tag": "core.py:3024", "width": 150 },
-    { "id": "use", "lane": "you", "col": 4, "type": "external", "label": "对话里直接可用", "sublabel": "下一次 run() 就能点名", "tag": "tools.py:239", "width": 150 }
+    { "id": "need", "lane": "you", "col": 0, "type": "external", "label": "描述想要的能力", "sublabel": "create_tool(user_input)", "tag": "core.py:2977", "width": 150 },
+    { "id": "gen", "lane": "agent", "col": 1, "type": "cloud", "label": "让模型写工具代码", "sublabel": "生成 tool_name+tool_code", "tag": "core.py:3038", "width": 150 },
+    { "id": "failed", "lane": "agent", "col": 2, "type": "security", "label": "写不出来就报错", "sublabel": "JSON 解析失败返回", "tag": "core.py:2994", "width": 150 },
+    { "id": "write", "lane": "dir", "col": 2, "type": "database", "label": "落盘为 .py 文件", "sublabel": "写入 tools/<tool_name>.py", "tag": "core.py:3064", "width": 150 },
+    { "id": "load", "lane": "agent", "col": 3, "type": "backend", "label": "热注册立即生效", "sublabel": "load_tools([tool_name])", "tag": "core.py:3069", "width": 150 },
+    { "id": "use", "lane": "you", "col": 4, "type": "external", "label": "对话里直接可用", "sublabel": "下一次 run() 就能点名", "tag": "tools.py:240", "width": 150 }
   ],
   "edges": [
     { "from": "need", "to": "gen", "role": "main", "label": "一段自然语言" },
@@ -32,11 +32,11 @@
   ],
   "cards": [
     {
-      "dot": "cyan", "title": "生成链路（core.py:2932）",
+      "dot": "cyan", "title": "生成链路（core.py:2977）",
       "items": [
-        "create_tool 用主模型生成，prompt 里带现有工具说明书（:2940 附近）",
+        "create_tool 用主模型生成，prompt 里带现有工具说明书（:2985 附近）",
         "解析模型输出的 JSON：tool_name + tool_code 两个字段",
-        "生成即落盘 tools/<name>.py，再走 ToolLoader 热加载（tools.py:239）"
+        "生成即落盘 tools/<name>.py，再走 ToolLoader 热加载（tools.py:240）"
       ]
     },
     {

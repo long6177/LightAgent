@@ -63,7 +63,7 @@
       "type": "external",
       "label": "把步骤串成链",
       "sublabel": "flow.step(a).step(b)",
-      "tag": "flow.py:144",
+      "tag": "flow.py:153",
       "width": 150
     },
     {
@@ -73,7 +73,7 @@
       "type": "backend",
       "label": "先体检依赖关系",
       "sublabel": "查未知依赖与环",
-      "tag": "flow.py:192",
+      "tag": "flow.py:205",
       "width": 150
     },
     {
@@ -83,7 +83,7 @@
       "type": "backend",
       "label": "按依赖顺序执行",
       "sublabel": "拓扑排序后逐步跑",
-      "tag": "flow.py:809",
+      "tag": "flow.py:1024",
       "width": 150
     },
     {
@@ -93,7 +93,7 @@
       "type": "security",
       "label": "步骤前钩子",
       "sublabel": "before_flow_step 可拦截",
-      "tag": "flow.py:434",
+      "tag": "flow.py:560",
       "width": 150
     },
     {
@@ -103,7 +103,7 @@
       "type": "external",
       "label": "要人审批吗",
       "sublabel": "requires_approval 步骤",
-      "tag": "flow.py:932",
+      "tag": "flow.py:1176",
       "width": 150
     },
     {
@@ -113,7 +113,7 @@
       "type": "backend",
       "label": "Agent 执行本步",
       "sublabel": "_call_agent → run()",
-      "tag": "flow.py:743",
+      "tag": "flow.py:946",
       "width": 150
     },
     {
@@ -123,7 +123,7 @@
       "type": "security",
       "label": "重试/超时/兜底",
       "sublabel": "max_retry·timeout·fallback",
-      "tag": "flow.py:667",
+      "tag": "flow.py:811",
       "width": 150,
       "yOffset": 104
     },
@@ -134,7 +134,7 @@
       "type": "database",
       "label": "每步落盘存档",
       "sublabel": "JsonLightFlowStore",
-      "tag": "flow.py:871",
+      "tag": "flow.py:1102",
       "width": 150
     },
     {
@@ -144,7 +144,7 @@
       "type": "backend",
       "label": "批复后继续跑",
       "sublabel": "approve() → resume()",
-      "tag": "flow.py:266",
+      "tag": "flow.py:318",
       "width": 150,
       "yOffset": 0
     }
@@ -217,26 +217,26 @@
       "title": "什么时候用 LightFlow",
       "items": [
         "步骤固定、顺序明确的多 Agent 流水线（先调研→写作→审校）",
-        "每步就是一个 Agent 的 run()，输入可由 callable 从上一步结果拼装（flow.py:829）",
-        "编排器是同步确定性执行，异步入口 arun 走线程（:262）"
+        "每步就是一个 Agent 的 run()，输入可由 callable 从上一步结果拼装（flow.py:1044）",
+        "编排器是同步确定性执行，异步入口 arun 走线程（:314）"
       ]
     },
     {
       "dot": "emerald",
       "title": "断点续跑",
       "items": [
-        "每步结束写 JSON 存档（_checkpoint:871，每 run 一个文件）",
-        "resume() 跳过已成功步骤（:266）；rerun_step() 重跑某步及其全部下游（:300）",
-        "注意：超时后后台线程仍在跑，只是结果被丢弃（:766）"
+        "每步结束写 JSON 存档（_checkpoint:1102，每 run 一个文件）",
+        "resume() 跳过已成功步骤（:318）；rerun_step() 重跑某步及其全部下游（:358）",
+        "注意：超时后后台线程仍在跑，只是结果被丢弃（:975）"
       ]
     },
     {
       "dot": "rose",
-      "title": "审批的四种批复（flow.py:932）",
+      "title": "审批的四种批复（flow.py:1176）",
       "items": [
-        "approve：照原样继续；edit：改写该步问题后继续（:538）",
-        "respond：不调 Agent，人工文字直接当输出（:542）",
-        "reject：整条流程标记失败；pending 半途 break 退出等批复（:518）"
+        "approve：照原样继续；edit：改写该步问题后继续（:671）",
+        "respond：不调 Agent，人工文字直接当输出（:675）",
+        "reject：整条流程标记失败；pending 半途 break 退出等批复（:650）"
       ]
     }
   ]

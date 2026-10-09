@@ -108,21 +108,21 @@
       "to": "core",
       "y": 175,
       "label": "run(query, session_id)",
-      "note": "core.py:480"
+      "note": "core.py:489"
     },
     {
       "from": "core",
       "to": "rt",
       "y": 215,
       "label": "open_session()",
-      "note": "core.py:861"
+      "note": "core.py:877"
     },
     {
       "from": "rt",
       "to": "store",
       "y": 255,
       "label": "get(session_id)",
-      "note": "runtime.py:737"
+      "note": "runtime.py:920"
     },
     {
       "from": "store",
@@ -138,14 +138,14 @@
       "y": 335,
       "label": "回放事件恢复管理器",
       "variant": "return",
-      "note": "runtime.py:754 inbox/goals/budget/jobs"
+      "note": "runtime.py:948 inbox/goals/budget/jobs"
     },
     {
       "from": "core",
       "to": "session",
       "y": 375,
       "label": "追加 turn.started / message.received",
-      "note": "core.py:876/881"
+      "note": "core.py:878/883"
     },
     {
       "from": "core",
@@ -153,28 +153,28 @@
       "y": 430,
       "label": "每条事件落盘",
       "variant": "dashed",
-      "note": "core.py:896 save"
+      "note": "core.py:912 save"
     },
     {
       "from": "core",
       "to": "session",
       "y": 470,
       "label": "model.* / tool.* 持续记录",
-      "note": "映射表 core.py:913"
+      "note": "映射表 core.py:914"
     },
     {
       "from": "app",
       "to": "core",
       "y": 530,
       "label": "checkpoint_session()",
-      "note": "core.py:795"
+      "note": "core.py:804"
     },
     {
       "from": "core",
       "to": "rt",
       "y": 565,
       "label": "checkpoint()",
-      "note": "runtime.py:761"
+      "note": "runtime.py:955"
     },
     {
       "from": "rt",
@@ -188,7 +188,7 @@
       "to": "core",
       "y": 635,
       "label": "新进程带 session_id 回来",
-      "note": "core.py:625 → open_session:861"
+      "note": "core.py:641 → open_session:863"
     },
     {
       "from": "rt",
@@ -214,8 +214,8 @@
       "title": "恢复的两条路径与陷阱",
       "items": [
         "整会话恢复：store.get → SessionEvent.from_dict → migrate（session.py:366）",
-        "管理器状态恢复：open_session 按 inbox.*/goal.*/budget.*/job.* 命名空间回放（runtime.py:754）",
-        "Job 只恢复档案并标 INTERRUPTED，协程本体不恢复（runtime.py:564/557）",
+        "管理器状态恢复：open_session 按 inbox.*/goal.*/budget.*/job.* 命名空间回放（runtime.py:948）",
+        "Job 只恢复档案并标 INTERRUPTED，协程本体不恢复（runtime.py:700/684）",
         "replay() 只统计 turn 完成度，不重放执行（session.py:313）"
       ]
     }

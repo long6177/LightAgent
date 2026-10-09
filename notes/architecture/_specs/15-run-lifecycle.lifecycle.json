@@ -24,7 +24,7 @@
       "col": 0,
       "label": "进入 run()",
       "sublabel": "生成 traceid",
-      "tag": "core.py:480"
+      "tag": "core.py:489"
     },
     {
       "id": "prepare",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "准备与检查",
       "sublabel": "开会话·钩子·护栏",
-      "tag": "core.py:852/598"
+      "tag": "core.py:854/603"
     },
     {
       "id": "assemble",
@@ -42,7 +42,7 @@
       "col": 2,
       "label": "组装上下文",
       "sublabel": "记忆注入 + ToT",
-      "tag": "core.py:1436/2745"
+      "tag": "core.py:1481/2790"
     },
     {
       "id": "loop",
@@ -51,7 +51,7 @@
       "col": 3,
       "label": "模型与工具循环",
       "sublabel": "create ↔ dispatch",
-      "tag": "core.py:726/2000"
+      "tag": "core.py:742/2045"
     },
     {
       "id": "finish",
@@ -60,7 +60,7 @@
       "col": 4,
       "label": "正常收尾",
       "sublabel": "_finish_run",
-      "tag": "core.py:995"
+      "tag": "core.py:1011"
     },
     {
       "id": "halted",
@@ -69,7 +69,7 @@
       "col": 1,
       "label": "中止",
       "sublabel": "拦截·预算·超限",
-      "tag": "core.py:589/1017"
+      "tag": "core.py:617/1010"
     },
     {
       "id": "modelfail",
@@ -190,19 +190,19 @@
       "dot": "cyan",
       "title": "主线对应的函数（core.py）",
       "items": [
-        "run:480 总入口 → _begin_session_run:852 开会话并投影历史",
-        "_add_memory_context:1436 → run_thought:2745（ToT 可选）",
-        "_prepare_model_request:1072 每次模型调用前的统一闸门",
-        "_finish_run:995 收尾：on_error/after_run 钩子 + run_end + turn 事件"
+        "run:478 总入口 → _begin_session_run:854 开会话并投影历史",
+        "_add_memory_context:1439 → run_thought:2713（ToT 可选）",
+        "_prepare_model_request:1084 每次模型调用前的统一闸门",
+        "_finish_run:997 收尾：on_error/after_run 钩子 + run_end + turn 事件"
       ]
     },
     {
       "dot": "rose",
       "title": "出口与陷阱",
       "items": [
-        "非流式轮数由 max_retry 控制（:1918），重试用尽返回固定失败文案（:2107）",
-        "预算四维：seconds:1014 / model_calls:1082 / tokens:1137 / tool_calls:1294",
-        "run() 会重置实例状态（:531），并发/嵌套调用同一实例不安全"
+        "非流式轮数由 max_retry 控制（:1914），重试用尽返回固定失败文案（:2097）",
+        "预算四维：seconds:1016 / model_calls:1097 / tokens:1152 / tool_calls:1301",
+        "run() 会重置实例状态（:546），并发/嵌套调用同一实例不安全"
       ]
     }
   ]

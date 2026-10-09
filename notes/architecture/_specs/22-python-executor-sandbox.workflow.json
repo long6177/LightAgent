@@ -58,7 +58,7 @@
       "type": "cloud",
       "label": "Agent 要跑代码",
       "sublabel": "execute_python_code",
-      "tag": "python_executor.py:399",
+      "tag": "python_executor.py:456",
       "width": 156
     },
     {
@@ -68,7 +68,7 @@
       "type": "security",
       "label": "双重门控",
       "sublabel": "注册开关+SandboxProvider",
-      "tag": "core.py:272/1260",
+      "tag": "core.py:270/1269",
       "width": 156
     },
     {
@@ -78,7 +78,7 @@
       "type": "backend",
       "label": "三入口收口",
       "sublabel": "code · file · stream",
-      "tag": "python_executor.py:399/525/563",
+      "tag": "python_executor.py:451/577/615",
       "width": 156
     },
     {
@@ -88,7 +88,7 @@
       "type": "security",
       "label": "import 审查",
       "sublabel": "AST 黑名单+别名还原",
-      "tag": "python_executor.py:280",
+      "tag": "python_executor.py:337",
       "width": 156
     },
     {
@@ -98,7 +98,7 @@
       "type": "external",
       "label": "拦截",
       "sublabel": "危险模块/内置/动态派发",
-      "tag": "python_executor.py:22",
+      "tag": "python_executor.py:23",
       "width": 156,
       "yOffset": 108
     },
@@ -109,7 +109,7 @@
       "type": "backend",
       "label": "受限执行",
       "sublabel": "子进程·临时目录·超时",
-      "tag": "python_executor.py:493",
+      "tag": "python_executor.py:550",
       "width": 156
     },
     {
@@ -119,7 +119,7 @@
       "type": "backend",
       "label": "输出捕获",
       "sublabel": "stdout/stderr/退出码",
-      "tag": "python_executor.py:504",
+      "tag": "python_executor.py:561",
       "width": 156
     },
     {
@@ -187,7 +187,7 @@
       "dot": "rose",
       "title": "这是静态审查，不是容器沙箱",
       "items": [
-        "AST 黑名单挡 import/eval/exec/getattr 逃逸（python_executor.py:280-345）",
+        "AST 黑名单挡 import/eval/exec/getattr 逃逸（python_executor.py:337-402）",
         "无 seccomp/namespace/资源限额，子进程与宿主共享内核",
         "文件系统隔离仅限 cwd=临时目录，代码本身仍可触碰宿主路径（若绕过 open 黑名单）"
       ]
@@ -196,8 +196,8 @@
       "dot": "emerald",
       "title": "执行边界",
       "items": [
-        "默认 30s 超时（tool_info 声明，模型可传）；流式版超时后 kill（:662）",
-        "有 requirements 时建临时 venv 且子进程 env={}（:452/500）",
+        "默认 30s 超时（tool_info 声明，模型可传）；流式版超时后 kill（:719）",
+        "有 requirements 时建临时 venv 且子进程 env={}（:500/552）",
         "无 requirements 时继承完整宿主环境变量——注意 API key 暴露面"
       ]
     },
@@ -205,8 +205,8 @@
       "dot": "cyan",
       "title": "绕过与清洗的陷阱",
       "items": [
-        "_clean_code_string 是有损清洗：字面 \n、Windows 路径可能被改坏（:95）",
-        "execute_python_file 无目录限制，可执行宿主任意 .py（:525）",
+        "_clean_code_string 是有损清洗：字面 \n、Windows 路径可能被改坏（:145）",
+        "execute_python_file 无目录限制，可执行宿主任意 .py（:582）",
         "与 safe_expression 互补：后者白名单零执行面，前者全功能需门控"
       ]
     }

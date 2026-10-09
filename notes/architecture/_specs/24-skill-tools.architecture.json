@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/long6177/LightAgent",
-      "revision": "f2c29eebca1ae362c0f384bc05055e0043a8f63f"
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
     },
     "views": [
       { "id": "register", "label": "注册链路", "focus": ["skillsDir", "manager", "bridge", "four", "registry"], "note": "从扫描 SKILL.md 到四件套入注册表" },
@@ -81,8 +81,8 @@
       "tag": "core.py",
       "pos": [990, 330], "size": [172, 62],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 288, "label": "auto_discover_skills" },
-        { "path": "LightAgent/core.py", "line": 295, "label": "create_skill_tools 调用" }
+        { "path": "LightAgent/core.py", "line": 286, "label": "auto_discover_skills" },
+        { "path": "LightAgent/core.py", "line": 293, "label": "create_skill_tools 调用" }
       ]
     }
   ],
@@ -104,7 +104,7 @@
       "dot": "cyan", "title": "渐进式披露",
       "items": [
         "构造期只扫 SKILL.md 元数据（skills.py:43），正文不读",
-        "get_skills_xml 把技能清单注入 system prompt（core.py:659）",
+        "get_skills_xml 把技能清单注入 system prompt（core.py:675）",
         "模型按需调 activate_skill 才载入全文指令（skills.py:142）"
       ]
     },

@@ -24,7 +24,7 @@
       "col": 0,
       "label": "已定义",
       "sublabel": "tool_info / MCP / 生成",
-      "tag": "tools.py:36"
+      "tag": "tools.py:37"
     },
     {
       "id": "registered",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "已登记",
       "sublabel": "进注册表三视图",
-      "tag": "tools.py:54"
+      "tag": "tools.py:55"
     },
     {
       "id": "live",
@@ -42,7 +42,7 @@
       "col": 2,
       "label": "在岗可调用",
       "sublabel": "dispatch 随时执行",
-      "tag": "tools.py:294"
+      "tag": "tools.py:255"
     },
     {
       "id": "removed",
@@ -51,7 +51,7 @@
       "col": 3,
       "label": "退役",
       "sublabel": "被覆盖 / 被移除",
-      "tag": "tools.py:81"
+      "tag": "tools.py:82"
     },
     {
       "id": "hotswap",
@@ -60,7 +60,7 @@
       "col": 2,
       "label": "同名覆盖中",
       "sublabel": "load_tools 原地替换",
-      "tag": "tools.py:54"
+      "tag": "tools.py:55"
     },
     {
       "id": "invalid",
@@ -69,7 +69,7 @@
       "col": 0,
       "label": "校验未过",
       "sublabel": "tool_info 不合法",
-      "tag": "tools.py:97"
+      "tag": "tools.py:98"
     },
     {
       "id": "disconnected",
@@ -196,18 +196,18 @@
       "dot": "cyan",
       "title": "登记的两条通道",
       "items": [
-        "常规通道：register_tool 校验 tool_info → 覆盖写三视图（tools.py:36-87）",
+        "常规通道：register_tool 校验 tool_info → 覆盖写三视图（tools.py:37-88）",
         "MCP 通道：绕过 register_tool 直写三视图（mcp_client_manager.py:127-150）",
-        "同名注册静默覆盖并返回 True，只有 validate_tools 能事后诊断（:175）"
+        "同名注册静默覆盖并返回 True，只有 validate_tools 能事后诊断（:176）"
       ]
     },
     {
       "dot": "rose",
       "title": "热替换与退役",
       "items": [
-        "load_tools 按名字重新加载即原地替换（tools.py:239，core.py:3024）",
+        "load_tools 按名字重新加载即原地替换（tools.py:240，core.py:3069）",
         "MCP refresh_tools 先摘旧再重注册（mcp_client_manager.py:165）",
-        "schema 视图同步：先删同名旧 schema 再 append 新的（tools.py:81-86）"
+        "schema 视图同步：先删同名旧 schema 再 append 新的（tools.py:82-87）"
       ]
     }
   ]

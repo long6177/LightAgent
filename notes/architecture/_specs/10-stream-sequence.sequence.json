@@ -93,14 +93,14 @@
       "to": "core",
       "y": 175,
       "label": "run(query, stream=True)",
-      "note": "core.py:480"
+      "note": "core.py:489"
     },
     {
       "from": "core",
       "to": "llm",
       "y": 215,
       "label": "create(stream=True)",
-      "note": "core.py:726"
+      "note": "core.py:742"
     },
     {
       "from": "llm",
@@ -108,7 +108,7 @@
       "y": 255,
       "label": "逐块下发 delta",
       "variant": "return",
-      "note": "core.py:2141"
+      "note": "core.py:2186"
     },
     {
       "from": "core",
@@ -124,7 +124,7 @@
       "y": 340,
       "label": "tool_calls 增量分片",
       "variant": "return",
-      "note": "按 index 拼接 core.py:2165"
+      "note": "按 index 拼接 core.py:2210"
     },
     {
       "from": "core",
@@ -132,14 +132,14 @@
       "y": 380,
       "label": "yield 工具调用信息",
       "variant": "return",
-      "note": "core.py:2255"
+      "note": "core.py:2300"
     },
     {
       "from": "core",
       "to": "tool",
       "y": 420,
       "label": "dispatch(name, args)",
-      "note": "core.py:2285"
+      "note": "core.py:2330"
     },
     {
       "from": "tool",
@@ -147,7 +147,7 @@
       "y": 460,
       "label": "执行结果 / 流式输出",
       "variant": "return",
-      "note": "tools.py:294"
+      "note": "tools.py:255"
     },
     {
       "from": "core",
@@ -155,7 +155,7 @@
       "y": 500,
       "label": "yield 工具输出",
       "variant": "return",
-      "note": "core.py:2316"
+      "note": "core.py:2368"
     },
     {
       "from": "core",
@@ -163,14 +163,14 @@
       "y": 535,
       "label": "turn/model/tool 事件",
       "variant": "dashed",
-      "note": "core.py:910 双写"
+      "note": "core.py:926 双写"
     },
     {
       "from": "core",
       "to": "llm",
       "y": 580,
       "label": "带工具结果再次请求",
-      "note": "core.py:2463"
+      "note": "core.py:2508"
     },
     {
       "from": "llm",
@@ -178,7 +178,7 @@
       "y": 620,
       "label": "逐块下发至 finish_reason=stop",
       "variant": "return",
-      "note": "core.py:2203"
+      "note": "core.py:2248"
     },
     {
       "from": "core",
@@ -193,18 +193,18 @@
       "dot": "cyan",
       "title": "流式循环怎么转",
       "items": [
-        "while 循环内：模型流式输出 → 收集 tool_calls → 执行 → 回填 → 再次请求（core.py:2112-2487）",
-        "流式工具轮的 assistant 消息是手工 dict，content 必须空串并带 reasoning_content（:2421，DeepSeek 兼容）",
-        "max_tool_iterations 只约束这条流式路径（:2400）"
+        "while 循环内：模型流式输出 → 收集 tool_calls → 执行 → 回填 → 再次请求（core.py:2157-2532）",
+        "流式工具轮的 assistant 消息是手工 dict，content 必须空串并带 reasoning_content（:2466，DeepSeek 兼容）",
+        "max_tool_iterations 只约束这条流式路径（:2375）"
       ]
     },
     {
       "dot": "rose",
       "title": "消费方必读",
       "items": [
-        "yield 的既有 ChatCompletionChunk 对象也有 dict（:2141），消费方必须自行判型",
-        "想拿结构化事件用 result_format='event'，_stream_as_events 包装五类 StreamEvent（:1415）",
-        "流式内容不经过输出护栏（对比非流式 :2073）"
+        "yield 的既有 ChatCompletionChunk 对象也有 dict（:2186），消费方必须自行判型",
+        "想拿结构化事件用 result_format='event'，_stream_as_events 包装五类 StreamEvent（:1460）",
+        "流式内容不经过输出护栏（对比非流式 :2064）"
       ]
     }
   ]

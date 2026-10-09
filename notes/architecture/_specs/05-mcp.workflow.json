@@ -63,7 +63,7 @@
       "type": "external",
       "label": "一行接入",
       "sublabel": "await agent.setup_mcp()",
-      "tag": "core.py:460",
+      "tag": "core.py:458",
       "width": 152
     },
     {
