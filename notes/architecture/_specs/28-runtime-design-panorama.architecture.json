@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Runtime 设计全景（v0.10 / v0.11）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
+    },
+    "views": [
+      { "id": "compat", "label": "① 兼容入口 · 双轨异步", "focus": ["entry", "runtime", "jobs"], "note": "旧 API 零改动；同步客户端隔离到工作线程，原生异步留在事件循环" },
+      { "id": "security", "label": "② 能力与安全边界", "focus": ["registry", "gate", "policy"], "note": "Registry 找能力并调用，Gate 在安全上下文下守边界，两者都经 PolicyEngine" },
+      { "id": "persistence", "label": "③ 事件溯源与输入治理", "focus": ["session", "store", "compact", "retrieve"], "note": "事件是唯一持久化介质；上下文与检索都从历史派生" },
+      { "id": "extend", "label": "④ 技能 · MCP · 韧性", "focus": ["skills", "mcp", "jobs"], "note": "技能后目录覆盖、MCP 命名空间隔离；长任务靠租约与 epoch 防旧结果" }
+    ]
+  },
+  "components": [
+    {
+      "id": "entry", "type": "backend", "label": "run() / arun() 调用入口",
+      "sublabel": "同步主线 · 异步线程桥",
+      "tag": "core.py",
+      "pos": [64, 104], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 478, "label": "run 同步主循环入口" },
+        { "path": "LightAgent/core.py", "line": 751, "label": "arun 异步入口" },
+        { "path": "LightAgent/core.py", "line": 763, "label": "astream 异步迭代器" }
+      ]
+    },
+    {
+      "id": "runtime", "type": "backend", "label": "AgentRuntime 治理中枢",
+      "sublabel": "六大管理器 · opt-in",
+      "tag": "runtime.py",
+      "pos": [420, 98], "size": [220, 100],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 897, "label": "AgentRuntime" },
+        { "path": "LightAgent/runtime.py", "line": 920, "label": "open_session 回放恢复" },
+        { "path": "LightAgent/runtime.py", "line": 1000, "label": "_append 统一事件出口" }
+      ]
+    },
+    {
+      "id": "session", "type": "database", "label": "Session 事件日志",
+      "sublabel": "append-only · 连续 sequence",
+      "tag": "session.py",
+      "pos": [780, 104], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 195, "label": "Session 聚合根" },
+        { "path": "LightAgent/session.py", "line": 216, "label": "append 递增 sequence" },
+        { "path": "LightAgent/session.py", "line": 336, "label": "validate 连续性校验" }
+      ]
+    },
+    {
+      "id": "store", "type": "database", "label": "SessionStore 三后端",
+      "sublabel": "内存 / JSONL / SQLite",
+      "tag": "session.py",
+      "pos": [1100, 104], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore 协议" },
+        { "path": "LightAgent/session.py", "line": 394, "label": "InMemory 默认后端" },
+        { "path": "LightAgent/session.py", "line": 521, "label": "Sqlite WAL 事务" }
+      ]
+    },
+    {
+      "id": "registry", "type": "backend", "label": "CapabilityRegistry 能力注册表",
+      "sublabel": "作用域优先 · 同级后注册胜",
+      "tag": "capabilities.py",
+      "pos": [64, 292], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/capabilities.py", "line": 375, "label": "CapabilityRegistry" },
+        { "path": "LightAgent/capabilities.py", "line": 460, "label": "resolve 作用域排序" },
+        { "path": "LightAgent/capabilities.py", "line": 507, "label": "invoke 路由" }
+      ]
+    },
+    {
+      "id": "jobs", "type": "backend", "label": "JobManager 长任务",
+      "sublabel": "幂等键 · 租约 · fencing epoch",
+      "tag": "runtime.py",
+      "pos": [420, 292], "size": [220, 88],
+      "sources": [
+        { "path": "LightAgent/runtime.py", "line": 484, "label": "start 幂等键入档" },
+        { "path": "LightAgent/runtime.py", "line": 611, "label": "renew_lease 续租" },
+        { "path": "LightAgent/runtime.py", "line": 637, "label": "resume 递增 epoch" }
+      ]
+    },
+    {
+      "id": "compact", "type": "backend", "label": "ContextBudget + Compactor",
+      "sublabel": "确定性裁剪 · sha256 外溢",
+      "tag": "session.py",
+      "pos": [780, 292], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/session.py", "line": 717, "label": "ContextBudget 估算" },
+        { "path": "LightAgent/session.py", "line": 741, "label": "ContextCompactor" },
+        { "path": "LightAgent/session.py", "line": 802, "label": "超长工具结果外溢" }
+      ]
+    },
+    {
+      "id": "retrieve", "type": "database", "label": "RAG 与会话检索",
+      "sublabel": "FTS5 · 引用可核对",
+      "tag": "knowledge.py",
+      "pos": [1100, 292], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/knowledge.py", "line": 78, "label": "SqliteFTSRetrievalProvider" },
+        { "path": "LightAgent/knowledge.py", "line": 302, "label": "SessionSearchProvider" },
+        { "path": "LightAgent/knowledge.py", "line": 194, "label": "search 检索" }
+      ]
+    },
+    {
+      "id": "gate", "type": "security", "label": "CapabilityGate 能力闸门",
+      "sublabel": "SecurityContext · 审批令牌",
+      "tag": "security.py",
+      "pos": [64, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/security.py", "line": 373, "label": "CapabilityGate" },
+        { "path": "LightAgent/security.py", "line": 387, "label": "authorize 六项检查" },
+        { "path": "LightAgent/security.py", "line": 70, "label": "SecurityContext" }
+      ]
+    },
+    {
+      "id": "policy", "type": "security", "label": "PolicyEngine 策略引擎",
+      "sublabel": "allow / block / approval",
+      "tag": "capabilities.py",
+      "pos": [420, 450], "size": [220, 88],
+      "sources": [
+        { "path": "LightAgent/capabilities.py", "line": 298, "label": "PolicyEngine" },
+        { "path": "LightAgent/capabilities.py", "line": 343, "label": "evaluate_sync" },
+        { "path": "LightAgent/capabilities.py", "line": 275, "label": "PolicyDecision 三裁决" }
+      ]
+    },
+    {
+      "id": "skills", "type": "backend", "label": "SkillManager 技能目录",
+      "sublabel": "后目录覆盖 · 冲突可查",
+      "tag": "skills.py",
+      "pos": [780, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/skills.py", "line": 34, "label": "SkillManager" },
+        { "path": "LightAgent/skills.py", "line": 43, "label": "declared order 扫描" },
+        { "path": "LightAgent/skills.py", "line": 83, "label": "list_conflicts" }
+      ]
+    },
+    {
+      "id": "mcp", "type": "external", "label": "MCPClientManager 外部工具",
+      "sublabel": "stdio / SSE / HTTP · 命名空间",
+      "tag": "mcp_client_manager.py",
+      "pos": [1100, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/mcp_client_manager.py", "line": 26, "label": "MCPClientManager" },
+        { "path": "LightAgent/mcp_client_manager.py", "line": 165, "label": "refresh_tools" },
+        { "path": "LightAgent/mcp_client_manager.py", "line": 189, "label": "命名空间隔离" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "能力与安全边界（v0.11）", "wraps": ["registry", "gate"], "pad": 12 },
+    { "kind": "region", "label": "事件溯源持久化底座", "wraps": ["session", "store"], "pad": 12 },
+    { "kind": "region", "label": "上下文与知识（输入治理）", "wraps": ["compact", "retrieve"], "pad": 12 },
+    { "kind": "region", "label": "技能与 MCP 接入", "wraps": ["skills", "mcp"], "pad": 12 }
+  ],
+  "connections": [
+    { "from": "entry", "to": "runtime", "label": "持有 · run 前 open_session", "variant": "emphasis", "fromSide": "right", "toSide": "left", "labelAt": [300, 206] },
+    { "from": "runtime", "to": "session", "label": "_append：append + save", "variant": "emphasis", "fromSide": "right", "toSide": "left", "labelAt": [700, 148] },
+    { "from": "session", "to": "store", "label": "save / get", "fromSide": "right", "toSide": "left" },
+    { "from": "runtime", "to": "jobs", "label": "job.* 事件", "fromSide": "bottom", "toSide": "top", "labelAt": [530, 245] },
+    { "from": "runtime", "to": "registry", "label": "runtime.registry 能力面", "fromSide": "top", "toSide": "top", "via": [[530, 84], [390, 84], [390, 220], [166, 220]], "labelAt": [150, 220] },
+    { "from": "session", "to": "compact", "label": "compact_session 投影", "fromSide": "bottom", "toSide": "top", "labelAt": [882, 242] },
+    { "from": "store", "to": "retrieve", "label": "SessionSearch 读会话历史", "fromSide": "bottom", "toSide": "top", "labelAt": [1202, 242] },
+    { "from": "registry", "to": "gate", "label": "SecurityContext 路径", "fromSide": "bottom", "toSide": "top", "labelAt": [166, 436] },
+    { "from": "gate", "to": "policy", "label": "authorize → 策略裁决", "fromSide": "right", "toSide": "left" },
+    { "from": "registry", "to": "skills", "label": "SkillProviderAdapter", "fromSide": "right", "toSide": "top", "via": [[330, 336], [330, 390], [882, 390]], "labelAt": [470, 390] },
+    { "from": "registry", "to": "mcp", "label": "MCPProviderAdapter", "fromSide": "left", "toSide": "top", "via": [[28, 336], [28, 414], [1202, 414]], "labelAt": [700, 414] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan", "title": "兼容边界与双轨异步",
+      "items": [
+        "agent.run('hello') / stream / Hooks / Guardrails / Memory / LightSwarm / LightFlow 保持兼容，runtime 完全 opt-in",
+        "arun 非流式用 asyncio.to_thread 隔离同步客户端；astream 以 sentinel 判停并在 finally 归还生成器（core.py:751-778）",
+        "原生异步 Provider 与后台 Job 留在调用方事件循环（core.py:752-756）",
+        "Session / Capability API 属 pre-1.0 契约：v1.0 冻结前只做 additive 变更（docs/runtime_v010.md）"
+      ]
+    },
+    {
+      "dot": "emerald", "title": "事件即持久化",
+      "items": [
+        "六大管理器只改内存态，统一经 _append → Session.append + store.save（runtime.py:1000）",
+        "事件四大性质：append-only、sequence 连续校验、schema_version 版本、凭据字段写前脱敏（session.py:18-28、336）",
+        "open_session 按命名空间回放恢复；Job 只恢复档案，未完结立即标 INTERRUPTED（runtime.py:920、684）"
+      ]
+    },
+    {
+      "dot": "rose", "title": "收紧原则与长任务韧性",
+      "items": [
+        "SecurityContext.narrow 只允许收紧资源 / 网络 / 沙箱 / 截止时间 / 风险，不能放宽（security.py:107）",
+        "ApprovalToken 绑定 arguments_digest，reusable 默认 False；重复消费验证失败（security.py:208-310）",
+        "Job 幂等键去重返回原任务、租约过期不发布结果、恢复递增 fencing epoch（runtime.py:484、637）"
+      ]
+    }
+  ]
+}
