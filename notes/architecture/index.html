@@ -68,7 +68,7 @@
 <body>
 <header>
   <h1>LightAgent 架构图集</h1>
-  <span class="sub">27 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
+  <span class="sub">28 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
   <span class="spacer"></span>
   <span class="ztool" aria-label="缩放控制">
     <button id="zout" aria-label="缩小" title="缩小（-）">−</button>
@@ -125,7 +125,8 @@ const DATA = [
   { id:'runtime', name:'运行时', sub:'长任务治理层', color:'var(--blue)', side:'left', items:[
     {file:'25-agent-runtime.html', num:'25', title:'AgentRuntime 长任务运行时', desc:'六大治理组件 · 事件日志即持久化', type:'architecture'},
     {file:'26-event-flow.html', num:'26', title:'事件流全景', desc:'Session / Trace / Hooks · 双写与回放', type:'architecture'},
-    {file:'27-session-lineage.html', num:'27', title:'会话事件溯源', desc:'事件日志 · append-only · 快照 / 分叉 / 重放', type:'dataflow'}
+    {file:'27-session-lineage.html', num:'27', title:'会话事件溯源', desc:'事件日志 · append-only · 快照 / 分叉 / 重放', type:'dataflow'},
+    {file:'28-runtime-design-panorama.html', num:'28', title:'Runtime 设计全景', desc:'v0.10/v0.11 九项设计 · 兼容边界与治理全貌', type:'architecture'}
   ]}
 ];
 
@@ -256,7 +257,7 @@ el('rect', {x:cx-CENTER.w/2, y:cy-CENTER.h/2, width:CENTER.w, height:CENTER.h, r
 const ct = el('text', {x:cx, y:cy-12, class:'ct'}, cg); ct.textContent = 'LightAgent';
 const ct2 = el('text', {x:cx, y:cy+22, class:'ct', style:'font-size:18px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
 const cs = el('text', {x:cx, y:cy+54, class:'cs'}, cg);
-cs.textContent = '6 类视角 · 27 张图 · 点击节点打开';
+cs.textContent = '6 类视角 · 28 张图 · 点击节点打开';
 
 // ===== 缩放与平移：以 viewBox 方式实现，任何倍率下文字都保持矢量清晰 =====
 (function(){
