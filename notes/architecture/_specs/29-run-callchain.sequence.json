@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "run 调用链：同步核心与异步桥接",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1400, 640],
+    "column_fit": "spread",
+    "views": [
+      { "id": "sync-entry", "label": "① 同步入口 run()：阻塞到底", "focus": ["caller", "core", "llm", "disp", "tool"], "note": "run() 全程占用调用者线程；异步工具经 run_async_safely 同步等待" },
+      { "id": "async-entry", "label": "② 异步入口 arun()：to_thread 外壳", "focus": ["caller", "loop", "worker", "core"], "note": "asyncio.to_thread 把同步 run() 移出调用方事件循环，等待期间不占 loop" },
+      { "id": "stream", "label": "③ 流式：同步生成器的两种消费", "focus": ["loop", "worker", "core", "disp"], "note": "同步 next() 阻塞；astream 为每个 chunk 做一次 to_thread 往返" }
+    ]
+  },
+  "participants": [
+    { "id": "caller", "type": "external", "label": "调用方" },
+    { "id": "loop", "type": "backend", "label": "调用方事件循环" },
+    { "id": "worker", "type": "backend", "label": "工作线程" },
+    { "id": "core", "type": "backend", "label": "同步核心 run()" },
+    { "id": "llm", "type": "cloud", "label": "大模型 API" },
+    { "id": "disp", "type": "backend", "label": "工具调度" },
+    { "id": "tool", "type": "backend", "label": "工具" }
+  ],
+  "segments": [
+    { "from": 150, "to": 286, "label": "① 同步入口 · run() 非流式" },
+    { "from": 290, "to": 366, "label": "② 异步入口 · arun() 非流式" },
+    { "from": 370, "to": 482, "label": "③ 流式 · 同步 run(stream=True)" },
+    { "from": 486, "to": 566, "label": "④ 流式 · 异步 astream()" }
+  ],
+  "messages": [
+    { "from": "caller", "to": "core", "y": 160, "label": "run(query, stream=False)", "note": "core.py:478｜同步阻塞至结束" },
+    { "from": "core", "to": "llm", "y": 188, "label": "create() 同步 HTTP", "note": "core.py:729｜首轮模型请求" },
+    { "from": "core", "to": "disp", "y": 216, "label": "run_async_safely(dispatch)", "variant": "emphasis", "note": "core.py:1991｜同步→异步桥" },
+    { "from": "disp", "to": "tool", "y": 244, "label": "调用工具", "note": "tools.py:273-288｜四路分支" },
+    { "from": "core", "to": "caller", "y": 272, "label": "返回最终文本 str", "variant": "return", "note": "tools.py:291 → core.py:749" },
+
+    { "from": "caller", "to": "loop", "y": 300, "label": "await arun(query)", "note": "core.py:751" },
+    { "from": "loop", "to": "worker", "y": 328, "label": "asyncio.to_thread(run)", "variant": "emphasis", "note": "core.py:760｜异步→同步桥" },
+    { "from": "loop", "to": "caller", "y": 356, "label": "await 得到结果", "variant": "return", "note": "core.py:760" },
+
+    { "from": "caller", "to": "core", "y": 384, "label": "run(query, stream=True)", "note": "core.py:744-748｜同步生成器" },
+    { "from": "core", "to": "llm", "y": 412, "label": "create(stream=True)", "note": "core.py:729" },
+    { "from": "core", "to": "disp", "y": 440, "label": "run_async_safely(dispatch)", "variant": "emphasis", "note": "core.py:2260｜同步→异步桥" },
+    { "from": "core", "to": "caller", "y": 468, "label": "yield chunk → 最终回复", "variant": "return", "note": "每次 next() 阻塞" },
+
+    { "from": "caller", "to": "loop", "y": 496, "label": "async for astream()", "note": "core.py:763" },
+    { "from": "loop", "to": "worker", "y": 524, "label": "to_thread(next, gen)", "variant": "emphasis", "note": "core.py:771｜每 chunk 一次往返" },
+    { "from": "loop", "to": "caller", "y": 552, "label": "yield item", "variant": "return", "note": "core.py:771-774｜结束 to_thread(close)" }
+  ],
+  "activations": [
+    { "participant": "caller", "from": 156, "to": 278 },
+    { "participant": "core", "from": 160, "to": 276 },
+    { "participant": "llm", "from": 184, "to": 192 },
+    { "participant": "disp", "from": 212, "to": 248 },
+    { "participant": "tool", "from": 240, "to": 248 },
+
+    { "participant": "caller", "from": 296, "to": 362 },
+    { "participant": "loop", "from": 296, "to": 362 },
+    { "participant": "worker", "from": 324, "to": 332 },
+
+    { "participant": "caller", "from": 380, "to": 474 },
+    { "participant": "core", "from": 384, "to": 474 },
+    { "participant": "llm", "from": 408, "to": 416 },
+    { "participant": "disp", "from": 436, "to": 444 },
+
+    { "participant": "caller", "from": 492, "to": 558 },
+    { "participant": "loop", "from": 492, "to": 558 },
+    { "participant": "worker", "from": 520, "to": 528 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条桥，方向相反",
+      "items": [
+        "asyncio.to_thread：异步 → 同步。arun / astream 把同步 run() 移出调用方事件循环（core.py:760、767）",
+        "run_async_safely：同步 → 异步。同步核心借它等待 async dispatch（core.py:80-109）",
+        "两者都是“等待”语义：to_thread 不占事件循环但任务仍在等；future.result() 直接阻塞当前线程（core.py:109）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "同步是默认，异步只是外壳",
+      "items": [
+        "_core_run_logic / _run_non_stream_logic / _run_stream_logic 全是同步实现（core.py:1903、1910、2102）；stream 只切换输出协议",
+        "dispatch 声明为 async，但同步工具被直接调用（tools.py:273-288）；耗时同步工具会阻塞承载它的事件循环",
+        "工具四态：同步函数 / 异步函数 / 同步生成器（透传） / 异步生成器（收集为 str）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "阻塞点落在哪里",
+      "items": [
+        "非流式：run() 全程阻塞调用者线程；arun() 只是把等待移出调用方 loop（core.py:760）",
+        "流式：同步每次 next() 阻塞；astream() 每 chunk 一次 to_thread 往返，finally 再 to_thread(close)（core.py:771-778）",
+        "常见路径下 dispatch 的临时事件循环在工作线程，阻塞的是它而非调用方事件循环（core.py:103、107-109）"
+      ]
+    }
+  ]
+}
