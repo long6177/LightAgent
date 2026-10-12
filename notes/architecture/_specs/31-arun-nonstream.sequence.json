@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "② 异步入口 arun()：to_thread 线程桥",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1085, 580],
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "caller", "type": "external", "label": "调用方", "sublabel": "async 宿主" },
+    { "id": "loop", "type": "backend", "label": "事件循环", "sublabel": "调用方 asyncio" },
+    { "id": "worker", "type": "backend", "label": "工作线程", "sublabel": "to_thread" },
+    { "id": "core", "type": "backend", "label": "同步核心", "sublabel": "run() 主循环" },
+    { "id": "llm", "type": "cloud", "label": "模型 API", "sublabel": "Chat Completions" },
+    { "id": "disp", "type": "backend", "label": "工具调度", "sublabel": "dispatch() 协程" }
+  ],
+  "segments": [
+    { "from": 156, "to": 262, "label": "① 异步外壳" },
+    { "from": 268, "to": 470, "label": "② 线程内同步核心" }
+  ],
+  "messages": [
+    { "from": "caller", "to": "loop", "y": 160, "label": "await agent.arun(query)", "note": "core.py:751｜非流式分支" },
+    { "from": "loop", "to": "worker", "y": 204, "label": "asyncio.to_thread(self.run, query)", "variant": "emphasis", "note": "core.py:760｜异步→同步桥" },
+    { "from": "worker", "to": "core", "y": 248, "label": "执行同步 run()" },
+    { "from": "core", "to": "llm", "y": 276, "label": "create() 同步 HTTP" },
+    { "from": "llm", "to": "core", "y": 304, "label": "response（含 tool_calls）", "variant": "return" },
+    { "from": "core", "to": "disp", "y": 348, "label": "run_async_safely(dispatch(...))", "variant": "emphasis", "note": "core.py:103｜无运行 loop → asyncio.run 直达" },
+    { "from": "disp", "to": "core", "y": 392, "label": "工具结果 str", "variant": "return" },
+    { "from": "worker", "to": "loop", "y": 420, "label": "运行结果（str / RunResult）", "variant": "return" },
+    { "from": "loop", "to": "caller", "y": 464, "label": "await 返回结果", "variant": "return", "note": "等待期间不占调用方事件循环" }
+  ],
+  "activations": [
+    { "participant": "caller", "from": 156, "to": 474 },
+    { "participant": "loop", "from": 156, "to": 474 },
+    { "participant": "worker", "from": 200, "to": 470 },
+    { "participant": "core", "from": 244, "to": 428 },
+    { "participant": "llm", "from": 272, "to": 310 },
+    { "participant": "disp", "from": 344, "to": 398 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "桥的方向：异步 → 同步",
+      "items": [
+        "arun() 非流式把整条同步 run() 交给线程池（core.py:760）",
+        "调用方事件循环在等待期间仍可调度其他任务",
+        "协程本身仍要等线程返回，只是不占用事件循环线程"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "线程里没有第二次套娃",
+      "items": [
+        "工作线程内没有运行中的事件循环，run_async_safely 直接 asyncio.run(coro)（core.py:101-103）",
+        "因此 arun() 路径不会为每个工具再开一层线程",
+        "同步 run_async_safely 仍是阻塞等待：future.result()（core.py:107-109）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么这样设计",
+      "items": [
+        "docstring 明确：同步模型与工具客户端隔离到工作线程，保持 v0.9 兼容（core.py:752-756）",
+        "原生异步 Provider 与后台 Job 留在调用方事件循环，不走这条线程桥",
+        "代价：取消与超时跨线程传播更复杂"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "④ 异步流式 astream()：逐 chunk 线程往返",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1085, 580],
+    "column_fit": "spread"
+  },
+  "participants": [
+    { "id": "caller", "type": "external", "label": "调用方", "sublabel": "async for item in ..." },
+    { "id": "loop", "type": "backend", "label": "事件循环", "sublabel": "调用方 asyncio" },
+    { "id": "worker", "type": "backend", "label": "工作线程", "sublabel": "to_thread" },
+    { "id": "core", "type": "backend", "label": "同步核心", "sublabel": "_run_stream_logic" }
+  ],
+  "segments": [
+    { "from": 156, "to": 262, "label": "① 包装同步生成器" },
+    { "from": 268, "to": 470, "label": "② 逐 chunk 迭代与归还" }
+  ],
+  "messages": [
+    { "from": "caller", "to": "loop", "y": 160, "label": "async for item in astream(query)", "note": "core.py:763｜返回异步生成器" },
+    { "from": "loop", "to": "worker", "y": 204, "label": "to_thread(self.run, stream=True)", "variant": "emphasis", "note": "core.py:767｜取得同步生成器" },
+    { "from": "worker", "to": "core", "y": 248, "label": "run() 启动（生成器惰性求值）" },
+    { "from": "loop", "to": "worker", "y": 276, "label": "to_thread(next, gen, sentinel)", "variant": "emphasis", "note": "core.py:771｜每 chunk 一次线程往返" },
+    { "from": "worker", "to": "core", "y": 320, "label": "推进 _run_stream_logic()" },
+    { "from": "core", "to": "worker", "y": 364, "label": "chunk", "variant": "return" },
+    { "from": "worker", "to": "loop", "y": 392, "label": "chunk", "variant": "return", "note": "core.py:771-774｜sentinel 判停" },
+    { "from": "loop", "to": "caller", "y": 436, "label": "yield item", "variant": "return" },
+    { "from": "loop", "to": "worker", "y": 464, "label": "finally: to_thread(gen.close)", "note": "core.py:775-778｜归还生成器" }
+  ],
+  "activations": [
+    { "participant": "caller", "from": 156, "to": 474 },
+    { "participant": "loop", "from": 156, "to": 474 },
+    { "participant": "worker", "from": 200, "to": 470 },
+    { "participant": "core", "from": 244, "to": 370 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "每 chunk 一次线程往返",
+      "items": [
+        "astream 不重写流式内核，而是给同步生成器加异步外壳（core.py:763-778）",
+        "每个 chunk 都是一次 to_thread(next, gen, sentinel)（core.py:771）",
+        "sentinel 是普通对象哨兵，用于判断生成器结束，不是异常控制流"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "取消与资源归还",
+      "items": [
+        "异步生成器被取消或正常结束时，finally 里 to_thread(gen.close)（core.py:775-778）",
+        "同步生成器因此不会被半途遗弃",
+        "工具轮（dispatch）同样发生在工作线程内，不额外开线程"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "它到底是不是“异步流”",
+      "items": [
+        "推进的对象是同步的 _run_stream_logic()（core.py:2102）",
+        "对调用方来说可被 await 取消，但底层仍是阻塞式产出",
+        "代价：每个 chunk 都有一次线程调度开销"
+      ]
+    }
+  ]
+}
