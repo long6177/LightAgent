@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "run 调用链总览：同步核心与双向异步桥",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/long6177/LightAgent",
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
+    },
+    "views": [
+      { "id": "async-path", "label": "① 异步入口路径", "focus": ["caller", "async_entry", "tothread", "run"], "note": "异步调用者经 to_thread 把同步 run() 移入工作线程" },
+      { "id": "sync-core", "label": "② 同步核心与分流", "focus": ["run", "model", "router", "loops"], "note": "run() 内部：首轮模型请求 → _core_run_logic 按 stream 分流" },
+      { "id": "bridge-tools", "label": "③ 桥与工具面", "focus": ["loops", "safely", "dispatch", "tools", "session"], "note": "同步循环借 run_async_safely 等待异步 dispatch，四态工具在此汇合" }
+    ]
+  },
+  "components": [
+    {
+      "id": "caller", "type": "external", "label": "调用方",
+      "sublabel": "同步脚本 · async 宿主",
+      "pos": [64, 104], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 478, "label": "同步调用 run()" },
+        { "path": "LightAgent/core.py", "line": 751, "label": "异步调用 arun()" }
+      ]
+    },
+    {
+      "id": "async_entry", "type": "backend", "label": "arun / astream",
+      "sublabel": "异步入口（事件循环内）",
+      "tag": "core.py", "pos": [420, 98], "size": [220, 100],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 751, "label": "arun 非流式" },
+        { "path": "LightAgent/core.py", "line": 763, "label": "astream 异步迭代器" }
+      ]
+    },
+    {
+      "id": "tothread", "type": "backend", "label": "asyncio.to_thread",
+      "sublabel": "异步 → 同步桥",
+      "tag": "core.py", "pos": [780, 104], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 760, "label": "to_thread(self.run)" },
+        { "path": "LightAgent/core.py", "line": 767, "label": "取同步生成器" },
+        { "path": "LightAgent/core.py", "line": 771, "label": "to_thread(next, gen)" }
+      ]
+    },
+    {
+      "id": "run", "type": "backend", "label": "run() 同步核心",
+      "sublabel": "阻塞所在线程",
+      "tag": "core.py", "pos": [1100, 98], "size": [220, 100],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 478, "label": "run 同步主入口" },
+        { "path": "LightAgent/core.py", "line": 744, "label": "交给 _core_run_logic" },
+        { "path": "LightAgent/core.py", "line": 749, "label": "返回 str / RunResult" }
+      ]
+    },
+    {
+      "id": "model", "type": "cloud", "label": "模型客户端",
+      "sublabel": "chat.completions.create",
+      "tag": "core.py", "pos": [1100, 292], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 729, "label": "首轮同步请求" },
+        { "path": "LightAgent/core.py", "line": 2186, "label": "流式逐块下发" }
+      ]
+    },
+    {
+      "id": "router", "type": "backend", "label": "_core_run_logic",
+      "sublabel": "同步分流器",
+      "tag": "core.py", "pos": [780, 292], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1903, "label": "stream 分流" }
+      ]
+    },
+    {
+      "id": "loops", "type": "backend", "label": "同步工具循环",
+      "sublabel": "_run_non_stream / _run_stream",
+      "tag": "core.py", "pos": [420, 292], "size": [220, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1910, "label": "非流式循环" },
+        { "path": "LightAgent/core.py", "line": 2102, "label": "流式生成器" },
+        { "path": "LightAgent/core.py", "line": 1914, "label": "循环 ≤ max_retry" }
+      ]
+    },
+    {
+      "id": "safely", "type": "backend", "label": "run_async_safely",
+      "sublabel": "同步 → 异步桥",
+      "tag": "core.py", "pos": [64, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 80, "label": "桥接函数" },
+        { "path": "LightAgent/core.py", "line": 103, "label": "无 loop：asyncio.run" },
+        { "path": "LightAgent/core.py", "line": 107, "label": "有 loop：Executor" }
+      ]
+    },
+    {
+      "id": "dispatch", "type": "backend", "label": "AsyncToolDispatcher",
+      "sublabel": "dispatch() 协程",
+      "tag": "tools.py", "pos": [420, 450], "size": [220, 88],
+      "sources": [
+        { "path": "LightAgent/tools.py", "line": 255, "label": "async def dispatch" },
+        { "path": "LightAgent/tools.py", "line": 273, "label": "四路分支" },
+        { "path": "LightAgent/tools.py", "line": 291, "label": "结果序列化" }
+      ]
+    },
+    {
+      "id": "tools", "type": "backend", "label": "四态工具",
+      "sublabel": "sync / async / 生成器",
+      "tag": "tools.py", "pos": [780, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/tools.py", "line": 273, "label": "同步 / 异步函数" },
+        { "path": "LightAgent/tools.py", "line": 276, "label": "异步生成器收集" },
+        { "path": "LightAgent/tools.py", "line": 280, "label": "同步生成器透传" }
+      ]
+    },
+    {
+      "id": "session", "type": "database", "label": "Session · Trace",
+      "sublabel": "事件旁路（双写）",
+      "tag": "core.py", "pos": [1100, 450], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 912, "label": "_record_trace 事件" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "异步入口与线程隔离", "wraps": ["async_entry", "tothread"], "pad": 12 },
+    { "kind": "region", "label": "同步核心执行链", "wraps": ["router", "loops"], "pad": 12 },
+    { "kind": "region", "label": "桥与工具调度面", "wraps": ["safely", "dispatch"], "pad": 12 }
+  ],
+  "connections": [
+    { "from": "caller", "to": "async_entry", "label": "await arun()", "variant": "emphasis" },
+    { "from": "async_entry", "to": "tothread", "label": "to_thread(run)", "variant": "emphasis" },
+    { "from": "tothread", "to": "run", "label": "隔离同步客户端" },
+    { "from": "run", "to": "model", "label": "create() 同步 HTTP", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "labelAt": [1150, 240] },
+    { "from": "run", "to": "router", "label": "首轮响应接手" },
+    { "from": "router", "to": "loops", "label": "stream 分流" },
+    { "from": "loops", "to": "safely", "label": "run_async_safely(dispatch)" },
+    { "from": "safely", "to": "dispatch", "label": "asyncio.run(coro)", "labelAt": [344, 516] },
+    { "from": "dispatch", "to": "tools", "label": "四路分支" },
+    { "from": "run", "to": "session", "label": "turn / model / tool 事件", "variant": "dashed", "fromSide": "right", "toSide": "right", "via": [[1340, 148], [1340, 494]], "labelAt": [1202, 394] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条桥，方向相反",
+      "items": [
+        "异步 → 同步：asyncio.to_thread 把同步 run() 移出调用方事件循环（core.py:760、767）",
+        "同步 → 异步：run_async_safely 让同步核心等待异步 dispatch（core.py:80-109）",
+        "同步调用者直接跑 run()，两条桥都不参与"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "同步是默认，异步只是外壳",
+      "items": [
+        "_core_run_logic / _run_non_stream_logic / _run_stream_logic 全是同步实现（core.py:1903、1910、2102）",
+        "dispatch 声明为 async，但同步工具被直接调用（tools.py:273-288）",
+        "astream 用 to_thread(next, gen) 包装同步生成器（core.py:771）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "阻塞发生在哪一层",
+      "items": [
+        "非流式 run() 占满它所在的线程；arun() 只是把这个线程换成工作线程",
+        "常见路径下 dispatch 的临时事件循环位于工作线程，被阻塞的是它（core.py:103、107-109）",
+        "取消与超时跨线程传播更复杂，是这套兼容架构的代价"
+      ]
+    }
+  ]
+}
