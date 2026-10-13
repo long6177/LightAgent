@@ -2,221 +2,71 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "会话持久化与恢复时序",
+    "title": "会话持久化与恢复：事件日志即唯一事实",
     "locale": "zh-CN",
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "viewBox": [1085, 620],
+    "column_fit": "spread"
   },
   "participants": [
-    {
-      "id": "app",
-      "type": "external",
-      "label": "调用方",
-      "sublabel": "你的应用"
-    },
-    {
-      "id": "core",
-      "type": "backend",
-      "label": "LightAgent",
-      "sublabel": "run() / 会话 API"
-    },
-    {
-      "id": "rt",
-      "type": "backend",
-      "label": "AgentRuntime",
-      "sublabel": "runtime.py 管家"
-    },
-    {
-      "id": "session",
-      "type": "database",
-      "label": "Session",
-      "sublabel": "事件追加日志"
-    },
-    {
-      "id": "store",
-      "type": "database",
-      "label": "SessionStore",
-      "sublabel": "内存 / JSONL / SQLite"
-    }
+    { "id": "app", "type": "external", "label": "调用方", "sublabel": "你的应用" },
+    { "id": "core", "type": "backend", "label": "LightAgent", "sublabel": "run() / 会话 API" },
+    { "id": "rt", "type": "backend", "label": "AgentRuntime", "sublabel": "运行时治理中枢" },
+    { "id": "session", "type": "database", "label": "Session", "sublabel": "事件追加日志" },
+    { "id": "store", "type": "database", "label": "SessionStore", "sublabel": "内存 / JSONL / SQLite" }
   ],
   "segments": [
-    {
-      "from": 150,
-      "to": 500,
-      "label": "运行中持续记录"
-    },
-    {
-      "from": 500,
-      "to": 700,
-      "label": "存档与恢复"
-    }
-  ],
-  "activations": [
-    {
-      "participant": "app",
-      "from": 160,
-      "to": 480
-    },
-    {
-      "participant": "core",
-      "from": 170,
-      "to": 470
-    },
-    {
-      "participant": "rt",
-      "from": 205,
-      "to": 340
-    },
-    {
-      "participant": "session",
-      "from": 365,
-      "to": 480
-    },
-    {
-      "participant": "store",
-      "from": 425,
-      "to": 445
-    },
-    {
-      "participant": "app",
-      "from": 520,
-      "to": 680
-    },
-    {
-      "participant": "core",
-      "from": 525,
-      "to": 678
-    },
-    {
-      "participant": "rt",
-      "from": 560,
-      "to": 612
-    },
-    {
-      "participant": "rt",
-      "from": 630,
-      "to": 676
-    },
-    {
-      "participant": "session",
-      "from": 595,
-      "to": 612
-    }
+    { "from": 150, "to": 312, "label": "① 打开会话：get / create / 回放恢复" },
+    { "from": 316, "to": 480, "label": "② 运行中双写：append + save" },
+    { "from": 484, "to": 570, "label": "③ 存档与恢复：checkpoint → 新进程续聊" }
   ],
   "messages": [
-    {
-      "from": "app",
-      "to": "core",
-      "y": 175,
-      "label": "run(query, session_id)",
-      "note": "core.py:489"
-    },
-    {
-      "from": "core",
-      "to": "rt",
-      "y": 215,
-      "label": "open_session()",
-      "note": "core.py:877"
-    },
-    {
-      "from": "rt",
-      "to": "store",
-      "y": 255,
-      "label": "get(session_id)",
-      "note": "runtime.py:920"
-    },
-    {
-      "from": "store",
-      "to": "rt",
-      "y": 295,
-      "label": "返回既有会话",
-      "variant": "return",
-      "note": "无则新建 session.started"
-    },
-    {
-      "from": "rt",
-      "to": "core",
-      "y": 335,
-      "label": "回放事件恢复管理器",
-      "variant": "return",
-      "note": "runtime.py:948 inbox/goals/budget/jobs"
-    },
-    {
-      "from": "core",
-      "to": "session",
-      "y": 375,
-      "label": "追加 turn.started / message.received",
-      "note": "core.py:878/883"
-    },
-    {
-      "from": "core",
-      "to": "store",
-      "y": 430,
-      "label": "每条事件落盘",
-      "variant": "dashed",
-      "note": "core.py:912 save"
-    },
-    {
-      "from": "core",
-      "to": "session",
-      "y": 470,
-      "label": "model.* / tool.* 持续记录",
-      "note": "映射表 core.py:914"
-    },
-    {
-      "from": "app",
-      "to": "core",
-      "y": 530,
-      "label": "checkpoint_session()",
-      "note": "core.py:804"
-    },
-    {
-      "from": "core",
-      "to": "rt",
-      "y": 565,
-      "label": "checkpoint()",
-      "note": "runtime.py:955"
-    },
-    {
-      "from": "rt",
-      "to": "session",
-      "y": 600,
-      "label": "写入 SessionCheckpoint",
-      "note": "session.py:262 打点即事件"
-    },
-    {
-      "from": "app",
-      "to": "core",
-      "y": 635,
-      "label": "新进程带 session_id 回来",
-      "note": "core.py:641 → open_session:863"
-    },
-    {
-      "from": "rt",
-      "to": "core",
-      "y": 670,
-      "label": "ContextProjector 投影历史",
-      "variant": "return",
-      "note": "session.py:647 无缝续上"
-    }
+    { "from": "app", "to": "core", "y": 160, "label": "run(query, session_id=...)", "note": "core.py:478｜session_id 参数 ::495｜省略则本次运行只用内存 Session" },
+    { "from": "core", "to": "rt", "y": 202, "label": "_begin_session_run → open_session(...)｜core.py:567、:863" },
+    { "from": "rt", "to": "store", "y": 232, "label": "get(session_id)｜None 则 create + session.started（runtime.py:928-932）" },
+    { "from": "rt", "to": "session", "y": 262, "label": "回放管理器状态：restore ×4 + mark_interrupted（runtime.py:947-951）" },
+    { "from": "rt", "to": "core", "y": 292, "label": "返回 deepcopy(Session)｜runtime.py:952", "variant": "return" },
+    { "from": "core", "to": "session", "y": 322, "label": "投影历史 → 本轮 messages｜core.py:870、生效条件 :630、session.py:647" },
+    { "from": "core", "to": "session", "y": 352, "label": "append turn.started / message.received", "note": "core.py:878、:883｜append 只改内存并递增 sequence（session.py:216-239）" },
+    { "from": "core", "to": "store", "y": 394, "label": "save(session)", "variant": "dashed", "note": "core.py:905（_record_session_event 内）｜runtime._append 同构（runtime.py:1000-1009）" },
+    { "from": "core", "to": "session", "y": 436, "label": "运行期 model.* / tool.*（trace_type → 事件名映射，core.py:915-926）" },
+    { "from": "app", "to": "core", "y": 465, "label": "checkpoint_session(label)｜core.py:797-802" },
+    { "from": "core", "to": "rt", "y": 495, "label": "runtime.checkpoint()", "note": "runtime.py:954-957｜session.checkpoint 记录当前 sequence 并再追加 session.checkpointed（session.py:262-270）" },
+    { "from": "app", "to": "core", "y": 537, "label": "③ 新进程：同一 session_id 再 run()", "note": "投影历史成为本轮上下文 → 续聊（core.py:630、:687）" }
+  ],
+  "activations": [
+    { "participant": "app", "from": 156, "to": 541 },
+    { "participant": "core", "from": 160, "to": 541 },
+    { "participant": "rt", "from": 198, "to": 499 },
+    { "participant": "session", "from": 258, "to": 541 },
+    { "participant": "store", "from": 228, "to": 438 }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "三种存储怎么选（session.py）",
+      "title": "三种存储后端（session.py）",
       "items": [
-        "InMemorySessionStore:394 默认、单进程、测试；拒绝旧序列覆盖",
-        "JsonlSessionStore:435 每会话一文件、人类可读；保存是 tmp+os.replace 原子全量重写",
-        "SqliteSessionStore:521 WAL+事务，保存=DELETE 全部事件再重插"
+        "InMemory（:394）未传 session_store 时默认（runtime.py:908）；save 前 validate，拒绝更旧 sequence 覆盖（:414-421）",
+        "JSONL（:435）每会话一文件；临时文件 → fsync → os.replace 原子替换（:480-498）",
+        "SQLite（:521）WAL + 事务；save = UPSERT 后 DELETE 再整表重插，event_id 唯一（:537-626）"
       ]
     },
     {
       "dot": "rose",
-      "title": "恢复的两条路径与陷阱",
+      "title": "恢复：两条路径 + 一个陷阱",
       "items": [
-        "整会话恢复：store.get → SessionEvent.from_dict → migrate（session.py:366）",
-        "管理器状态恢复：open_session 按 inbox.*/goal.*/budget.*/job.* 命名空间回放（runtime.py:948）",
-        "Job 只恢复档案并标 INTERRUPTED，协程本体不恢复（runtime.py:700/684）",
-        "replay() 只统计 turn 完成度，不重放执行（session.py:313）"
+        "整会话：Session.from_dict（:365）先 migrate（:366、:48）再逐条 SessionEvent.from_dict（:370、:148）",
+        "管理器：open_session 按 inbox.* / goal.* / budget.* / job.* 命名空间回放（runtime.py:947-950）",
+        "陷阱：Job 只恢复档案，PENDING/RUNNING 一律标 INTERRUPTED 并发 job.interrupted（runtime.py:684-688、:700）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "续聊靠投影，不靠内存驻留",
+      "items": [
+        "投影规则：message.* → user|assistant、assistant.completed → assistant、tool.completed → role=tool（session.py:658-667）",
+        "无匹配事件时回退最近一条 model.requested 的 messages 快照（session.py:668-672）",
+        "两条写入口都是 append + save：core.py:893-905、runtime.py:1000-1009"
       ]
     }
   ]

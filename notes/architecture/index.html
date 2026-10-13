@@ -105,7 +105,7 @@ const DATA = [
   { id:'seq', name:'时序交互', sub:'消息怎么来回', color:'var(--amber)', side:'right', items:[
     {file:'10-stream-sequence.html', num:'10', title:'流式对话时序', desc:'chunks 增量 · tool_calls 拼装 · 二次请求', type:'sequence'},
     {file:'11-approval-sequence.html', num:'11', title:'人工审批时序', desc:'HumanApprovalHook 拦截 → 批复 → 放行', type:'sequence'},
-    {file:'12-session-sequence.html', num:'12', title:'会话持久化时序', desc:'open_session · checkpoint · 恢复续聊', type:'sequence'},
+    {file:'12-session-sequence.html', num:'12', title:'会话持久化与恢复', desc:'open_session · 事件双写 · checkpoint · 新进程续聊', type:'sequence'},
     {file:'30-run-nonstream.html', num:'30', title:'① 同步入口 run()', desc:'非流式工具循环 · 三次同步等待', type:'sequence'},
     {file:'31-arun-nonstream.html', num:'31', title:'② 异步入口 arun()', desc:'to_thread 线程桥 · 异步→同步', type:'sequence'},
     {file:'32-run-stream.html', num:'32', title:'③ 流式入口 run(stream=True)', desc:'同步生成器 · chunk 与工具轮', type:'sequence'},
