@@ -5,52 +5,28 @@
     "title": "记忆的读写与晋升",
     "locale": "zh-CN",
     "quality_profile": "showcase",
+    "output": "notes/architecture/08-memory.html",
     "views": [
       {
         "id": "read",
         "label": "读取路径",
-        "focus": [
-          "ask",
-          "retrieve",
-          "filter",
-          "inject"
-        ],
-        "note": "检索→过滤→注入 query"
+        "focus": ["ask", "retrieve", "filter", "inject"],
+        "note": "检索 → 过滤 → 注入 query"
       },
       {
         "id": "write",
         "label": "写入与晋升",
-        "focus": [
-          "storeq",
-          "fingerprint",
-          "candidate",
-          "promote",
-          "backend"
-        ],
+        "focus": ["storeq", "fingerprint", "candidate", "promote", "backend"],
         "note": "先审后存，内部记忆要走晋升"
       }
     ]
   },
   "lanes": [
-    {
-      "id": "chat",
-      "label": "01 / 对话进行中"
-    },
-    {
-      "id": "protocol",
-      "label": "02 / 记忆接口 protocol.py"
-    },
-    {
-      "id": "backend",
-      "label": "03 / 记忆后端（如 mem0）"
-    }
+    { "id": "chat", "label": "01 / 对话进行中" },
+    { "id": "protocol", "label": "02 / 记忆接口 protocol.py" },
+    { "id": "backend", "label": "03 / 记忆后端（如 mem0）" }
   ],
-  "mainPath": [
-    "ask",
-    "retrieve",
-    "filter",
-    "inject"
-  ],
+  "mainPath": ["ask", "retrieve", "filter", "inject"],
   "nodes": [
     {
       "id": "ask",
@@ -59,18 +35,28 @@
       "type": "external",
       "label": "带 user_id 提问",
       "sublabel": "_add_memory_context",
-      "tag": "core.py:1481",
-      "width": 150
+      "tag": "core.py:1439",
+      "yOffset": -60
+    },
+    {
+      "id": "storeq",
+      "lane": "chat",
+      "col": 0,
+      "type": "backend",
+      "label": "本轮 query 也存一份",
+      "sublabel": "_store_memory_with_policy",
+      "tag": "core.py:1457",
+      "yOffset": 60
     },
     {
       "id": "retrieve",
       "lane": "protocol",
       "col": 1,
       "type": "backend",
-      "label": "翻出相关记忆",
+      "label": "检索相关记忆",
       "sublabel": "钩子包夹 retrieve()",
-      "tag": "core.py:1530",
-      "width": 150
+      "tag": "core.py:1517",
+      "yOffset": -60
     },
     {
       "id": "filter",
@@ -80,128 +66,75 @@
       "label": "策略过滤",
       "sublabel": "allows_result 防注入",
       "tag": "protocol.py:270",
-      "width": 150,
-      "yOffset": 0
+      "yOffset": -60
     },
     {
       "id": "inject",
       "lane": "chat",
       "col": 3,
       "type": "backend",
-      "label": "拼进提示词",
-      "sublabel": "作为 query 前缀",
-      "tag": "core.py:1528",
-      "width": 150
-    },
-    {
-      "id": "storeq",
-      "lane": "chat",
-      "col": 1,
-      "type": "backend",
-      "label": "本轮对话也存一份",
-      "sublabel": "_store_memory_with_policy",
-      "tag": "core.py:1581",
-      "width": 150,
-      "yOffset": 0
+      "label": "拼进 query 前缀",
+      "sublabel": "不改 system prompt",
+      "tag": "core.py:1486",
+      "yOffset": -60
     },
     {
       "id": "fingerprint",
       "lane": "protocol",
-      "col": 2,
+      "col": 1,
       "type": "security",
       "label": "准入与去重",
-      "sublabel": "allows_write+指纹",
+      "sublabel": "allows_write + 指纹",
       "tag": "protocol.py:409",
-      "width": 150,
-      "yOffset": 116
+      "yOffset": 60
     },
     {
       "id": "candidate",
       "lane": "protocol",
-      "col": 3,
+      "col": 2,
       "type": "backend",
       "label": "内部记忆先当候选",
       "sublabel": "MemoryCandidate 不可注入",
-      "tag": "protocol.py:84",
-      "width": 150,
-      "yOffset": 116
+      "tag": "protocol.py:85",
+      "yOffset": 60
     },
     {
       "id": "promote",
       "lane": "protocol",
-      "col": 4,
+      "col": 3,
       "type": "security",
       "label": "评审通过才转正",
-      "sublabel": "allows_promotion",
+      "sublabel": "allows_promotion 默认拒绝",
       "tag": "protocol.py:463",
-      "width": 150
+      "yOffset": 60
     },
     {
       "id": "backend",
       "lane": "backend",
-      "col": 4,
+      "col": 3,
       "type": "database",
       "label": "写入 mem0 / 向量库",
       "sublabel": "store(data, user_id)",
-      "tag": "core.py:1903",
-      "width": 150
+      "tag": "core.py:1880"
     }
   ],
   "edges": [
-    {
-      "from": "ask",
-      "to": "retrieve",
-      "role": "main",
-      "label": "检索记忆"
-    },
-    {
-      "from": "retrieve",
-      "to": "filter",
-      "role": "main",
-      "label": "命中若干条"
-    },
-    {
-      "from": "filter",
-      "to": "inject",
-      "role": "return",
-      "label": "通过的注入"
-    },
+    { "from": "ask", "to": "retrieve", "role": "main", "label": "检索记忆" },
+    { "from": "retrieve", "to": "filter", "role": "main", "label": "命中若干条" },
+    { "from": "filter", "to": "inject", "role": "return", "label": "通过的注入" },
     {
       "from": "ask",
       "to": "storeq",
       "role": "branch",
-      "label": "对话继续"
+      "label": "对话继续",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
-    {
-      "from": "storeq",
-      "to": "fingerprint",
-      "role": "main",
-      "label": "先审后存"
-    },
-    {
-      "from": "fingerprint",
-      "to": "backend",
-      "role": "main",
-      "label": "外部来源直写"
-    },
-    {
-      "from": "fingerprint",
-      "to": "candidate",
-      "role": "branch",
-      "label": "内部来源转候选"
-    },
-    {
-      "from": "candidate",
-      "to": "promote",
-      "role": "main",
-      "label": "评审"
-    },
-    {
-      "from": "promote",
-      "to": "backend",
-      "role": "return",
-      "label": "批准才落库"
-    }
+    { "from": "storeq", "to": "fingerprint", "role": "main", "label": "先审后存" },
+    { "from": "fingerprint", "to": "backend", "role": "main", "label": "外部来源直写" },
+    { "from": "fingerprint", "to": "candidate", "role": "branch", "label": "内部来源转候选" },
+    { "from": "candidate", "to": "promote", "role": "main", "label": "评审" },
+    { "from": "promote", "to": "backend", "role": "return", "label": "批准才落库" }
   ],
   "cards": [
     {
@@ -209,7 +142,7 @@
       "title": "两级准入模型（protocol.py）",
       "items": [
         "写入准入 allows_write:409：频控/最短长度/正则拒绝/指纹去重",
-        "晋升准入 allows_promotion:463：内部记忆需批准才可注入",
+        "晋升准入 allows_promotion:463：内部记忆需批准才可注入（默认拒绝）",
         "检索过滤 allows_result:270：归因校验+白名单+置信度+过期"
       ]
     },
@@ -219,16 +152,17 @@
       "items": [
         "memory= 注入任意 MemoryProtocol（protocol.py:16，两个方法即可）",
         "内置 SharedMemoryPool：词面重叠打分、无持久化（shared_memory.py:40）",
-        "core 不直接 import mem0——一切经协议与策略（core.py:1559/1903）"
+        "core 不直接 import mem0——一切经协议与策略（core.py:128/1880）",
+        "self_learning 开启时，还检索/回写 agent 命名空间（core.py:1465）"
       ]
     },
     {
       "dot": "rose",
       "title": "容易误读",
       "items": [
-        "记忆注入改写的是用户 query，不是 system prompt（core.py:1528）",
-        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（:1685）",
-        "候选默认 injectable=False，未晋升的内部记忆检索时也会被二次拦截（protocol.py:352）"
+        "记忆注入改写的是用户 query，不是 system prompt（core.py:1486）",
+        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（core.py:1457）",
+        "候选默认 injectable=False，未晋升的内部记忆检索时二次拦截（protocol.py:352）"
       ]
     }
   ]
