@@ -11418,7 +11418,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           Archify.routeProbe.pauseJourney({ preserveElapsed: true, reason: reason || 'manual' });
         }
       }
-      function zoom(next, options) {
+      function zoom(next, options, anchorX, anchorY) {
         options = options || {};
         if (options.manual !== false) interruptCamera();
         var previous = state.scale;
@@ -11426,22 +11426,24 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (next === previous) return;
         var longDiagram = svg.clientHeight > window.innerHeight && Math.min(previous, next) < 1;
         var before = longDiagram ? svg.getBoundingClientRect() : null;
-        var anchorY = before ? Math.max(0, Math.min(window.innerHeight, before.bottom) + Math.max(0, before.top)) / 2 : 0;
-        if (before && (before.bottom <= 0 || before.top >= window.innerHeight)) anchorY = window.innerHeight / 2;
-        var logicalY = before ? Math.max(0, Math.min(svg.clientHeight, (anchorY - before.top) / previous)) : 0;
+        var viewportY = before ? Math.max(0, Math.min(window.innerHeight, before.bottom) + Math.max(0, before.top)) / 2 : 0;
+        if (before && (before.bottom <= 0 || before.top >= window.innerHeight)) viewportY = window.innerHeight / 2;
+        var logicalY = before ? Math.max(0, Math.min(svg.clientHeight, (viewportY - before.top) / previous)) : 0;
         var documentTop = before ? window.scrollY + before.top - state.y : 0;
         var centerX = (svg.clientWidth || 1) / 2;
         var centerY = (svg.clientHeight || 1) / 2;
-        var contentX = (centerX - state.x) / previous;
-        var contentY = (centerY - state.y) / previous;
+        if (typeof anchorX !== "number") anchorX = centerX;
+        if (typeof anchorY !== "number") anchorY = centerY;
+        var contentX = (anchorX - state.x) / previous;
+        var contentY = (anchorY - state.y) / previous;
         state.scale = next;
-        state.x = centerX - contentX * next;
-        state.y = centerY - contentY * next;
+        state.x = anchorX - contentX * next;
+        state.y = anchorY - contentY * next;
         apply();
         if (longDiagram) {
           var scaledHeight = svg.clientHeight * next;
           var pageY = scaledHeight <= window.innerHeight ? documentTop + state.y
-            : documentTop + state.y + logicalY * next - anchorY;
+            : documentTop + state.y + logicalY * next - viewportY;
           window.scrollTo({ left: window.scrollX, top: Math.max(0, pageY), behavior: 'instant' });
         }
       }
@@ -11685,6 +11687,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
       inBtn.addEventListener('click', function () { zoom(state.scale + 0.25); });
       outBtn.addEventListener('click', function () { zoom(state.scale - 0.25); });
+      svg.addEventListener('wheel', function (event) {
+        if (event.deltaY === 0) return;
+        var forward = event.deltaY < 0;
+        if (forward ? state.scale >= 3 : state.scale <= 1) return; // 已到边界则不拦截滚轮
+        event.preventDefault();
+        var r = svg.getBoundingClientRect();
+        var ax = event.clientX - r.left + state.x;
+        var ay = event.clientY - r.top + state.y;
+        zoom(state.scale + (forward ? 0.25 : -0.25), {}, ax, ay);
+      }, { passive: false });
       resetBtn.addEventListener('click', reset);
       container.addEventListener('pointerdown', function (event) {
         if (state.scale <= 1 || event.button !== 0 || event.target.closest('.diagram-nav, .focus-chip, .node-finder, .diagram-guide, .overview-map, .route-probe, .semantic-lens') || event.target.closest('[data-node-id]') || event.target.closest('[data-relationship-hit-key]')) return;
