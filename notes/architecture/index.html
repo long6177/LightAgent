@@ -68,7 +68,7 @@
 <body>
 <header>
   <h1>LightAgent 架构图集</h1>
-  <span class="sub">33 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
+  <span class="sub">34 张交互式图表 · 深 / 浅主题 · 滚轮缩放 / 双指缩放 / 拖拽平移 · 点击卡片打开对应图</span>
   <span class="spacer"></span>
   <span class="ztool" aria-label="缩放控制">
     <button id="zout" aria-label="缩小" title="缩小（-）">−</button>
@@ -114,7 +114,8 @@ const DATA = [
   { id:'overview', name:'总览', sub:'建立全局感', color:'var(--cyan)', side:'left', items:[
     {file:'01-overview.html', num:'01', title:'整体架构总览', desc:'你的代码 · LightAgent 框架 · 外部服务', type:'architecture'},
     {file:'02-modules.html', num:'02', title:'代码模块地图', desc:'每个 .py 文件管什么 · 关键类在哪', type:'architecture'},
-    {file:'29-run-callchain.html', num:'29', title:'run 调用链总览', desc:'同步核心 · to_thread 与 run_async_safely 双向桥', type:'architecture'}
+    {file:'29-run-callchain.html', num:'29', title:'run 调用链总览', desc:'同步核心 · to_thread 与 run_async_safely 双向桥', type:'architecture'},
+    {file:'35-memory-callchain.html', num:'35', title:'core.py 记忆调用链', desc:'检索注入 × 持久化落库双路径 · 晋升审核授予可注入', type:'architecture'}
   ]},
   { id:'data', name:'数据流转', sub:'一段话的旅程', color:'var(--violet)', side:'left', items:[
     {file:'13-request-dataflow.html', num:'13', title:'一次请求的数据流转', desc:'query 进 → 回复出 · 事件与用量旁路', type:'dataflow'},
@@ -262,7 +263,7 @@ el('rect', {x:cx-CENTER.w/2, y:cy-CENTER.h/2, width:CENTER.w, height:CENTER.h, r
 const ct = el('text', {x:cx, y:cy-12, class:'ct'}, cg); ct.textContent = 'LightAgent';
 const ct2 = el('text', {x:cx, y:cy+22, class:'ct', style:'font-size:18px;'}, cg); ct2.textContent = '架构图集 · 思维导图';
 const cs = el('text', {x:cx, y:cy+54, class:'cs'}, cg);
-cs.textContent = '6 类视角 · 33 张图 · 点击节点打开';
+cs.textContent = '6 类视角 · 34 张图 · 点击节点打开';
 
 // ===== 缩放与平移：以 viewBox 方式实现，任何倍率下文字都保持矢量清晰 =====
 (function(){
