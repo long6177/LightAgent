@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "core.py 记忆调用链：检索注入与持久化落库",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": "notes/architecture/34-memory-callchain.html",
+    "repository": {
+      "url": "git@github-long:long6177/LightAgent.git",
+      "link_mode": "local-only",
+      "revision": "8318a5d7cb7a573b6ee63ed5e10d0d23bf10466f"
+    },
+    "views": [
+      { "id": "retrieve-inject", "label": "① 检索 → 注入", "focus": ["entry", "retrieve", "hookretrieve", "memretrieve", "filter", "injected"], "note": "_add_memory_context 先检索：双钩子 + 后端检索 + 可注入过滤，结果拼入上下文" },
+      { "id": "persist-direct", "label": "② 落库直通", "focus": ["entry", "store", "hookwrite", "admission", "requires", "memstore"], "note": "外部记忆经钩子与写入准入后直通 memory.store 落库" },
+      { "id": "promotion-review", "label": "③ 晋升审核", "focus": ["requires", "candidate", "hookpromote", "merge", "promotionpolicy", "apply", "memstore"], "note": "内部记忆必须经候选暂存与晋升裁决，promote 后才落库且标记可注入" }
+    ]
+  },
+  "components": [
+    {
+      "id": "run", "type": "backend", "label": "run()",
+      "sublabel": "L669 注入记忆上下文",
+      "tag": "主入口", "pos": [40, 64], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 668, "end_line": 669, "label": "调用 _add_memory_context" }
+      ]
+    },
+    {
+      "id": "entry", "type": "backend", "label": "_add_memory_context",
+      "sublabel": "memory=None 时原样返回",
+      "tag": "双路径起点", "pos": [40, 224], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1439, "end_line": 1486, "label": "检索→拼接→落库" },
+        { "path": "LightAgent/core.py", "line": 1486, "label": "返回拼接 query" }
+      ]
+    },
+    {
+      "id": "retrieve", "type": "backend", "label": "_retrieve_memory_with_hooks",
+      "sublabel": "user 与 self_learning 各一次",
+      "tag": "路径一", "pos": [288, 224], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1488, "end_line": 1537, "label": "钩子包裹检索" }
+      ]
+    },
+    {
+      "id": "hookretrieve", "type": "security", "label": "before / after_memory_retrieve",
+      "sublabel": "BLOCK→空结果 · 可改写 query",
+      "tag": "钩子闸", "pos": [528, 224], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1498, "end_line": 1515, "label": "before 钩子" },
+        { "path": "LightAgent/core.py", "line": 1518, "end_line": 1535, "label": "after 钩子" }
+      ]
+    },
+    {
+      "id": "memretrieve", "type": "database", "label": "memory.retrieve()",
+      "sublabel": "MemoryProtocol 后端检索",
+      "tag": "协议方法", "pos": [744, 224], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1517, "label": "实际调用点" },
+        { "path": "LightAgent/protocol.py", "line": 21, "label": "协议签名" }
+      ]
+    },
+    {
+      "id": "filter", "type": "security", "label": "_filter_memory_results",
+      "sublabel": "allows_result 可注入过滤",
+      "tag": "逐条过滤", "pos": [976, 224], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1883, "end_line": 1901, "label": "过滤并记 trace" },
+        { "path": "LightAgent/protocol.py", "line": 270, "end_line": 299, "label": "allows_result 判定" }
+      ]
+    },
+    {
+      "id": "injected", "type": "messagebus", "label": "携带记忆的 query",
+      "sublabel": "##用户偏好 · ##问题相关补充信息",
+      "tag": "拼装后返回 run()", "pos": [976, 64], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1453, "end_line": 1486, "label": "拼接上下文并返回" }
+      ]
+    },
+    {
+      "id": "scopedid", "type": "security", "label": "MemoryPolicy.scoped_user_id",
+      "sublabel": "namespace 前缀隔离身份",
+      "tag": "供检索与落库使用", "pos": [288, 384], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/protocol.py", "line": 264, "end_line": 268, "label": "域隔离 ID" }
+      ]
+    },
+    {
+      "id": "store", "type": "backend", "label": "_store_memory_with_policy",
+      "sublabel": "user 与 self_learning 各一次",
+      "tag": "路径二", "pos": [40, 544], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1539, "end_line": 1651, "label": "钩子→准入→分流" }
+      ]
+    },
+    {
+      "id": "hookwrite", "type": "security", "label": "before_memory_write",
+      "sublabel": "BLOCK→不落库 · 可改写 data",
+      "tag": "钩子闸", "pos": [288, 544], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1562, "end_line": 1578, "label": "写前钩子" }
+      ]
+    },
+    {
+      "id": "admission", "type": "security", "label": "MemoryPolicy.allows_write",
+      "sublabel": "频次 · 最短长度 · 指纹去重",
+      "tag": "写入准入", "pos": [528, 544], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/protocol.py", "line": 409, "end_line": 461, "label": "准入判定" },
+        { "path": "LightAgent/protocol.py", "line": 481, "end_line": 489, "label": "write_fingerprint" }
+      ]
+    },
+    {
+      "id": "requires", "type": "security", "label": "_requires_memory_promotion",
+      "sublabel": "内部 source/scope → 须晋升",
+      "tag": "分流判定", "pos": [744, 544], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1653, "end_line": 1668, "label": "内部来源/作用域集合" }
+      ]
+    },
+    {
+      "id": "memstore", "type": "database", "label": "memory.store()",
+      "sublabel": "经 _store_memory_record 落库",
+      "tag": "持久化终点", "pos": [976, 704], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1867, "end_line": 1881, "label": "metadata 能力探测" },
+        { "path": "LightAgent/protocol.py", "line": 18, "label": "协议签名" }
+      ]
+    },
+    {
+      "id": "candidate", "type": "backend", "label": "_handle_memory_promotion_candidate",
+      "sublabel": "MemoryCandidate 暂存待审",
+      "tag": "晋升审核", "pos": [40, 704], "size": [220, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1670, "end_line": 1728, "label": "候选→钩子→裁决" }
+      ]
+    },
+    {
+      "id": "hookpromote", "type": "security", "label": "before_memory_promote",
+      "sublabel": "BLOCK→blocked · payload 可改写",
+      "tag": "钩子闸", "pos": [288, 704], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1699, "end_line": 1717, "label": "晋升前钩子" }
+      ]
+    },
+    {
+      "id": "merge", "type": "backend", "label": "_candidate_from_hook_payload",
+      "sublabel": "合并钩子改写并重新暂存",
+      "tag": "仅 payload 时", "pos": [528, 704], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1730, "end_line": 1744, "label": "payload 合并" }
+      ]
+    },
+    {
+      "id": "apply", "type": "backend", "label": "_apply_memory_promotion_decision",
+      "sublabel": "promote→落库可注入 · 否则搁置",
+      "tag": "最终裁决", "pos": [744, 704], "size": [204, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1746, "end_line": 1822, "label": "执行晋升裁决" }
+      ]
+    },
+    {
+      "id": "promotionpolicy", "type": "security", "label": "MemoryPolicy.allows_promotion",
+      "sublabel": "无回调默认 keep",
+      "tag": "晋升仲裁", "pos": [744, 864], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/protocol.py", "line": 463, "end_line": 478, "label": "默认 keep" },
+        { "path": "LightAgent/protocol.py", "line": 249, "label": "内部记忆默认须晋升" }
+      ]
+    },
+    {
+      "id": "upsert", "type": "database", "label": "_upsert_memory_candidate",
+      "sublabel": "内存候选列表",
+      "tag": "暂存区", "pos": [40, 864], "size": [192, 88],
+      "sources": [
+        { "path": "LightAgent/core.py", "line": 1838, "end_line": 1846, "label": "列表暂存" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "路径一 · 记忆检索 → 上下文注入", "wraps": ["retrieve", "hookretrieve", "memretrieve", "filter"], "pad": 12 },
+    { "kind": "region", "label": "路径二 · 持久化落库", "wraps": ["store", "hookwrite", "admission", "requires"], "pad": 12 },
+    { "kind": "region", "label": "内部记忆 · 晋升审核", "wraps": ["candidate", "hookpromote", "merge", "apply"], "pad": 12 }
+  ],
+  "connections": [
+    { "id": "run-entry", "from": "run", "to": "entry", "label": "记忆上下文", "variant": "emphasis" },
+    { "id": "entry-retrieve", "from": "entry", "to": "retrieve", "label": "检索", "variant": "emphasis" },
+    { "id": "entry-scopedid", "from": "entry", "to": "scopedid", "label": "取隔离 ID" },
+    { "id": "entry-store", "from": "entry", "to": "store", "label": "落库", "variant": "emphasis" },
+    { "id": "retrieve-hook", "from": "retrieve", "to": "hookretrieve" },
+    { "id": "hook-memretrieve", "from": "hookretrieve", "to": "memretrieve" },
+    { "id": "memretrieve-filter", "from": "memretrieve", "to": "filter" },
+    { "id": "filter-injected", "from": "filter", "to": "injected", "label": "拼入上下文", "variant": "emphasis" },
+    { "id": "store-hookwrite", "from": "store", "to": "hookwrite" },
+    { "id": "hookwrite-admission", "from": "hookwrite", "to": "admission", "label": "准入" },
+    { "id": "admission-requires", "from": "admission", "to": "requires" },
+    { "id": "requires-candidate", "from": "requires", "to": "candidate", "label": "内部记忆须晋升", "variant": "security" },
+    { "id": "requires-memstore", "from": "requires", "to": "memstore", "label": "非内部 · 直通落库", "variant": "emphasis" },
+    { "id": "candidate-hookpromote", "from": "candidate", "to": "hookpromote" },
+    { "id": "candidate-promotionpolicy", "from": "candidate", "to": "promotionpolicy", "label": "钩子放行后仲裁", "variant": "security" },
+    { "id": "candidate-upsert", "from": "candidate", "to": "upsert", "variant": "dashed" },
+    { "id": "hookpromote-merge", "from": "hookpromote", "to": "merge" },
+    { "id": "merge-apply", "from": "merge", "to": "apply" },
+    { "id": "merge-upsert", "from": "merge", "to": "upsert", "variant": "dashed" },
+    { "id": "promotionpolicy-apply", "from": "promotionpolicy", "to": "apply", "label": "裁决", "variant": "security" },
+    { "id": "apply-memstore", "from": "apply", "to": "memstore", "label": "落库", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条路径，一个入口",
+      "items": [
+        "run() 在 core.py:669 调用 _add_memory_context；memory=None 时全链短路",
+        "user 侧与 self_learning 侧各跑一遍「检索 → 落库」，由 scoped_user_id 隔离身份",
+        "检索结果拼为 ##用户偏好 / ##问题相关补充信息，随 query 返回主循环"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "落库的三道闸",
+      "items": [
+        "before_memory_write 钩子：BLOCK 则不落库，payload 可改写内容（core.py:1562）",
+        "allows_write：max_writes_per_run 频次、min_write_length、write_fingerprint 指纹去重（protocol.py:409）",
+        "_requires_memory_promotion：内部 source/scope（reflection、agent、swarm 等）必须走晋升审核（core.py:1653）"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "「可注入」由晋升裁决授予",
+      "items": [
+        "allows_promotion 无回调默认 keep；钩子 payload 可直接给出裁决（protocol.py:463）",
+        "promote 后经 _store_memory_record 落库并标记 injectable=true；否则候选置 rejected/kept",
+        "检索侧 allows_result 会拦截未晋升/不可注入的内部记忆，形成落库→检索闭环（protocol.py:352）"
+      ]
+    }
+  ]
+}
