@@ -5,7 +5,7 @@
     "title": "core.py 记忆调用链：检索注入与持久化落库",
     "locale": "zh-CN",
     "quality_profile": "showcase",
-    "output": "notes/architecture/35-memory-callchain.html",
+    "output": "notes/architecture/34-memory-callchain.html",
     "repository": {
       "url": "git@github-long:long6177/LightAgent.git",
       "link_mode": "local-only",
