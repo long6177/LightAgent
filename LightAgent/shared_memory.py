@@ -45,6 +45,8 @@ class SharedMemoryPool:
     lightweight prototype for LightSwarm/LightFlow experiments, not as durable
     storage. External backends can mirror this record shape while preserving
     namespace, source, scope, and agent provenance metadata.
+
+    他不是生产级的记忆后端, 而是一个轻量级的内存原型, 用于 LightSwarm/LightFlow 实验。外部后端可以镜像这个记录形状，同时保留命名空间、来源、作用域和智能体溯源元数据。
     """
 
     def __init__(

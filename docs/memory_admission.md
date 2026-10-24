@@ -1,21 +1,21 @@
 ## Memory Admission And Mutation Controls
 
-LightAgent v0.8.2 adds optional write-time controls for memory-backed agents.
-These controls are configured through `MemoryPolicy` and run before
+LightAgent v0.8.2 adds optional write-time controls (记忆写入的控制) for memory-backed agents.
+These controls are configured through **`MemoryPolicy`** and run before
 `memory.store(data, user_id)` is called.
 
 Default behavior is unchanged. If you do not configure memory admission options,
-LightAgent stores memory the same way as earlier versions.
+LightAgent stores memory the same way as earlier versions. (早期版本没有使用`MemoryPolicy`, 没有把对记忆写入的控制分离出来)
 
 ### Write Admission Hook
 
 Use `memory_write_admission` when an application needs to block, approve, or
-rewrite memory writes.
+rewrite memory writes. (用户自定义的记忆是否运行write的回调函数)
 
 ```python
 from LightAgent import LightAgent, MemoryAdmissionDecision, MemoryPolicy
 
-def admit_memory(data, context):
+def admit_memory(data, context) -> MemoryAdmissionDecision | str:
     if context["source"] == "reflection":
         return "Reflection memory requires review before persistence."
     return MemoryAdmissionDecision(allowed=True, value=data.strip())
@@ -38,7 +38,7 @@ The hook receives:
 | `context["scope"]` | `user` or `agent` for built-in writes |
 | `context["user_id"]` | Original user or agent identifier |
 | `context["memory_user_id"]` | Scoped user id sent to the backend |
-| `context["agent_name"]` | Current agent name |
+| `context["agent_name"]` | Current agent name (The agent who hold this candidate memory) |
 | `context["trace_id"]` | Current run trace id |
 
 The hook can return:
@@ -52,7 +52,7 @@ The hook can return:
 ### Fail-Closed Shared-Memory Writes
 
 Set `require_write_admission=True` when a shared graph or vector backend must
-never receive an implicit conversational write:
+never receive an implicit conversational write（记忆不允许隐式的write):
 
 ```python
 policy = MemoryPolicy(
@@ -65,15 +65,15 @@ In this mode:
 
 - a missing callback blocks the write;
 - `None` from the callback blocks the write instead of implicitly allowing it;
-- callback exceptions block the write and expose only the exception type in the
+- **callback exceptions block** the write and expose only the exception type in the
   trace reason;
 - `True` or `MemoryAdmissionDecision(allowed=True, ...)` is required to approve
   persistence.
 
 Default behavior remains compatible: when `require_write_admission=False`,
-an unconfigured write policy still allows ordinary user-memory persistence.
+**an unconfigured write policy still allows ordinary user-memory persistence**.
 
-### Write Limits
+### Write Limits -- 限制一个turn的最大write次数
 
 Use `max_writes_per_run` to cap memory mutations from a single run.
 
@@ -93,7 +93,7 @@ single run.
 policy = MemoryPolicy(reject_duplicate_writes=True)
 ```
 
-The duplicate fingerprint is lightweight and scope-aware. It includes the scoped
+The duplicate **fingerprint** is lightweight and scope-aware. It includes the scoped
 memory user id, source, scope, agent name, and normalized text. This means a
 user memory and a reflection memory with the same text are not treated as the
 same write.
@@ -101,7 +101,7 @@ same write.
 ### Low-Quality Write Blocking
 
 Use `min_write_length` and `reject_write_patterns` for simple default memory
-quality gates before a backend persists data:
+quality gates（记忆质量门槛)  before a backend persists data: -- 基本过滤
 
 ```python
 policy = MemoryPolicy(
@@ -118,9 +118,9 @@ classifiers can still perform deeper review after basic filtering.
 
 ### Memory Promotion For Internal Evidence
 
-Reflection, self-learning, delegation summaries, and other internal agent
-evidence are treated as non-injectable memory candidates by default. They are
-not written to the configured memory backend unless an explicit promotion
+**Reflection, self-learning, delegation summaries, and other internal agent**
+**evidence are treated as non-injectable memory candidates by default.** （这些都是默认不可注入的内部记忆, 不是直接来自于用户的prompt) They are
+not written to the configured memory backend unless **an explicit promotion**
 decision approves or rewrites them.
 
 ```python
@@ -144,7 +144,7 @@ agent = LightAgent(
 )
 ```
 
-The promotion callback receives a `MemoryCandidate` with `candidate_id`,
+The promotion callback **receives a `MemoryCandidate`** with `candidate_id`,
 `source`, `scope`, `memory_user_id`, `original_user_id`, `agent_name`,
 `trace_id`, `run_id`, and raw `data`. The trace events emitted for promotion do
 not include raw memory text.
@@ -154,7 +154,7 @@ Promotion decisions can:
 - approve the candidate as prompt-injectable memory;
 - reject it;
 - rewrite it before persistence;
-- keep it non-injectable for audit or later review.
+- keep it non-injectable for audit or later review. （不注入, 但保留在在trace recoder中)
 
 Use `agent.list_memory_candidates()` after a run to inspect candidates, or
 `agent.promote_memory_candidate(candidate_id)` to explicitly promote one later.
@@ -168,7 +168,7 @@ is explicitly promoted. Existing internal records without `promotion_status`
 and `injectable` metadata are also excluded from prompt injection.
 
 For a temporary compatibility window, applications can restore the previous
-retrieval and write behavior while they audit existing records:
+retrieval and write behavior(回复先前的检索和写入行为) while they audit existing records:
 
 ```python
 policy = MemoryPolicy(require_promotion_for_internal_memory=False)
@@ -178,7 +178,7 @@ The safer migration is to review legacy internal records and backfill only
 approved entries with `promotion_status="promoted"` and `injectable=True`.
 Records explicitly marked `injectable=False` or with a candidate, rejected, or
 blocked `promotion_status` remain non-injectable even when the compatibility
-option is enabled. The exact backfill operation belongs in the memory adapter
+option is enabled. The exact backfill(回填) operation belongs in the memory adapter
 because storage APIs differ between vector, graph, and custom backends.
 
 ### Expiration-Aware Retrieval
@@ -200,7 +200,7 @@ expiration enforcement is enabled.
 
 ### Trace Events
 
-When tracing is enabled, memory write controls emit:
+When tracing is enabled, memory write controls emit(发出):
 
 | Event | Meaning |
 | --- | --- |
@@ -208,10 +208,10 @@ When tracing is enabled, memory write controls emit:
 | `memory_write_block` | A memory write was blocked by policy. |
 | `memory_retrieve_filter` | Retrieval result counts after namespace, provenance, trust, and promotion filtering. |
 | `memory_promotion_required` | Internal memory was converted to a non-injectable candidate. |
-| `memory_promotion_approved` | A candidate was approved and persisted. |
-| `memory_promotion_rewritten` | A candidate was rewritten before persistence. |
-| `memory_promotion_rejected` | A candidate was rejected. |
-| `memory_promotion_blocked` | A candidate stayed non-injectable or was blocked by policy. |
+| `memory_promotion_approved` | A candidate was **approved** and persisted. |
+| `memory_promotion_rewritten` | A candidate was **rewritten** before persistence. |
+| `memory_promotion_rejected` | A candidate was **rejected**. |
+| `memory_promotion_blocked` | A candidate stayed non-injectable or was **blocked** by policy. |
 
 These events do not include raw memory text.
 

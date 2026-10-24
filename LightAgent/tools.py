@@ -28,22 +28,27 @@ class ToolRegistry:
     """集中管理工具注册表，避免全局变量"""
 
     def __init__(self):
+        """初始化工具注册表项"""
         self.function_mappings = {}  # 工具名称 -> 工具函数
         self.function_info = {}  # 工具名称 -> 工具info信息
-        self.openai_function_schemas = []  # OpenAI 格式的工具描述
-        self._registration_counts: Dict[str, int] = {}
+        self.openai_function_schemas = []  # OpenAI 格式的工具描述 (给AI看)
+        self._registration_counts: Dict[str, int] = {} # 用来记录同一个工具名被不同函数注册的次数
 
     def register_tool(self, func: Callable) -> bool:
-        """注册单个工具"""
+        """
+        注册单个工具 (`fucn+tool_info` -> `function_mappings+function_info+openai_function_schemas`)
+
+        :param func: 工具函数，必须包含 `tool_info` 属性
+        """
         if not hasattr(func, "tool_info"):
             return False
 
         tool_info = func.tool_info
         tool_name = tool_info["tool_name"]
-        existing_func = self.function_mappings.get(tool_name)
-        if tool_name not in self._registration_counts:
+        existing_func = self.function_mappings.get(tool_name) # 获取已有的同名工具函数
+        if tool_name not in self._registration_counts: # 第一次注册时, 将该tool_name的计数设为1
             self._registration_counts[tool_name] = 1
-        elif existing_func is not func:
+        elif existing_func is not func: # 只有同工具名不同函数时才增加计数
             self._registration_counts[tool_name] += 1
 
         # 注册到字典
@@ -72,10 +77,13 @@ class ToolRegistry:
             }
         }
 
+        # 删除/覆盖 旧的同tool_name的工具描述
+        # 1. 删除
         self.openai_function_schemas = [
             schema for schema in self.openai_function_schemas
             if schema.get("function", {}).get("name") != tool_name
         ]
+        # 2. 覆盖: 添加新的工具描述
         self.openai_function_schemas.append(tool_def_openai)
         return True
 
@@ -104,6 +112,17 @@ class ToolRegistry:
         tool_name = raw_tool_name if isinstance(raw_tool_name, str) and raw_tool_name else "<unknown>"
 
         def add(level: str, field: str, message: str) -> None:
+            """
+            `validate_tool_info` 内部的辅助函数，用于添加诊断信息
+            
+            diagnostics结构:
+            `{
+                "tool": tool_name,
+                "level": level,  # "error" 或 "warning"
+                "field": field,  # 出错的字段名
+                "message": message,  # 错误/警告信息
+            }`
+            """
             diagnostics.append({
                 "tool": tool_name,
                 "level": level,
@@ -160,7 +179,7 @@ class ToolRegistry:
         for tool_name, tool_info in self.function_info.items():
             diagnostics.extend(self.validate_tool_info(tool_info))
             count = self._registration_counts.get(tool_name, 0)
-            if count > 1:
+            if count > 1: # 诊断出同名工具被注册多次的情况
                 diagnostics.append({
                     "tool": tool_name,
                     "level": "error",
@@ -178,7 +197,12 @@ class ToolRegistry:
         return json.dumps(self.openai_function_schemas, indent=4, ensure_ascii=False)
 
     def filter_tools(self, tool_reflection_result: str) -> List[Dict]:
-        """根据内容过滤工具"""
+        """
+        根据内容过滤工具
+        
+        :param tool_reflection_result: 期望得到的工具列表的 JSON 字符串 (来自模型的输出, 可能包含 Markdown 代码块)
+        :return: 过滤后的工具描述列表
+        """
         try:
             # 安全解析可能包含 Markdown 代码块的 JSON
             refined_content = tool_reflection_result.strip()
@@ -188,6 +212,7 @@ class ToolRegistry:
             parsed_data = json.loads(refined_content)
             valid_tools = {tool["name"].strip().lower() for tool in parsed_data.get("tools", [])}
 
+            # 进行过滤
             return [
                 schema for schema in self.openai_function_schemas
                 if isinstance(schema, dict) and
@@ -198,11 +223,19 @@ class ToolRegistry:
 
 
 class ToolLoader:
-    """工具加载器，支持动态加载和缓存"""
+    """
+    工具加载器，支持动态加载和缓存
+    
+    1. `tools/*.py` 动态 `import` → 函数对象（缓存 + 名字/路径安全校验）
+    2. 加载`tools_directory`目录下的工具模块，并将工具函数注册到 `ToolRegistry` 中。
+    """
 
     def __init__(self, tools_directory: str = "tools"):
+        """
+        :param tools_directory: 工具文件所在目录，默认是 "tools"
+        """
         self.tools_directory = tools_directory
-        self.loaded_tools = {}
+        self.loaded_tools = {} # 缓存已加载的工具函数，避免重复加载
 
     def load_tool(self, tool_name: str) -> Callable:
         """加载单个工具"""
@@ -228,13 +261,14 @@ class ToolLoader:
         if hasattr(module, tool_name):
             tool_func = getattr(module, tool_name)
             if callable(tool_func) and hasattr(tool_func, "tool_info"):
-                self.loaded_tools[tool_name] = tool_func
+                self.loaded_tools[tool_name] = tool_func # 登记到 `loaded_tools` 缓存中
                 return tool_func
 
         raise AttributeError(f"Tool '{tool_name}' is not properly defined in {tool_path}")
 
     @staticmethod
     def _is_safe_tool_name(tool_name: str) -> bool:
+        """检查工具名称`tool_name`是否安全（只允许字母、数字和下划线）"""
         return bool(_TOOL_NAME_PATTERN.fullmatch(str(tool_name)))
 
     def load_tools(self, tool_names: List[str]) -> Dict[str, Callable]:
@@ -249,15 +283,28 @@ class AsyncToolDispatcher:
     """异步工具调度器"""
 
     def __init__(self, function_mappings: Dict[str, Callable] = None, function_info: Dict[str, Dict[str, Any]] = None):
+        """
+        初始化异步工具调度器
+
+        :param function_mappings: 工具名称 -> 工具函数的映射
+        :param function_info: 工具名称 -> 工具信息的映射
+        """
         self.function_mappings = function_mappings or {}
         self.function_info = function_info or {}
 
     async def dispatch(self, tool_name: str, tool_params: Dict[str, Any]) -> Union[
         str, Generator[str, None, None]]:
-        """调用工具执行，支持同步/异步工具及流式输出。
+        """
+        调用工具执行，支持同步/异步工具及流式输出。
 
         异步生成器工具的结果在 dispatch 内收集并序列化为 str 返回；
         同步生成器工具透传 Generator，由调用方消费以支持流式输出。
+        
+
+        :param tool_name: 工具名称
+        :param tool_params: 工具参数字典
+
+        :return: 工具执行结果
         """
         if tool_name not in self.function_mappings:
             return format_error_code("LA-TOOL", f"Tool `{tool_name}` not found.")
@@ -283,13 +330,14 @@ class AsyncToolDispatcher:
                 # result = list(tool_call(**tool_params))
                 # if len(result) == 1:
                 #     result = result[0]
+
             else:
-                # 普通函数 - 直接调用
+                # 普通函数 - 直接调用 - (会阻塞dispather所在的工作线程)
                 result = tool_call(**tool_params)
 
             # 将结果转换为字符串（OpenAI 要求 tool content 必须是字符串）
             return self._serialize_result(result)
-        except Exception as e:
+        except Exception as e: # 捕获工具函数执行异常, 然后格式化错误信息, 作为 tool_result 返回给上层, 进一步发给LLM, 让他能够看到错误并据此修正或者采取自愈措施
             return f"{format_lightagent_error(e, 'execute tool', default_code='LA-TOOL')}\n{traceback.format_exc()}"
 
     def _serialize_result(self, result: Any) -> str:
@@ -329,6 +377,11 @@ class AsyncToolDispatcher:
 
     @staticmethod
     def _matches_declared_type(value: Any, declared_type: Any) -> bool:
+        """
+        Check whether a value matches the declared parameter type.
+        
+        被 `_validate_tool_params` 调用，用于检查工具参数的类型是否符合声明的类型。
+        """
         if declared_type is None:
             return True
         if isinstance(declared_type, str):

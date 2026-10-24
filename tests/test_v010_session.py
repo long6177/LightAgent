@@ -99,6 +99,7 @@ def test_migration_registry_applies_ordered_event_migration():
 
 
 def test_jsonl_store_rejects_truncated_event(tmp_path):
+    """ 测试 `JsonlSessionStore` 能否检测并拒绝损坏了的 JSONL 文件"""
     store = JsonlSessionStore(tmp_path)
     session = store.create(Session(session_id="broken"))
     path = tmp_path / "broken.jsonl"
@@ -157,19 +158,20 @@ def test_in_memory_store_rejects_stale_session_save():
 
 
 def test_jsonl_atomic_save_failure_preserves_previous_session(tmp_path, monkeypatch):
+    """ 测试 `JsonlSessionStore` 在保存失败时不会破坏之前的会话数据"""
     from LightAgent import session as session_module
 
     store = JsonlSessionStore(tmp_path)
     current = store.create(Session(session_id="atomic"))
     current.append("durable.event", {"value": 1})
-    store.save(current)
+    store.save(current)  # 先正常保存
     before = store.get("atomic").to_dict()
     current.append("new.event", {"value": 2})
 
-    def fail_replace(source, destination):
+    def fail_replace(source, destination):  # 配置monkeypatch来模拟 `os.replace` 失败
         raise OSError("simulated replace failure")
 
-    monkeypatch.setattr(session_module.os, "replace", fail_replace)
+    monkeypatch.setattr(session_module.os, "replace", fail_replace)  # 模拟 `os.replace` 失败
     with pytest.raises(OSError, match="simulated replace failure"):
         store.save(current)
 

@@ -21,6 +21,9 @@ class CapabilityScope(str, Enum):
 
 
 class CapabilityRisk(str, Enum):
+    """
+    枚举类 `CapabilityRisk` -- 用于表示能力`CapabilitySpec`的风险等级
+    """
     READ_ONLY = "L0"
     ISOLATED_WRITE = "L1"
     SENSITIVE = "L2"
@@ -29,20 +32,24 @@ class CapabilityRisk(str, Enum):
 
 @dataclass(frozen=True)
 class CapabilitySpec:
+    """
+    Agent 能力的描述结构 -- `CapabilitySpec`
+
+    """
     name: str
     description: str = ""
-    risk: CapabilityRisk = CapabilityRisk.READ_ONLY
+    risk: CapabilityRisk = CapabilityRisk.READ_ONLY # 描述这个能力的风险等级
     read: bool = False
     write: bool = False
-    network: bool = False
-    execute: bool = False
-    persistent: bool = False
+    network: bool = False # 是否访问网络
+    execute: bool = False # 是否可以执行代码或命令
+    persistent: bool = False # 是否会产生持久影响
     cancellable: bool = False
-    resumable: bool = False
+    resumable: bool = False # 能够恢复
     timeout: float | None = None
     output_limit: int | None = None
-    requires_sandbox: bool = False
-    requires_approval: bool = False
+    requires_sandbox: bool = False # 是否需要在隔离环境/沙箱中运行
+    requires_approval: bool = False # 是否必须经过审批
     ui_type: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -373,7 +380,11 @@ class ProviderRegistration:
 
 
 class CapabilityRegistry:
-    """Resolve Providers by capability and runtime/session/agent scope."""
+    """
+    Resolve Providers by capability and runtime/session/agent scope.
+    
+    能力注册表
+    """
 
     _precedence = {
         CapabilityScope.DEFAULT: 0,
@@ -388,7 +399,7 @@ class CapabilityRegistry:
             policy_engine: PolicyEngine | None = None,
             audit: Callable[[str, dict[str, Any]], Any] | None = None,
     ):
-        self.policy_engine = policy_engine or PolicyEngine()
+        self.policy_engine = policy_engine or PolicyEngine() # 配套的策略引擎, 说明的能力审计策略
         self.audit = audit
         self._registrations: list[ProviderRegistration] = []
         self._conflicts: list[dict[str, Any]] = []

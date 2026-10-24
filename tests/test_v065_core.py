@@ -23,11 +23,23 @@ def make_agent(**kwargs):
 
 
 class StaticCompletions:
+    """
+    Fake Client1
+
+    Attributes:
+        calls (list): 记录每次调用 `create()` 时传入的参数, 可以供测试断言使用
+        content (str): 默认返回的下次内容, 作为 `response.choices[0].message.content` 的值
+    """
     def __init__(self, content="hello"):
         self.calls = []
         self.content = content
 
     def create(self, **params):
+        """
+        相当于 "覆写" `client.chat.completions.create(**params)`中的create方法
+
+        返回简洁的 ChatCompletion API 风格的JSON结构, 不构建过多字段, 支持 `response.choices[0].message.content` 调用即可
+        """
         self.calls.append(params)
         message = SimpleNamespace(content=self.content, tool_calls=None)
         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
@@ -109,6 +121,13 @@ class ErrorCompletions:
 
 
 def attach_client(agent, completions):
+    """
+    将 agent (LightAgent) 的 client 替换为假的客户端 completions
+
+    :param agent: LightAgent (包含 client 属性)
+    :param completions: StaticCompletions | ToolCallCompletions | LoopingStreamToolCallCompletions | ErrorCompletions
+    """
+    # run() 不关心 client 是真的还是假的；它只按统一接口调用 chat.completions.create。
     agent.client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
     return completions
 
@@ -128,11 +147,14 @@ runtime_add.tool_info = {
 
 
 def test_default_run_result_remains_string():
+    # Arrange - 准备测试环境
     agent = make_agent()
     attach_client(agent, StaticCompletions("hello"))
 
+    # Act - 执行被测行为
     result = agent.run("hello")
 
+    # Assert - 验证测试结果
     assert result == "hello"
     assert isinstance(result, str)
 

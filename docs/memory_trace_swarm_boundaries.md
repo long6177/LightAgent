@@ -1,24 +1,24 @@
 ## Memory, Trace, And Swarm Boundaries
 
-LightAgent v0.8.1 documents a clear boundary between three layers that often
+LightAgent v0.8.1 documents a clear boundary between **three layers** that often
 interact in long-lived agents:
 
 | Layer | Lifetime | Recommended Storage |
 | --- | --- | --- |
 | Trace | One run | Trace recorder or external observability backend |
-| User memory | Cross-session | Memory backend scoped by user or tenant |
+| User memory | Cross-session(跨会话) | Memory backend scoped by user or tenant |
 | Agent reflection memory | Candidate until promoted | Separate agent/reflection scope after review |
-| LightSwarm delegation state | One task or workflow | Caller-managed task state or trace metadata |
+| LightSwarm delegation (委托) state | One task or workflow | Caller-managed task state or trace metadata |
 
-Do not store trace summaries, tool logs, or self-reflection outputs as ordinary
+**Do not** store **trace summaries, tool logs, or self-reflection outputs** as ordinary
 user memories. LightAgent converts built-in reflection writes into
 non-injectable `MemoryCandidate` records unless your application intentionally
-promotes them.
+promotes them. (只有应用能够显式的promote这些内部候选记忆)
 
 ### MemoryScope Metadata
 
-`MemoryScope` is a small metadata convention that memory adapters can use when
-they support provenance fields.
+`MemoryScope` is a small metadata convention(元数据惯例) that memory adapters can use when
+they support(提供) provenance (来源) fields.
 
 ```python
 from LightAgent import MemoryScope
@@ -82,7 +82,7 @@ agent = LightAgent(
 )
 ```
 
-When filters such as `allowed_sources` are configured, memories missing that
+When filters such as `allowed_sources` are configured, memories missing(不符合) that
 metadata are rejected. This is intentional: strict shared-memory deployments
 should not inject unknown-origin records into the prompt.
 

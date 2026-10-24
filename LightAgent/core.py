@@ -87,6 +87,9 @@ def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
     running event loop" issue by detecting the current context and using
     the appropriate execution strategy.
 
+    解决了 `run()` 这样的同步入口如何安全调用异步函数的问题，避免了在已经运行的事件循环中调用 `asyncio.run()` 导致的错误。
+    **同步API内部桥接异步**是Agent框架的通用难题
+
     Args:
         coro: The coroutine to execute
 
@@ -97,6 +100,7 @@ def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
         Any exception raised by the coroutine
     """
     try:
+        # 兼容"当前线程"已经有事件循环"的场景
         # Check if we're already in an event loop
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -105,8 +109,8 @@ def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 
     # We're inside an event loop - need alternative execution strategy
     # Run the coroutine in a separate thread with its own event loop
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(asyncio.run, coro)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor: 
+        future = executor.submit(asyncio.run, coro) # 创建一个只包含一个工作线程的线程池创建事件循环(由`asyncio.run()`创建)并执行协程
         return future.result()
 
 # openai.langfuse_auth_check()
@@ -485,7 +489,7 @@ class LightAgent:
             max_tool_iterations: Optional[int] = None,
             user_id: str = "default_user",
             history: list = None,
-            metadata: Optional[Dict] = None,
+            metadata: Optional[Dict] = None, # 其他元数据
             use_skills: bool = True,  # 是否使用技能
             result_format: str = "str",
             trace: bool = False,
@@ -495,7 +499,7 @@ class LightAgent:
             session_id: str | None = None,
             cancellation_token: CancellationToken | None = None,
             idempotency_key: str | None = None,
-    ) -> Union[Generator[str, None, None], str, RunResult]:
+    ) -> Union[Generator[str, None, None], str, RunResult]: # generator是为了处理流式响应
         """
         运行代理，处理用户输入。
 
@@ -505,7 +509,7 @@ class LightAgent:
         :param stream: 是否启用流式输出。
         :param max_retry: 最大重试次数。
         :param max_tool_iterations: 流式工具调用的最大循环轮次；默认沿用 max_retry 保持兼容。
-        :param user_id: 用户 ID。
+        :param user_id: 用户 ID。 # 运行本次会话的用户标识符，用于区分不同用户的会话和历史记录。
         :param history: 历史对话 。
         :param metadata: 元数据。
         :param use_skills: 是否使用技能。
@@ -529,7 +533,7 @@ class LightAgent:
             raise ValueError("max_tool_iterations must be at least 1")
         effective_max_tool_iterations = max_tool_iterations if max_tool_iterations is not None else max_retry
 
-        # 设置跟踪ID
+        # 设置跟踪ID  # 以下信息保持了 Agent 的运行状态记录
         traceid = uuid4().hex
         self.traceid = traceid
         self._current_run_id = uuid4().hex
@@ -564,7 +568,7 @@ class LightAgent:
         self._memory_write_fingerprints = set()
         self._memory_promotion_candidates = []
         self._budget_error = None
-        projected_history = self._begin_session_run(
+        projected_history = self._begin_session_run( # 创建和打开会话runtime; 并得到 映射出来的历史消息(创建新会话时返回空)
             session_id=session_id,
             query=query,
             user_id=str(user_id),
@@ -582,7 +586,7 @@ class LightAgent:
             "run_id": self._current_run_id,
             "idempotency_key": idempotency_key,
         })
-        before_run = self._run_hooks("before_run", {
+        before_run = self._run_hooks("before_run", { # 执行 hook
             "query": query,
             "tools": tools,
             "stream": stream,
@@ -626,7 +630,7 @@ class LightAgent:
                 self._record_policy_adapter_event("before_run", "input_guardrails", "replace")
             query = input_decision.value
 
-        # 初始化历史记录
+        # 初始化历史记录( type: list[dict] )
         history = projected_history if history is None and session_id is not None else (history or [])
 
         # 处理运行时传入的工具
@@ -653,9 +657,9 @@ class LightAgent:
         current_date = now.strftime("%Y-%m-%d")
         current_time = now.strftime("%H:%M:%S")
         system_prompt = (
-            f"##代理名称：{self.name}\n"
-            f"##代理指令：{self.instructions}\n"
-            f"##身份：{self.role}\n"
+            f"## 代理名称：{self.name}\n"
+            f"## 代理指令：{self.instructions}\n"
+            f"## 身份：{self.role}\n"
             f"请一步一步思考来完成用户的要求。尽可能完成用户的回答，如果有补充信息，请参考补充信息来调用工具，直到获取所有满足用户的提问所需的答案。\n"
             f"今日的日期: {current_date} 当前时间: {current_time}"
         )
@@ -665,7 +669,8 @@ class LightAgent:
             if skills_xml:
                 system_prompt += f"\n\n## 可用技能\n{skills_xml}\n"
                 system_prompt += "当用户需求与某个技能描述匹配时，请先使用 activate_skill 工具加载完整指令。"
-        # 添加记忆上下文
+
+        # 添加记忆上下文 # 整个 run() 仅在这里访问了记忆模块
         query = self._add_memory_context(query, user_id)
 
         # 思维链处理
@@ -725,6 +730,8 @@ class LightAgent:
                     return self._stream_as_events(stream_result, traceid)
                 return stream_result
             return self._format_run_result(hook_error, result_format, traceid, hook_error)
+
+        # 通过 hook 检验, 开始模型请求
         try:
             response = self.client.chat.completions.create(**self.chat_params)
         except Exception as e:
@@ -741,6 +748,7 @@ class LightAgent:
             return self._format_run_result(error_msg, result_format, traceid, error_msg)
         self._complete_model_request(response=response)
 
+        # 第一次模型响应之后, 开始执行核心逻辑 `_core_run_logic`，包括工具调用、思维链处理、输出生成等
         result = self._core_run_logic(response, stream, max_retry, effective_max_tool_iterations)
         if stream:
             if result_format == "event":
@@ -764,15 +772,16 @@ class LightAgent:
         """Expose the legacy streaming generator as a cancellable async iterator."""
         options = dict(kwargs)
         options["stream"] = True
-        stream_result = await asyncio.to_thread(self.run, query, **options)
+        stream_result = await asyncio.to_thread(self.run, query, **options)  # 得到流式run返回的同步生成器
         sentinel = object()
         try:
             while True:
+                # 在to_thread工作线程中推进同步生成器, 避免阻塞整个事件循环
                 chunk = await asyncio.to_thread(next, stream_result, sentinel)
                 if chunk is sentinel:
                     return
                 yield chunk
-        finally:
+        finally: # 无论是否异常, 都执行, 产生stream_resulth函数可能并没有把生成器完全耗尽, 避免资源泄露
             close = getattr(stream_result, "close", None)
             if callable(close):
                 await asyncio.to_thread(close)
@@ -891,14 +900,25 @@ class LightAgent:
             self.capability_registry.register(MemoryProviderAdapter(self.memory), scope=CapabilityScope.RUNTIME)
 
     def _record_session_event(self, event_type: str, data: Dict[str, Any] | None = None) -> Any:
+        """将核心运行过程中的事件同步记录到当前会话。
+
+        此方法负责连接 Agent 的运行逻辑与会话持久化层：它会将指定事件追加到
+        当前会话中，并附带当前回合、运行实例以及 Agent 的标识，随后保存更新
+        后的会话。这样，模型请求、消息接收和运行状态变化等事件都能以统一的
+        形式保存在会话记录中，便于后续恢复上下文、追踪执行过程和审计运行结果。
+
+        如果当前没有活动会话，方法将直接返回 ``None``。当事件追加或会话保存
+        失败时，错误会被记录到 ``_session_store_error`` 并写入日志；异常不会
+        继续向上抛出，以避免会话存储故障中断 Agent 的核心运行流程。
+        """
         if not getattr(self, "runtime", None) or self.runtime.session is None:
             return None
         try:
-            session = self.runtime.session
-            event = session.append(
+            session = self.runtime.session # 获得当前agent.run()/运行时的session
+            event = session.append( # run() 和 session模块之间的bridge
                 event_type,
                 data or {},
-                turn_id=getattr(self, "_current_turn_id", None),
+                turn_id=getattr(self, "_current_turn_id", None), # 每个之间都会有一个当前的`turn_id`
                 run_id=getattr(self, "_current_run_id", None),
                 agent_id=self.name,
             )
@@ -910,9 +930,10 @@ class LightAgent:
             return None
 
     def _record_trace(self, event_type: str, data: Dict[str, Any] | None = None):
+        # 映射层, 作为 `LightAgent._record_session_event` 的包装器, 记录 Trace 和 Session 事件
         """Record compatible Trace and durable Session views from one event."""
         trace_data = deepcopy(data or {})
-        session_type = {
+        session_type = { # 映射: trace事件 -> Session 事件
             "run_start": "run.started",
             "model_request": "model.requested",
             "model_response": "assistant.completed",
@@ -1420,7 +1441,11 @@ class LightAgent:
         return result
 
     def _stream_as_events(self, stream_result: Generator[Any, None, None], trace_id: str) -> Generator[StreamEvent, None, None]:
-        """Wrap legacy stream chunks as structured events when explicitly requested."""
+        """
+        Wrap legacy stream chunks as structured events when explicitly requested.
+
+        this function is used in `run()` when `stream=True` and `result_format="event"` to yield `StreamEvent` objects instead of raw strings.
+        """
         for chunk in stream_result:
             if isinstance(chunk, dict):
                 if "error" in chunk:
@@ -1433,17 +1458,23 @@ class LightAgent:
                     yield StreamEvent(type="event", data=chunk, trace_id=trace_id)
             elif isinstance(chunk, str) and chunk.startswith("[LA-"):
                 yield StreamEvent(type="error", data=chunk, trace_id=trace_id)
-            else:
+            else: # `_run_stream_logic` yields的是一个个ChatCompletionChunk对象, 在这里StreamEvent的data还是一个ChatCompletionChunk对象, 需要在StreamEvent的消费者中进一步处理
                 yield StreamEvent(type="content", data=chunk, trace_id=trace_id)
 
     def _add_memory_context(self, query: str, user_id: str) -> str:
-        """添加记忆上下文"""
+        """
+        添加记忆上下文
+
+        1. 调用到模型之前, 读取与当前问题相关的长期记忆, 把他们拼接到用户的query前面
+        2. 把当前的query也加入到记忆系统
+        3. 如果agent启动的`self_learning`模式, 还会检索与当前问题相关的智能体记忆(scope="agent", source="reflection"), 并把它们拼接到用户的query前面
+        """
         if self.memory is None:
             return query
 
         context = ""
-        memory_user_id = self.memory_policy.scoped_user_id(user_id)
-        related_memories = self._retrieve_memory_with_hooks(
+        memory_user_id = self.memory_policy.scoped_user_id(user_id) # 增加命名空间前缀, 用于隔离共享后端的不同用户记忆
+        related_memories = self._retrieve_memory_with_hooks( # 获得经过self.memory_policy过滤后的记忆结果, 只返回当前用户的记忆
             query=query,
             memory_user_id=memory_user_id,
             original_user_id=user_id,
@@ -1454,6 +1485,8 @@ class LightAgent:
             context += "\n##用户偏好\n用户之前提到了:\n" + "\n".join(
                 [m["memory"] for m in related_memories["results"]]
             )
+
+        # 把当前的query也加入到记忆系统, 以便后续的查询可以检索到
         self._store_memory_with_policy(
             data=query,
             memory_user_id=memory_user_id,
@@ -1462,6 +1495,7 @@ class LightAgent:
             scope="user",
         )
 
+        # 当 agent 启用自学习时, 检索并保存与当前问题相关的智能体记忆
         if self.self_learning:
             agent_user_id = self.memory_policy.scoped_user_id(self.name)
             agent_memories = self._retrieve_memory_with_hooks(
@@ -1475,6 +1509,7 @@ class LightAgent:
                 context += "\n##问题相关补充信息:\n" + "\n".join(
                     [m["memory"] for m in agent_memories["results"]]
                 )
+
             self._store_memory_with_policy(
                 data=query,
                 memory_user_id=agent_user_id,
@@ -1495,6 +1530,7 @@ class LightAgent:
             scope: str,
     ) -> Any:
         """Retrieve memories through hook and MemoryPolicy boundaries."""
+        # 运行 配置好的`before_memory_retrieve` 检索前执行hook
         before = self._run_hooks("before_memory_retrieve", {
             "query": query,
             "memory_user_id": str(memory_user_id),
@@ -1514,7 +1550,10 @@ class LightAgent:
             query = str(before.payload.get("query", query))
             memory_user_id = str(before.payload.get("memory_user_id", memory_user_id))
 
+        # 开始检索
         memories = self.memory.retrieve(query=query, user_id=memory_user_id)
+
+        # 运行 配置好的`after_memory_retrieve` 检索后执行hook
         after = self._run_hooks("after_memory_retrieve", {
             "query": query,
             "memory_user_id": str(memory_user_id),
@@ -1545,10 +1584,24 @@ class LightAgent:
             source: str,
             scope: str,
     ) -> bool:
-        """Persist memory only when the configured memory policy allows it."""
+        """
+        Persist memory only when the **configured memory policy** allows it.
+
+        会调用 `self.memory_policy.allows_write` 来判断是否允许写入记忆, 并在必要时运行 `before_memory_write` 和 `after_memory_write` hook.
+
+        Args:
+            data: 要写入的记忆内容。
+            memory_user_id: 用于存储记忆的用户标识。
+            original_user_id: 发起当前操作的原始用户标识。
+            source: 记忆的来源。
+            scope: 记忆的作用域。
+
+        Returns:
+            如果记忆成功写入或由晋升流程处理则返回 ``True``，否则返回 ``False``。
+        """
         if self.memory is None:
             return False
-        context = {
+        context = { # 与本次写入相关的上下文
             "agent_name": self.name,
             "trace_id": self.traceid,
             "parent_trace_id": getattr(self, "_parent_trace_id", None),
@@ -1576,6 +1629,7 @@ class LightAgent:
             return False
         if hook_decision.payload:
             data = str(hook_decision.payload.get("data", data))
+        # 调用 memory_policy 来判断是否允许写入记忆
         decision = self.memory_policy.allows_write(
             data,
             context,
@@ -1618,7 +1672,8 @@ class LightAgent:
                 "run_id": getattr(self, "_current_run_id", None),
                 "run_group_id": getattr(self, "_run_group_id", None),
             },
-        ).to_metadata()
+        ).to_metadata() # 返回一个字典dict
+
         if self._requires_memory_promotion(source=source, scope=scope):
             return self._handle_memory_promotion_candidate(
                 data=stored_data,
@@ -1630,7 +1685,10 @@ class LightAgent:
                 context=context,
             )
 
+        # 这一步真正开始存储到 memory后端(调用 self.memory.store)
         self._store_memory_record(stored_data, memory_user_id, metadata)
+
+        # 能走到这一步的都是不需要promotion的, 所以直接调用after_memory_write hook, 然后 return true
         self._run_hooks("after_memory_write", {
             "data": stored_data,
             "metadata": metadata,
@@ -1651,7 +1709,11 @@ class LightAgent:
         return True
 
     def _requires_memory_promotion(self, *, source: str, scope: str) -> bool:
-        """Return whether a memory write must pass explicit promotion first."""
+        """
+        Return whether a memory write must pass explicit promotion first.
+
+        仅根据 source 和 scope 来判断是否需要进一步的promotion判断, 当scope 或者 source 处于**需要promotion的范围**时, 才会返回True, 否则返回False. 具体的promotion逻辑在 `_handle_memory_promotion_candidate` 中实现.
+        """
         if not self.memory_policy.require_promotion_for_internal_memory:
             return False
         internal_sources = {
@@ -1676,7 +1738,7 @@ class LightAgent:
             source: str,
             scope: str,
             metadata: dict[str, Any],
-            context: dict[str, Any],
+            context: dict[str, Any], # 与记忆持久化相关的上下文
     ) -> bool:
         """Review an internal memory candidate before it can be persisted."""
         candidate = MemoryCandidate(
@@ -1696,6 +1758,7 @@ class LightAgent:
         self._record_trace("memory_promotion_required", self._memory_candidate_trace(candidate))
         promotion_context = {**context, "candidate_id": candidate.candidate_id}
 
+        # 执行 befor hook
         hook_decision = self._run_hooks("before_memory_promote", {
             "candidate": candidate.to_dict(include_data=True),
             "data": candidate.data,
@@ -1724,6 +1787,7 @@ class LightAgent:
                 )
                 return self._apply_memory_promotion_decision(candidate, promotion_decision, promotion_context)
 
+        # 开始 执行是否晋升判断
         promotion_decision = self.memory_policy.allows_promotion(candidate, promotion_context)
         return self._apply_memory_promotion_decision(candidate, promotion_decision, promotion_context)
 
@@ -1751,11 +1815,11 @@ class LightAgent:
             *,
             manual: bool = False,
     ) -> bool:
-        """Apply a promotion decision and persist only explicitly promoted memory."""
+        """Apply a promotion decision(`MemoryPromotionDecision`) and persist only explicitly promoted memory."""
         if not decision.promotes:
             status = "rejected" if decision.action == "reject" else "kept"
             updated = candidate.with_updates(status=status, injectable=False)
-            self._upsert_memory_candidate(updated)
+            self._upsert_memory_candidate(updated) # 如果decision.promotes为False, 就把状态更新过的candidate存储到内存候选列表中, 以便后续查询
             event_type = "memory_promotion_rejected" if decision.action == "reject" else "memory_promotion_blocked"
             self._record_trace(event_type, {
                 **self._memory_candidate_trace(updated),
@@ -1767,11 +1831,11 @@ class LightAgent:
 
         promoted_data = decision.value if decision.value is not None else candidate.data
         promoted_metadata = candidate.to_metadata()
-        promoted_metadata.update(decision.metadata or {})
+        promoted_metadata.update(decision.metadata or {}) # 给字典增加元数据, 如果键已经存在, 则覆盖原值
         promoted_metadata.update({
             "promotion_status": "promoted",
             "promotion_decision": decision.action,
-            "injectable": True,
+            "injectable": True, # ======================== 这里只要是被promoted的记忆, 都会被标记为injectable=True
             "promoted_at": datetime.utcnow().isoformat() + "Z",
         })
         promoted = candidate.with_updates(
@@ -1780,8 +1844,12 @@ class LightAgent:
             injectable=True,
             metadata=promoted_metadata,
         )
+
+        # 已经更新完了相关元数据, 开始存储到后端
         self._store_memory_record(str(promoted_data), candidate.memory_user_id, promoted_metadata)
-        self._upsert_memory_candidate(promoted)
+
+
+        self._upsert_memory_candidate(promoted) # 更新内存的候选列表
 
         event_type = "memory_promotion_rewritten" if decision.action == "rewrite" else "memory_promotion_approved"
         self._record_trace(event_type, {
@@ -1836,9 +1904,17 @@ class LightAgent:
         }
 
     def _upsert_memory_candidate(self, candidate: MemoryCandidate) -> None:
+        """
+        Update an existing memory promotion candidate or add a new one.
+        
+        ``upsert = update + insert``
+
+        1. 候选id存在, 那就update, 覆盖原来的candidate
+        2. 候选id不存在, 那就insert, 添加新的candidate
+        """
         candidates = list(getattr(self, "_memory_promotion_candidates", []))
         for index, existing in enumerate(candidates):
-            if existing.candidate_id == candidate.candidate_id:
+            if existing.candidate_id == candidate.candidate_id: # 唯一标识符, 如果已经有这个id, 那就覆盖
                 candidates[index] = candidate
                 self._memory_promotion_candidates = candidates
                 return
@@ -1865,11 +1941,11 @@ class LightAgent:
         }
 
     def _store_memory_record(self, data: str, memory_user_id: str, metadata: dict[str, Any]) -> Any:
-        """Store memory metadata when the backend supports it."""
+        """Store memory metadata when the backend **supports** it."""
         store = getattr(self.memory, "store")
         try:
             signature = inspect.signature(store)
-            supports_metadata = (
+            supports_metadata = ( # type: bool, 检查是否支持 metadate 参数 
                 "metadata" in signature.parameters
                 or any(param.kind == inspect.Parameter.VAR_KEYWORD for param in signature.parameters.values())
             )
@@ -1881,23 +1957,35 @@ class LightAgent:
         return store(data=data, user_id=memory_user_id)
 
     def _filter_memory_results(self, memories: Any, scoped_user_id: str, original_user_id: str) -> Any:
-        """Filter retrieved memories using the configured memory policy."""
+        """Filter retrieved memories using the **configured memory policy**.
+
+        使用配置的记忆策略过滤检索到的记忆 -- 执行 `self.memory_policy.allows_result` 来判断每条记忆(`memory.result`)是否允许返回给用户。
+
+        Args:
+            memories: 记忆检索响应，通常是包含 ``results`` 列表的字典。
+            scoped_user_id: 用于记忆查询的用户 ID。
+            original_user_id: 用于策略检查和追踪的原始用户 ID。
+
+        Returns:
+            如果响应不是结果字典，则返回原始响应；否则返回移除不允许结果的浅拷贝。
+
+        """
         if not memories or not isinstance(memories, dict) or "results" not in memories:
             return memories
         results = memories.get("results") or []
         filtered_results = [
-            item for item in results
+            item for item in results # 检索结果有多条, 对每一条都进行判断.
             if self.memory_policy.allows_result(item, scoped_user_id, original_user_id)
         ]
         self._record_trace("memory_retrieve_filter", {
             "user_id": str(original_user_id),
             "memory_user_id": str(scoped_user_id),
             "total_count": len(results),
-            "allowed_count": len(filtered_results),
-            "blocked_count": len(results) - len(filtered_results),
+            "allowed_count": len(filtered_results), # 允许返回的记忆条数
+            "blocked_count": len(results) - len(filtered_results), #  不允许返回的记忆条数
         })
-        filtered = dict(memories)
-        filtered["results"] = filtered_results
+        filtered = dict(memories) # 浅拷贝原始字典, 以便不修改原始数据
+        filtered["results"] = filtered_results # 替换掉原始的 results 列表, 只保留允许返回的记忆条目(过滤掉的已经记录到 trace 中)
         return filtered
 
     def _core_run_logic(self, response, stream, max_retry, max_tool_iterations) -> Union[Generator[str, None, None], str]:
@@ -1909,30 +1997,39 @@ class LightAgent:
 
     def _run_non_stream_logic(self, response, max_retry) -> Union[str, None]:
         """
-        非流式处理逻辑。
+        非流式response处理逻辑(主要处理工具调用)。
+
+        从第一次模型响应开始，处理工具调用，直到拿到纯文本回复
+
+        Parameters
+        ---
+        :response: 第一轮模型响应(完整的`ChatCompletion`对象)
+        :max_retry: 最大重试次数
         """
         for _ in range(max_retry):
+            # 此时的response 是每轮的最新模型响应, 可能包含工具调用(循环继续l, 也可能是最终的纯文本输出(终止循环);
             if response.choices[0].message.tool_calls:
-                # 初始化一个列表，用于存储所有工具调用的结果
+                # 初始化一个列表, 用于存储所有工具调用的结果
                 tool_responses = []
                 # 初始化变量
                 output = ""
                 function_call_name = ""
+                # 把工具调用消息
                 tool_calls = response.choices[0].message.tool_calls
                 self.log("DEBUG", "non_stream tool_calls", {"tool_calls": tool_calls})
                 # 将工具调用和响应添加到消息列表中
                 self.chat_params["messages"].append(response.choices[0].message)
 
-                # 遍历所有工具调用
+                # 遍历所有工具调用, 并执行工具函数(run_async_safely)
                 for tool_call in tool_calls:
-                    function_call = tool_call.function
+                    function_call = tool_call.function # 解析 tool_call 中的 function_call
                     trace_tool_call = {
                         "id": getattr(tool_call, "id", None),
                         "name": function_call.name,
                         "arguments": function_call.arguments,
                     }
-                    self._current_tool_calls.append(trace_tool_call)
-                    self._record_trace("tool_call", deepcopy(trace_tool_call))
+                    self._current_tool_calls.append(trace_tool_call) # 本轮工具调用保存到当前会话/请求上下文中
+                    self._record_trace("tool_call", deepcopy(trace_tool_call)) # 写入统一的追踪日志/Trace, 供调试用
 
                     # 尝试自动修复常见转义问题
                     # fixed_args = function_call.arguments.replace('\\"', '"').replace('\\\\', '\\')
@@ -1946,24 +2043,27 @@ class LightAgent:
                             "LA-JSON",
                             f"{str(e)}; arguments: {function_call.arguments}",
                         )
-                        self._record_trace("error", {
+                        self._record_trace("error", { # 记录错误信息到追踪日志
                             "stage": "tool_arguments",
                             "tool": function_call.name,
                             "error": single_tool_response,
                         })
-                        self._notify_error(
+                        self._notify_error( # 把错误信息通知给 Hook
                             stage="tool_arguments",
                             error=single_tool_response,
                             tool=function_call.name,
                         )
+
+                        # 将错误作为 `role="tool"`的消息追加到对话历史, 并关联到原始 `tool_call_id`
                         self.chat_params["messages"].append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": single_tool_response
+                            "role": "tool", # 该 `role` 表示工具执行结果
+                            "tool_call_id": tool_call.id, # 关联统一ID
+                            "content": single_tool_response # 错误内容
                         })
                         tool_responses.append(single_tool_response)
                         continue
 
+                    # _prepare_tool_call 会执行工具调用前的 guardrail 检查和策略评估
                     function_args, guardrail_error = self._prepare_tool_call(function_call.name, function_args)
                     if guardrail_error:
                         self._record_trace("error", {
@@ -1985,10 +2085,10 @@ class LightAgent:
                         continue
 
                     # 调用工具并获取响应
-                    # tool_response = asyncio.run(self.tool_dispatcher.dispatch(function_call.name, function_args))
-                    # tool_response = await self.tool_dispatcher.dispatch(function_call.name, function_args)
+                    # tool_response = asyncio.run(self.tool_dispatcher.dispatch(function_call.name, function_args)) # 这些注释都是历史残留, 第一版
+                    # tool_response = await self.tool_dispatcher.dispatch(function_call.name, function_args) # 第二版
                     tool_started_at = time.perf_counter()
-                    tool_response = run_async_safely(self.tool_dispatcher.dispatch(function_call.name, function_args))
+                    tool_response = run_async_safely(self.tool_dispatcher.dispatch(function_call.name, function_args)) # 第三版
 
                     # 如果 tool_response 是异步函数，需要再次 await
                     # if asyncio.iscoroutine(tool_response) or asyncio.iscoroutinefunction(tool_response):
@@ -2001,6 +2101,7 @@ class LightAgent:
                     single_tool_response = ""
 
                     # 如果工具返回的是生成器（流式输出），则将所有 chunk 叠加
+                    #  `AsyncToolDispatcher` 的 `dispatch` 方法可能返回一个生成器
                     if isinstance(tool_response, Generator):
                         # print(f"Streaming response from tool: {function_call.name}")
                         for chunk in tool_response:
@@ -2047,7 +2148,7 @@ class LightAgent:
                         "latency_ms": round((time.perf_counter() - tool_started_at) * 1000, 3),
                     })
 
-                    self.chat_params["messages"].append({
+                    self.chat_params["messages"].append({ # 将工具结果追加到 messages
                         "role": "tool",
                         "tool_call_id": tool_call.id,  # 必须和上面的 id 一致
                         "content": f"{single_tool_response}"
@@ -2058,13 +2159,12 @@ class LightAgent:
 
                 # # 将所有工具调用的结果合并为一个字符串
                 self.log("DEBUG", "non_stream tool_responses", {"tool_responses": tool_responses})
-            else:
-                # 返回最终回复
+            else: #                 # 如果没有工具调用, 返回最终回复
                 reply = response.choices[0].message.content
                 reply = self._apply_output_guardrails(reply)
                 self.log("INFO", "non_stream final_reply", {"reply": reply})
                 self._record_trace("model_response", {"content": reply})
-                if isinstance(reply, str) and reply.startswith("[LA-GUARDRAIL]"):
+                if isinstance(reply, str) and reply.startswith("[LA-GUARDRAIL]"): # 如果输出被guardrail(_apply_output_guardrails)拦截
                     self._record_trace("error", {"stage": "output_guardrail", "error": reply})
                     self._finish_run(success=False, content=reply, error=reply, stage="output_guardrail")
                     return reply
@@ -2077,13 +2177,14 @@ class LightAgent:
                 return  # 如果最后调用了finish工具，则结束生成器
             # print("params:",self.chat_params)
             self.log("DEBUG", "non_stream chat-completions params", {"params": self.chat_params})
-            hook_error = self._prepare_model_request()
+            hook_error = self._prepare_model_request() # 在再次调用模型之前，运行 before_model_request hook
             if hook_error:
                 self._finish_run(success=False, error=hook_error, stage="before_model_request")
                 return hook_error
 
+            # 二次模型调用
             try:
-                response = self.client.chat.completions.create(**self.chat_params)
+                response = self.client.chat.completions.create(**self.chat_params)  # 携带工具信息, 再次调用
             except Exception as e:
                 self._complete_model_request(error=e)
                 error_msg = format_lightagent_error(e, "continue chat completion")
@@ -2099,13 +2200,26 @@ class LightAgent:
         self._finish_run(success=False, error="max_retry_reached", stage="max_retry")
         return "Failed to generate a valid response."
 
-    def _run_stream_logic(self, response, max_retry, max_tool_iterations) -> Generator[str, None, None]:
-        """流式处理逻辑"""
+    def _run_stream_logic(self, response, max_retry, max_tool_iterations) -> Generator[str, None, None]: # Generator[产出元素的类型, send 进去的类型, return 的值类型]
+        """
+        流式处理逻辑
+        
+        parameters
+        ---
+        :response: 第一轮模型响应(可迭代的流对象`SyncStream[ChatCompletionChunk]`, 里面依次产生多个`ChatCompletionChunk`对象, 需要通过`for chunk in response`(同步阻塞方式)来迭代)
+        :max_retry: 最大重试次数
+        :max_tool_iterations: 最大工具调用次数
+
+        yield
+        ---
+
+        
+        """
         for _ in range(max_retry):
             try:
                 tool_iterations = 0
                 # 处理当前响应（可能包含多轮工具调用）
-                while True:
+                while True: # 新一轮的模型 "拿到模型响应-处理响应(`for chunk in response`)-工具调用-再次调用模型或者返回结果" 循环
                     # 初始化变量
                     output = ""
                     output_reasoning_content = ""
@@ -2115,7 +2229,7 @@ class LightAgent:
                     last_chunk = None
 
                     for chunk in response:
-                        yield chunk  # 流式返回内容
+                        yield chunk  # 流式返回内容, 这里其实和函数签名的`Generator[str, None, None]`不太匹配, 因为这里返回的是`ChatCompletionChunk`对象, 但是不会报错, 类型标注在运行时不会被强制检查, 只是给开发者和IDE提供提示
                         last_chunk = chunk
                         reasoning_content = ""
                         content = ""
@@ -2136,6 +2250,7 @@ class LightAgent:
                         if content:
                             output += content
 
+                        # 处理提取LLM API发来的工具调用的流式信息
                         try:
                             # 检查是否有工具调用
                             if chunk.choices and chunk.choices[0].delta.tool_calls:
@@ -2157,9 +2272,9 @@ class LightAgent:
                                 if hasattr(tool_call_delta.function, "name") and tool_call_delta.function.name:
                                     tool_calls[tool_call_index]["name"] = tool_call_delta.function.name
 
-                                # 更新工具调用的参数
+                                # 更新工具调用的参数 
                                 if hasattr(tool_call_delta.function, "arguments") and tool_call_delta.function.arguments:
-                                    tool_calls[tool_call_index]["arguments"] += tool_call_delta.function.arguments
+                                    tool_calls[tool_call_index]["arguments"] += tool_call_delta.function.arguments # (注意! 这里是拼接`arguments`，因为LLM的流式响应会把较长的工具调用参数会分多次传输)
 
                         except (IndexError, AttributeError, KeyError) as e:
                             self.log("ERROR", "tool_call_error", {
@@ -2201,7 +2316,8 @@ class LightAgent:
                                 return  # 结束生成器
                             # 否则（有工具调用），不提前退出，让循环自然结束，后续会由循环外的工具处理逻辑接管
 
-                        # 如果工具调用结束
+                        # 如果本轮的工具调用流式信息到达末尾(`finish_reason="tool_calls"` 或 `finish_reason="stop"`)
+                        # (说明前面的 `for chunk in response` 本轮请求的循环读取已经到达最后一个 chunk)
                         if finish_reason in ("tool_calls", "stop") and any(tc["name"] for tc in tool_calls):
                             # 遍历所有工具调用
                             self.log("DEBUG", "stream tool_calls", {"tool_calls": tool_calls})
@@ -2298,7 +2414,7 @@ class LightAgent:
                                             single_tool_response = combined_response  # 处理单个工具的方法
                                         else:
                                             # print(f"Non-streaming response from tool: {tool_response}")
-                                            combined_response = str(tool_response)
+                                            combined_response = str(tool_response) # issue #1: 万一tool_response是 `AsyncGenerator`, 这里就会变成占位符placeholder
                                             single_tool_response = self._apply_after_tool_result(tool_name, combined_response)
                                             tool_output = {
                                                 "name": tool_name,
@@ -2432,6 +2548,8 @@ class LightAgent:
                                 self._finish_run(success=False, error=hook_error, stage="before_model_request")
                                 yield hook_error
                                 return
+
+                            # 拿着最新的工具调用结果, 进行下一轮的LLM请求
                             try:
                                 response = self.client.chat.completions.create(**self.chat_params)
                             except Exception as e:
@@ -2461,6 +2579,11 @@ class LightAgent:
 
     @staticmethod
     def _error_stream(message: str) -> Generator[str, None, None]:
+        """
+        把错误信息包装成流式生成器, 只会`yield`一次`message`;
+
+        当`run(..., stream=True)`时, 如果发生错误, 可以使用这个方法返回错误信息流, 让调用仍然可以按照"流式结果"的方法读取错误信息
+        """
         yield message
 
     def _handle_task_transfer(

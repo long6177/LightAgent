@@ -5,6 +5,7 @@ def get_weather(
     """
     Get the current weather for `city_name`
     """
+    # return f"Query result: {city_name} is sunny."
     if not isinstance(city_name, str):
         raise TypeError("City name must be a string")
 

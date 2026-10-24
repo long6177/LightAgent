@@ -64,7 +64,11 @@ class InboxMessage:
 
 
 class AgentInbox:
-    """Ordered, idempotent Inbox whose mutations are Session events."""
+    """
+    Ordered, idempotent Inbox whose mutations are Session events.
+
+    有序、幂等的收件箱，其变更记录为 Session 事件。
+    """
 
     def __init__(self, event_sink: Callable[[str, dict[str, Any]], Any] | None = None):
         self._messages: list[InboxMessage] = []
@@ -81,11 +85,11 @@ class AgentInbox:
     ) -> InboxMessage:
         resolved_id = message_id or uuid4().hex
         existing = self.get(resolved_id)
-        if existing is not None:
+        if existing is not None: # inbox已经收到过这个message_id的消息了, 不再重复enqueue
             return existing
         message = InboxMessage(
             message_id=resolved_id,
-            type=InboxMessageType(message_type),
+            type=InboxMessageType(message_type), # 枚举映射
             content=deepcopy(content),
             correlation_id=correlation_id,
             metadata=deepcopy(metadata or {}),
@@ -907,7 +911,7 @@ class AgentRuntime:
     ):
         self.runtime_id = runtime_id or uuid4().hex
         self.session_store = session_store or InMemorySessionStore()
-        self.registry = capability_registry or CapabilityRegistry()
+        self.registry = capability_registry or CapabilityRegistry() # 能力注册表：复用传入的注册表；未提供时创建默认注册表，供运行时管理和查询能力。
         self.session: Session | None = None
         self.context = RuntimeContext(runtime_id=self.runtime_id)
         self.inbox = AgentInbox(self._append)
@@ -926,6 +930,28 @@ class AgentRuntime:
             user_id: str | None = None,
             security_context: Any = None,
     ) -> Session:
+        """打开已有会话，或创建并初始化一个新会话。
+
+        打开的会话会成为当前运行时的活动会话。函数会从会话中恢复收件箱、
+        目标、预算和任务等运行时状态；对于上一次运行中被中断的任务，会将其
+        标记为已中断。如果传入安全上下文，函数会先校验其会话 ID 与当前打开
+        的会话一致，然后将其转换为运行时上下文。
+
+        Args:
+            session_id: 要打开的会话 ID。如果省略，则创建一个使用自动生成 ID
+                的新会话。
+            metadata: 新建会话时保存的元数据。
+            agent_id: 与会话关联的 Agent ID。
+            user_id: 与会话关联的用户 ID。
+            security_context: 可选的安全上下文，用于提供本次会话的运行时上下文。
+                该对象必须提供 ``to_runtime_context()`` 方法。
+
+        Returns:
+            已打开会话的深拷贝。
+
+        Raises:
+            ValueError: 传入的安全上下文属于其他会话时抛出。
+        """
         session = self.session_store.get(session_id) if session_id else None
         if session is None:
             session = Session(session_id=session_id or uuid4().hex, metadata=metadata or {})
@@ -998,6 +1024,9 @@ class AgentRuntime:
         self._append("session.continued", {"reason": reason})
 
     def _append(self, event_type: str, data: dict[str, Any]) -> None:
+        """
+        调用 `self.session.append()` 方法将事件(包括goal, budget, job, subagent, inbox等)追加到当前会话session中，并保存会话状态。
+        """
         session = self._require_session()
         session.append(
             event_type,

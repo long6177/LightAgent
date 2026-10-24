@@ -2,7 +2,7 @@
 
 LightAgent accepts external memory backends through a small `store()` and
 `retrieve()` interface. This keeps the framework flexible, but it also means
-deployments must treat long-term memory as a trust boundary.
+deployments must **treat long-term memory as a trust boundary**.
 
 ### Threat Model
 
@@ -11,12 +11,12 @@ agent context. If untrusted content is written into the same memory namespace as
 trusted content, a later request can retrieve poisoned facts and pass them to the
 model as apparently reliable context.
 
-This is especially important for high-impact domains such as healthcare,
-finance, legal, enterprise automation, and policy support.
+**This is especially important for high-impact domains such as healthcare,**
+**finance, legal, enterprise automation, and policy support.**
 
 ### Recommended Defaults
 
-- Use separate memory namespaces per user, tenant, agent, and environment.
+- Use separate memory **namespaces** per **user, tenant, agent, and environment.**
 - Set `memory_namespace` or a custom `MemoryPolicy` when a single backend is
   shared by multiple tenants or environments.
 - Do not share graph memory across users unless there is an explicit product
@@ -30,7 +30,7 @@ finance, legal, enterprise automation, and policy support.
   consistency checks, and rollback behavior are defined.
 - Log memory writes at the metadata level: user id, agent id, source, timestamp,
   and trust level. Avoid logging sensitive raw content unless required by your
-  compliance process.
+  compliance (合规性) process.
 
 ### Admission Checks Before Writing Memory
 
@@ -65,7 +65,7 @@ injection.
 
 Before injecting retrieved memory into the model context:
 
-- Filter by tenant, user, agent, and allowed source trust level.
+- **Filter** by tenant, user, agent, and allowed source trust level.
 - Prefer verified or same-user memories over cross-user memories.
 - Include provenance in internal context where possible.
 - For high-impact answers, require a trusted external source or tool result
@@ -133,12 +133,12 @@ record, and the public/private advisory boundary.
 
 ### LightAgent Adapter Guidance
 
-Custom memory implementations passed to `LightAgent(memory=...)` should enforce
-the security policy inside their `store()` and `retrieve()` methods. LightAgent
+Custom memory implementations passed to `LightAgent(memory=...)` **should enforce**
+**the security policy inside their `store()` and `retrieve()` methods.** LightAgent
 will call those methods, but the backend adapter remains responsible for
 persistence, isolation, provenance, and conflict handling.
 
-LightAgent also provides a lightweight core policy hook for shared deployments:
+LightAgent also provides a lightweight core policy **hook** for shared deployments:
 
 ```python
 from LightAgent import LightAgent, MemoryPolicy
