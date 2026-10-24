@@ -1,7 +1,7 @@
 # 工具箱 / 内置工具 / 技能 / MCP / 连接器 源码知识库
 
-> 源文件（均以工作树 2026-09-28 实际读取为准）：
-> `LightAgent/tools.py`(414 行)、`LightAgent/builtin_tools/nos.py`(182 行)、`LightAgent/builtin_tools/python_executor.py`(764 行)、`LightAgent/builtin_tools/safe_expression.py`(173 行)、`LightAgent/skill_tools.py`(114 行)、`LightAgent/skills.py`(274 行)、`LightAgent/mcp_client_manager.py`(284 行)、`LightAgent/connectors.py`(370 行)。
+> 源文件（行号以工作树 2026-10-24、提交 ac177ca 实读为准）：
+> `LightAgent/tools.py`(412 行)、`LightAgent/builtin_tools/nos.py`(182 行)、`LightAgent/builtin_tools/python_executor.py`(816 行)、`LightAgent/builtin_tools/safe_expression.py`(173 行)、`LightAgent/skill_tools.py`(115 行)、`LightAgent/skills.py`(274 行)、`LightAgent/mcp_client_manager.py`(284 行)、`LightAgent/connectors.py`(370 行)。
 > 行号均为真实 def/class 行号。核心装配点在 `core.py`（见各节"与其他模块的关系"）。
 
 ---
@@ -14,86 +14,86 @@
 
 ## 类与符号清单
 
-- `_TOOL_NAME_PATTERN` (L22)：模块级正则 `[A-Za-z_][A-Za-z0-9_]*`，工具名/加载名合法性基准。
-- `_SUPPORTED_TOOL_PARAM_TYPES` (L23)：允许的参数类型集合（string/integer/number/boolean/array/object）。
-- `ToolRegistry` (L26-L221)：工具注册表，三视图集中管理。
-- `ToolLoader` (L224-L278)：`tools/*.py` 动态 import 加载器（缓存 + 安全校验）。
-- `AsyncToolDispatcher` (L281-L414)：异步工具调度器，dispatch 统一入口。
+- `_TOOL_NAME_PATTERN` (L23)：模块级正则 `[A-Za-z_][A-Za-z0-9_]*`，工具名/加载名合法性基准。
+- `_SUPPORTED_TOOL_PARAM_TYPES` (L24)：允许的参数类型集合（string/integer/number/boolean/array/object）。
+- `ToolRegistry` (L27-L222)：工具注册表，三视图集中管理。
+- `ToolLoader` (L225-L279)：`tools/*.py` 动态 import 加载器（缓存 + 安全校验）。
+- `AsyncToolDispatcher` (L282-L412)：异步工具调度器，dispatch 统一入口。
 
 ## 关键方法
 
 ### ToolRegistry
 
-- `__init__` (L29) — 初始化 `function_mappings`（名→函数）、`function_info`（名→tool_info）、`openai_function_schemas`（OpenAI schema 列表）、`_registration_counts`（同名不同函数注册计数）。
-- `register_tool` (L36) — 登记单个工具；调用者：core.py:280、297、449、455、1363、1369（Agent 构造与 load_tools）、mcp_client_manager **不经过它**（直接写内部字段）。它调用：无外部依赖。
-- `register_tools` (L89) — 批量注册，任一失败整体返回 False。
-- `validate_tool_info` (L97, staticmethod) — 对一份 tool_info 做结构化诊断（tool_name 正则/描述非空/参数名重复/参数类型合法/required 为 bool）；调用者：`validate_tools` (L179)、connectors.py:200。
-- `validate_tools` (L175) — 遍历已注册工具做诊断，并额外报告"同名工具被注册多次"（L181-187）；调用者：core.py:398。
-- `get_tools` (L190) — 返回 OpenAI schema 的 deepcopy；调用者：core.py:394、700。
-- `get_tools_str` (L194) — schema 格式化 JSON 字符串（用于工具反思 prompt）；调用者：core.py:2760。
-- `filter_tools` (L198) — 按模型工具反思输出（可含 ```json 代码块）过滤 schema 子集；调用者：core.py:2830。
+- `__init__` (L30) — 初始化 `function_mappings`（名→函数）、`function_info`（名→tool_info）、`openai_function_schemas`（OpenAI schema 列表）、`_registration_counts`（同名不同函数注册计数）。
+- `register_tool` (L37) — 登记单个工具；调用者：core.py:282、299、451、457、1392、1398（Agent 构造与 load_tools）、mcp_client_manager **不经过它**（直接写内部字段）。它调用：无外部依赖。
+- `register_tools` (L90) — 批量注册，任一失败整体返回 False。
+- `validate_tool_info` (L99, staticmethod) — 对一份 tool_info 做结构化诊断（tool_name 正则/描述非空/参数名重复/参数类型合法/required 为 bool）；调用者：`validate_tools` (L180)、connectors.py:200。
+- `validate_tools` (L176) — 遍历已注册工具做诊断，并额外报告"同名工具被注册多次"（L181-188）；调用者：core.py:400。
+- `get_tools` (L191) — 返回 OpenAI schema 的 deepcopy；调用者：core.py:396、710。
+- `get_tools_str` (L195) — schema 格式化 JSON 字符串（用于工具反思 prompt）；调用者：core.py:2851。
+- `filter_tools` (L199) — 按模型工具反思输出（可含 ```json 代码块）过滤 schema 子集；调用者：core.py:2921。
 
 ### ToolLoader
 
-- `load_tool` (L239) — 单工具加载：名字安全校验 → 缓存命中 → 拼路径并防目录逃逸（L249 `startswith(tools_directory + os.sep)`）→ `importlib.util.spec_from_file_location` 动态加载（L255-257）→ 取与文件同名的可调用且带 `tool_info` 的函数（L260-262）；调用者：`load_tools` (L277)、core.py:444（Agent.load_tools）。
-- `_is_safe_tool_name` (L268, staticmethod) — 只允许字母数字下划线的工具名。
-- `load_tools` (L273) — 批量加载，跳过已缓存。
+- `load_tool` (L240) — 单工具加载：名字安全校验 → 缓存命中 → 拼路径并防目录逃逸（L250 `startswith(tools_directory + os.sep)`）→ `importlib.util.spec_from_file_location` 动态加载（L256-258）→ 取与文件同名的可调用且带 `tool_info` 的函数（L261-263）；调用者：`load_tools` (L278)、core.py:450（Agent.load_tools）。
+- `_is_safe_tool_name` (L270, staticmethod) — 只允许字母数字下划线的工具名。
+- `load_tools` (L274) — 批量加载，跳过已缓存。
 
 ### AsyncToolDispatcher
 
-- `dispatch` (L294) — 调度核心：查 `function_mappings`（未找到→格式化 LA-TOOL 错误串 L304-305）→ `_validate_tool_params` 前置校验（L308）→ 四路分派（协程 await L313-315 / 异步生成器原样返回 L325-327 / 同步生成器原样返回 L329-331 / 普通函数直接调用 L336-338）→ 非生成器结果经 `_serialize_result` 转字符串（L341）→ 异常捕获为 LA 错误码 + traceback 字符串（L342-343）。调用者：core.py:2000、2285（run 工具循环，经 `run_async_safely`）、capabilities.py:600（ToolCapabilityProvider.invoke）。
-- `_serialize_result` (L345) — None→成功提示；dict/list→JSON；其余→str()。
-- `_validate_tool_params` (L354) — 按 tool_info 校验必填参数存在（L369-370）与声明类型匹配（L371-377），错误以 LA-TOOL 错误码字符串返回（不抛异常）。
-- `_matches_declared_type` (L380, staticmethod) — 类型宽容匹配：integer 排除 bool（L397）、number 接受 int/float、未知类型放行（L406）。
-- `async_stream_generator` (L408) / `stream_generator` (L412) — 生成器透传包装器，**当前仓库内无调用点**（预留接口）。
+- `dispatch` (L295) — 调度核心：查 `function_mappings`（未找到→格式化 LA-TOOL 错误串 L309-310）→ `_validate_tool_params` 前置校验（L315）→ 四路分派（协程 await L320-322 / 异步生成器原样返回 L323-326 / 同步生成器原样返回 L327-329 / 普通函数直接调用 L334-336）→ 非生成器结果经 `_serialize_result` 转字符串（L339）→ 异常捕获为 LA 错误码 + traceback 字符串（L340-341）。调用者：core.py:2091、2376（run 工具循环，经 `run_async_safely`）、capabilities.py:636（ToolCapabilityProvider.invoke）。
+- `_serialize_result` (L343) — None→成功提示；dict/list→JSON；其余→str()。
+- `_validate_tool_params` (L352) — 按 tool_info 校验必填参数存在（L367-368）与声明类型匹配（L369-375），错误以 LA-TOOL 错误码字符串返回（不抛异常）。
+- `_matches_declared_type` (L379, staticmethod) — 类型宽容匹配：integer 排除 bool（L395）、number 接受 int/float、未知类型放行（L404）。
+- `async_stream_generator` (L406) / `stream_generator` (L410) — 生成器透传包装器，**当前仓库内无调用点**（预留接口）。
 
 ## 关键机制细节
 
-### register_tool 登记流程 (L36-L87)
+### register_tool 登记流程 (L37-L88)
 
-1. 无 `tool_info` 属性直接返回 False（L42-43）——"函数 + tool_info 属性"是全框架统一的工具定义协议。
-2. 取 `tool_info["tool_name"]`；用 `_registration_counts` 统计同名**不同函数**的注册次数（L47-51）：首次置 1，同函数重复注册不计数，不同函数 +1。
-3. 直接覆盖写 `function_info[name]` 与 `function_mappings[name]`（L54-55）——**同名后注册者赢，不报错**。
-4. 由 `tool_params` 构建 OpenAI schema（L58-77）：每个参数剥掉 `name`/`required` 两键后作为 property（L61-62），`required=True` 的参数名进 `required` 数组。
-5. 先从 `openai_function_schemas` 删除同名旧 schema（L81-84），再 append 新 schema（L86）——保证 schema 视图与映射视图一致。
+1. 无 `tool_info` 属性直接返回 False（L43-44）——"函数 + tool_info 属性"是全框架统一的工具定义协议。
+2. 取 `tool_info["tool_name"]`；用 `_registration_counts` 统计同名**不同函数**的注册次数（L47-52）：首次置 1，同函数重复注册不计数，不同函数 +1。
+3. 直接覆盖写 `function_info[name]` 与 `function_mappings[name]`（L55-56）——**同名后注册者赢，不报错**。
+4. 由 `tool_params` 构建 OpenAI schema（L58-78）：每个参数剥掉 `name`/`required` 两键后作为 property（L62-63），`required=True` 的参数名进 `required` 数组。
+5. 先从 `openai_function_schemas` 删除同名旧 schema（L82-85），再 append 新 schema（L87）——保证 schema 视图与映射视图一致。
 
-### dispatch 查找与执行流程 (L294-L343)
+### dispatch 查找与执行流程 (L295-L341)
 
-见上方关键方法。要点：生成器**不被消费**，原样交还调用方（L326-327、L331 的注释块是历史收集逻辑残留）；消费责任在 core.py:2014-2031（`isinstance(tool_response, Generator)` 后逐 chunk 拼接）。所有失败路径都返回**错误字符串**而非抛异常，保证工具循环不中断。
+见上方关键方法。要点：生成器**不被消费**，原样交还调用方（L330-332、L331 的注释块是历史收集逻辑残留）；消费责任在 core.py:2105-2113（`isinstance(tool_response, Generator)` 后逐 chunk 拼接）。所有失败路径都返回**错误字符串**而非抛异常，保证工具循环不中断。
 
 ## 与其他模块的关系
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| ToolRegistry.register_tool:36 | core.py:271-285 | 构造时注册内置工具（safe_expression/upload_file_to_oss 常驻；python 三件套需 `enable_unsafe_python`） |
-| ToolRegistry.register_tool:36 | core.py:294-302 | 技能发现后注册 create_skill_tools 产出的 4 个技能工具 |
+| ToolRegistry.register_tool:37 | core.py:273-283 | 构造时注册内置工具（safe_expression/upload_file_to_oss 常驻；python 三件套需 `enable_unsafe_python`） |
+| ToolRegistry.register_tool:37 | core.py:296-303 | 技能发现后注册 create_skill_tools 产出的 4 个技能工具 |
 | ToolRegistry (字段直写):— | mcp_client_manager.py:127-150 | MCP 管理器绕过 register_tool 直接写 function_info/function_mappings/openai_function_schemas |
-| ToolRegistry.validate_tool_info:97 | connectors.py:200 | 连接器校验复用同一套 tool_info 诊断 |
-| AsyncToolDispatcher.dispatch:294 | core.py:2000,2285 | run 主循环执行 LLM 选择的工具 |
-| AsyncToolDispatcher.dispatch:294 | capabilities.py:599-600 | 能力系统 ToolCapabilityProvider 的执行后端 |
-| ToolLoader.load_tool:239 | core.py:444 | Agent.load_tools 按名字加载 tools/ 目录工具 |
+| ToolRegistry.validate_tool_info:99 | connectors.py:200 | 连接器校验复用同一套 tool_info 诊断 |
+| AsyncToolDispatcher.dispatch:295 | core.py:2091,2376 | run 主循环执行 LLM 选择的工具 |
+| AsyncToolDispatcher.dispatch:295 | capabilities.py:640-641 | 能力系统 ToolCapabilityProvider 的执行后端 |
+| ToolLoader.load_tool:240 | core.py:450 | Agent.load_tools 按名字加载 tools/ 目录工具 |
 | errors.format_error_code / format_lightagent_error | tools.py:19 | 调度失败的统一 LA-TOOL 错误码 |
 
 ## 阅读陷阱
 
-1. **同名工具静默覆盖**：register_tool 对同名工具直接覆盖三个视图并返回 True，不抛错；重复注册只有事后 `validate_tools` 才能诊断出来（L181-187）。
-2. **生成器透传**：dispatch 对 async/sync 生成器"只返回不消费"，被注释掉的收集代码（L316-324、L332-334）是历史残留，别误以为 dispatch 会拼好完整字符串；真正逐 chunk 消费在 core.py:2014-2031（流式分支第二处 core.py:2297）。
+1. **同名工具静默覆盖**：register_tool 对同名工具直接覆盖三个视图并返回 True，不抛错；重复注册只有事后 `validate_tools` 才能诊断出来（L181-188）。
+2. **生成器透传**：dispatch 对 async/sync 生成器"只返回不消费"，被注释掉的收集代码（L323-326、L330-332）是历史残留，别误以为 dispatch 会拼好完整字符串；真正逐 chunk 消费在 core.py:2105-2113（流式分支第二处 core.py:2413）。
 3. **错误即字符串**：工具未找到/参数校验失败/执行异常都返回带 LA-TOOL 错误码的字符串，调用方无法用异常分支区分失败。
 4. **`async_stream_generator`/`stream_generator` 目前无人调用**，core 是自己直接迭代 Generator 的。
 
 ## 高频符号中文短语表
 
-- `ToolRegistry` (L26)：集中工具注册表，三视图同步
-- `ToolRegistry.register_tool` (L36)：登记函数并生成 OpenAI 模式
-- `ToolRegistry.validate_tool_info` (L97)：tool_info 静态诊断器
-- `ToolRegistry.filter_tools` (L198)：按反思结果过滤工具集
-- `ToolLoader` (L224)：tools 目录动态导入加载器
-- `ToolLoader.load_tool` (L239)：按名加载并缓存单工具
-- `AsyncToolDispatcher` (L281)：工具统一调度入口
-- `AsyncToolDispatcher.dispatch` (L294)：查表校验后分派执行
-- `_serialize_result` (L345)：任意结果转字符串
-- `_validate_tool_params` (L354)：必填与类型前置校验
-- `_matches_declared_type` (L380)：宽容的声明类型匹配
+- `ToolRegistry` (L27)：集中工具注册表，三视图同步
+- `ToolRegistry.register_tool` (L37)：登记函数并生成 OpenAI 模式
+- `ToolRegistry.validate_tool_info` (L99)：tool_info 静态诊断器
+- `ToolRegistry.filter_tools` (L199)：按反思结果过滤工具集
+- `ToolLoader` (L225)：tools 目录动态导入加载器
+- `ToolLoader.load_tool` (L240)：按名加载并缓存单工具
+- `AsyncToolDispatcher` (L282)：工具统一调度入口
+- `AsyncToolDispatcher.dispatch` (L295)：查表校验后分派执行
+- `_serialize_result` (L343)：任意结果转字符串
+- `_validate_tool_params` (L352)：必填与类型前置校验
+- `_matches_declared_type` (L379)：宽容的声明类型匹配
 
 ---
 
@@ -101,7 +101,7 @@
 
 ## 模块概览
 
-内置"文件上传"工具：把本地文件上传到阿里云 OSS（走 boto3 的 S3 兼容协议 + v4 签名），默认用文件 MD5 重命名以实现幂等去重，可选保留原名、前缀目录、公共读 ACL。这是 builtin_tools 里唯一的云存储工具，Agent 构造时默认注册（core.py:271）。
+内置"文件上传"工具：把本地文件上传到阿里云 OSS（走 boto3 的 S3 兼容协议 + v4 签名），默认用文件 MD5 重命名以实现幂等去重，可选保留原名、前缀目录、公共读 ACL。这是 builtin_tools 里唯一的云存储工具，Agent 构造时默认注册（core.py:273）。
 
 ## 类与符号清单
 
@@ -114,7 +114,7 @@
 
 - `_get_oss_client` (L16) — 参数 > 模块配置兜底；AK/SK 缺失抛 ValueError 并提示环境变量 `ALIYUN_OSS_ACCESS_KEY_ID` / `ALIYUN_OSS_ACCESS_KEY_SECRET`（L34-35）；`import boto3` 延迟到调用时（L37，未安装则由上层 ImportError 分支兜住）；调用者：`upload_file_to_oss` (L121)。它调用：boto3.client（s3v4 签名）。
 - `_calculate_md5` (L52) — 4096 字节分块流式哈希；调用者：upload_file_to_oss L111、L154。
-- `upload_file_to_oss` (L69) — 完整上传流程（见下）；被 core.py:271 注册进 ToolRegistry，经 dispatch 由模型调用。
+- `upload_file_to_oss` (L69) — 完整上传流程（见下）；被 core.py:273 注册进 ToolRegistry，经 dispatch 由模型调用。
 
 ## 关键机制细节
 
@@ -138,9 +138,9 @@
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| upload_file_to_oss:69 | core.py:71（import）、core.py:271（注册） | Agent 构造时默认注册的内置工具 |
-| upload_file_to_oss.tool_info:170 | tools.py ToolRegistry.register_tool:36 | 以"函数+tool_info"协议登记 |
-| upload_file_to_oss:69 | AsyncToolDispatcher.dispatch:294 | 由 dispatch 按普通同步函数调用 |
+| upload_file_to_oss:69 | core.py:73（import）、core.py:273（注册） | Agent 构造时默认注册的内置工具 |
+| upload_file_to_oss.tool_info:170 | tools.py ToolRegistry.register_tool:37 | 以"函数+tool_info"协议登记 |
+| upload_file_to_oss:69 | AsyncToolDispatcher.dispatch:295 | 由 dispatch 按普通同步函数调用 |
 
 ## 阅读陷阱
 
@@ -162,81 +162,81 @@
 
 ## 模块概览
 
-内置"Python 代码执行"三件套（执行代码串 / 执行 .py 文件 / 流式执行），是框架中最重的内置工具：多层输入清洗（dict/JSON/markdown 代码块）→ AST 静态安全检查（黑名单模块、危险内置、动态派发逃逸）→ 临时目录隔离执行（可选独立 venv 装依赖）→ 超时与输出捕获。同时导出 `UNSAFE_PYTHON_TOOL_NAMES` 供 core 的沙箱策略门控。**默认不注册**，需 `enable_unsafe_python=True`（core.py:272-278），且运行期还需显式 SandboxProvider（core.py:1245-1270）。
+内置"Python 代码执行"三件套（执行代码串 / 执行 .py 文件 / 流式执行），是框架中最重的内置工具：多层输入清洗（dict/JSON/markdown 代码块）→ AST 静态安全检查（黑名单模块、危险内置、动态派发逃逸）→ 临时目录隔离执行（可选独立 venv 装依赖）→ 超时与输出捕获。同时导出 `UNSAFE_PYTHON_TOOL_NAMES` 供 core 的沙箱策略门控。**默认不注册**，需 `enable_unsafe_python=True`（core.py:274-279），且运行期还需显式 SandboxProvider（core.py:1276-1299）。
 
 ## 类与符号清单
 
-- `_DANGEROUS_MODULES` (L22-L35)：禁止 import 的模块黑名单（os/sys/socket/subprocess/ctypes/importlib/shutil/pickle/pty/glob/shelve/`__builtins__`）。
-- `_DANGEROUS_BUILTINS` (L36)：禁止调用的内置（`__import__`/compile/eval/exec/input/open/raw_input）。
-- `_DANGEROUS_ATTRIBUTES` (L37)：危险属性名（compile/eval/exec/popen/system）。
-- `_PROCESS_ATTRIBUTES` (L38)：subprocess 进程 API 名（Popen/call/check_call/check_output/run）。
-- `_DANGEROUS_DYNAMIC_ATTRIBUTES` (L39)：以上三类并集，用于 getattr/attrgetter 动态派发拦截。
-- `UNSAFE_PYTHON_TOOL_NAMES` (L40-L44)：三个不安全工具名的 frozenset，供 core.py:69/1260 做 requires_sandbox 判定。
-- `_parse_code_parameter` (L47-L92)：从 str/dict/list 等各种形态中提取代码串。
-- `_clean_code_string` (L95-L150)：修复 JSON 转义/引号/双花括号/JSON 包装。
-- `_extract_code_from_text` (L153-L181)：从 markdown 代码块/内联代码中提取代码。
-- `_literal_string` (L184-L201)：AST 节点求字面字符串（常量、常量变量、字符串加法、纯字面 f-string）。
-- `_resolved_name` (L204-L225)：解析调用目标的点分全名（考虑 import 别名、常量下标、getattr 派发）。
-- `_dynamic_dispatch` (L228-L244)：识别 `getattr(x, "attr")` / `attrgetter("attr")(x)` 式动态属性访问。
-- `_collect_static_bindings` (L247-L277)：收集 import 别名与字符串常量绑定（3 轮迭代求别名传递闭包）。
-- `_safe_import_check` (L280-L345)：AST 静态安全检查核心，返回 (是否安全, 错误信息)。
-- `_install_requirements` (L348-L396)：在目标 venv 里先升级 pip（60s 超时）再逐个装依赖（每个 120s 超时）。
-- `execute_python_code` (L399-L522)：执行代码串；tool_info L672-L703。
-- `execute_python_file` (L525-L560)：执行 .py 文件；tool_info L705-L737。
-- `execute_python_code_stream` (L563-L668)：流式执行（生成器）；tool_info L739-L764。
+- `_DANGEROUS_MODULES` (L23-L36)：禁止 import 的模块黑名单（os/sys/socket/subprocess/ctypes/importlib/shutil/pickle/pty/glob/shelve/`__builtins__`）。
+- `_DANGEROUS_BUILTINS` (L37)：禁止调用的内置（`__import__`/compile/eval/exec/input/open/raw_input）。
+- `_DANGEROUS_ATTRIBUTES` (L38)：危险属性名（compile/eval/exec/popen/system）。
+- `_PROCESS_ATTRIBUTES` (L39)：subprocess 进程 API 名（Popen/call/check_call/check_output/run）。
+- `_DANGEROUS_DYNAMIC_ATTRIBUTES` (L40)：以上三类并集，用于 getattr/attrgetter 动态派发拦截。
+- `UNSAFE_PYTHON_TOOL_NAMES` (L41-L45)：三个不安全工具名的 frozenset，供 core.py:71/1286 做 requires_sandbox 判定。
+- `_parse_code_parameter` (L71-L121)：从 str/dict/list 等各种形态中提取代码串。
+- `_clean_code_string` (L140-L202)：修复 JSON 转义/引号/双花括号/JSON 包装。
+- `_extract_code_from_text` (L205-L233)：从 markdown 代码块/内联代码中提取代码。
+- `_literal_string` (L236-L253)：AST 节点求字面字符串（常量、常量变量、字符串加法、纯字面 f-string）。
+- `_resolved_name` (L256-L277)：解析调用目标的点分全名（考虑 import 别名、常量下标、getattr 派发）。
+- `_dynamic_dispatch` (L280-L296)：识别 `getattr(x, "attr")` / `attrgetter("attr")(x)` 式动态属性访问。
+- `_collect_static_bindings` (L299-L329)：收集 import 别名与字符串常量绑定（3 轮迭代求别名传递闭包）。
+- `_safe_import_check` (L332-L397)：AST 静态安全检查核心，返回 (是否安全, 错误信息)。
+- `_install_requirements` (L400-L448)：在目标 venv 里先升级 pip（60s 超时）再逐个装依赖（每个 120s 超时）。
+- `execute_python_code` (L451-L574)：执行代码串；tool_info L724-L755。
+- `execute_python_file` (L577-L612)：执行 .py 文件；tool_info L757-L789。
+- `execute_python_code_stream` (L615-L720)：流式执行（生成器）；tool_info L791-L816。
 
 ## 关键方法
 
-- `_parse_code_parameter` (L47) — dict 时按 code/script/python_code/source/content/program 键序提取（L64-72），单键 dict 直接取值（L75-78），list 全字符串则换行拼接（L86-87）；调用者：`execute_python_code` (L420)、`execute_python_code_stream` (L579)。
-- `_clean_code_string` (L95) — 六步清洗（见陷阱）；调用者：execute_python_code L423、execute_python_code_stream L580。
-- `_extract_code_from_text` (L153) — 优先 ```` ```python ```` 块，其次通用 ``` 块，再次内联反引号，全无则原文；调用者同上（L426、L581）。
-- `_safe_import_check` (L280) — `ast.parse` 后遍历：Import/ImportFrom 根模块命中 `_DANGEROUS_MODULES` 拒绝（L294-302）；`from builtins import eval` 式拒绝（L303-306）；普通调用解析全名后比对危险名（L307-331）；getattr/attrgetter 动态派发拦截（L313-315、L320-326）；下标访问 `mod["Popen"]` 拦截（L333-336）；裸名字引用危险内置拦截（L338-341）；SyntaxError 视为不安全（L342-343）。调用者：execute_python_code L433、execute_python_code_stream L588。
-- `_install_requirements` (L348) — subprocess 逐包装依赖，pip 升级 60s / 单包 120s 超时；调用者：execute_python_code L471、execute_python_code_stream L622。
-- `execute_python_code` (L399) — 主执行路径：解析→清洗→提取→安全检查（任一步失败返回错误串）→ `tempfile.TemporaryDirectory(prefix="lightagent_python_")` 作工作目录（L438）→ 有 requirements 时在临时目录内建 venv 并装依赖（L448-475），否则用 `sys.executable`（L482）→ `subprocess.run(cmd, timeout=timeout, cwd=tmpdir, env={} if venv_path else os.environ.copy())`（L493-501）→ 拼接 stdout/stderr/退出码返回（L504-517）；TimeoutExpired 返回超时提示（L519-520）。调用者：core.py:66（import 注册）、`execute_python_file` (L560)。
-- `execute_python_file` (L525) — 校验存在与 .py 后缀（L543-547）→ 读文件内容 → 注入 `sys.argv` 前导码支持 args（L557-558）→ 委托 execute_python_code。
-- `execute_python_code_stream` (L563) — 同样的清洗/检查/venv 流程，但用 `subprocess.Popen` 行缓冲流式读 stdout（L637-655），按 `chunk_size`（默认 100 字符）攒块 yield；`process.wait(timeout)` 超时则 kill（L662-666）。是**同步生成器**工具，dispatch 会原样透传，core 逐 chunk 消费。
+- `_parse_code_parameter` (L71) — dict 时按 code/script/python_code/source/content/program 键序提取（L90-98），单键 dict 直接取值（L100-104），list 全字符串则换行拼接（L115-116）；调用者：`execute_python_code` (L472)、`execute_python_code_stream` (L631)。
+- `_clean_code_string` (L140) — 六步清洗（见陷阱）；调用者：execute_python_code L475、execute_python_code_stream L632。
+- `_extract_code_from_text` (L205) — 优先 ```` ```python ```` 块，其次通用 ``` 块，再次内联反引号，全无则原文；调用者同上（L478、L633）。
+- `_safe_import_check` (L332) — `ast.parse` 后遍历：Import/ImportFrom 根模块命中 `_DANGEROUS_MODULES` 拒绝（L346-354）；`from builtins import eval` 式拒绝（L355-358）；普通调用解析全名后比对危险名（L359-383）；getattr/attrgetter 动态派发拦截（L365-367、L372-378）；下标访问 `mod["Popen"]` 拦截（L385-388）；裸名字引用危险内置拦截（L390-393）；SyntaxError 视为不安全（L394-395）。调用者：execute_python_code L485、execute_python_code_stream L640。
+- `_install_requirements` (L400) — subprocess 逐包装依赖，pip 升级 60s / 单包 120s 超时；调用者：execute_python_code L523、execute_python_code_stream L674。
+- `execute_python_code` (L451) — 主执行路径：解析→清洗→提取→安全检查（任一步失败返回错误串）→ `tempfile.TemporaryDirectory(prefix="lightagent_python_")` 作工作目录（L490）→ 有 requirements 时在临时目录内建 venv 并装依赖（L500-525），否则用 `sys.executable`（L534）→ `subprocess.run(cmd, timeout=timeout, cwd=tmpdir, env={} if venv_path else os.environ.copy())`（L545-553）→ 拼接 stdout/stderr/退出码返回（L555-569）；TimeoutExpired 返回超时提示（L571-572）。调用者：core.py:66（import 注册）、`execute_python_file` (L612)。
+- `execute_python_file` (L577) — 校验存在与 .py 后缀（L595-599）→ 读文件内容 → 注入 `sys.argv` 前导码支持 args（L609-610）→ 委托 execute_python_code。
+- `execute_python_code_stream` (L615) — 同样的清洗/检查/venv 流程，但用 `subprocess.Popen` 行缓冲流式读 stdout（L688-707），按 `chunk_size`（默认 100 字符）攒块 yield；`process.wait(timeout)` 超时则 kill（L714-718）。是**同步生成器**工具，dispatch 会原样透传，core 逐 chunk 消费。
 
 ## 关键机制细节
 
 ### 代码执行沙箱的安全边界（超时/隔离/限制）
 
-1. **静态 AST 黑名单**（_safe_import_check, L280-L345）：不是真沙箱，是"执行前源码审查"。覆盖了别名绕过（`import os as o`→别名解析 L252-257）、常量拼接绕过（`attr = "pop" + "en"`→常量传播 L247-277）、getattr/attrgetter 动态派发（L228-244）、下标取函数（L333-336）。
-2. **文件系统隔离**：代码写入临时目录并在其中执行（cwd=tmpdir，L499/L643），执行完目录删除；但这只是工作目录隔离，代码本身仍能以相对/绝对路径触碰宿主文件系统——前提是绕过了 open 的黑名单。
-3. **超时**：代码执行默认 30s（tool_info 声明，模型可传 timeout 参数）；依赖安装 pip 升级 60s、单包 120s；流式版 wait 超时后 kill 进程（L665）。
-4. **环境隔离**：使用 venv 时子进程 `env={}` 清空环境变量（L500）——切断宿主凭据；无 venv 时继承完整 `os.environ`（注意：此时子进程能看到宿主所有环境变量，包括 API key）。
-5. **依赖隔离**：requirements 会触发在临时目录里 `python -m venv` 新建虚拟环境（L452-457），Windows/Unix 分支取不同 pip/python 路径（L463-468）。
-6. **框架层双重门控**：构造期需 `enable_unsafe_python=True` 才注册（core.py:272-278）；运行期 `_prepare_tool_call`（core.py:1253）检查工具名 ∈ UNSAFE_PYTHON_TOOL_NAMES 且无 SandboxProvider 时直接拒绝执行（requires_sandbox 判定在 core.py:1260）。
+1. **静态 AST 黑名单**（_safe_import_check, L332-L397）：不是真沙箱，是"执行前源码审查"。覆盖了别名绕过（`import os as o`→别名解析 L303-309）、常量拼接绕过（`attr = "pop" + "en"`→常量传播 L299-329）、getattr/attrgetter 动态派发（L280-296）、下标取函数（L385-388）。
+2. **文件系统隔离**：代码写入临时目录并在其中执行（cwd=tmpdir，L551/L695），执行完目录删除；但这只是工作目录隔离，代码本身仍能以相对/绝对路径触碰宿主文件系统——前提是绕过了 open 的黑名单。
+3. **超时**：代码执行默认 30s（tool_info 声明，模型可传 timeout 参数）；依赖安装 pip 升级 60s、单包 120s；流式版 wait 超时后 kill 进程（L717）。
+4. **环境隔离**：使用 venv 时子进程 `env={}` 清空环境变量（L552）——切断宿主凭据；无 venv 时继承完整 `os.environ`（注意：此时子进程能看到宿主所有环境变量，包括 API key）。
+5. **依赖隔离**：requirements 会触发在临时目录里 `python -m venv` 新建虚拟环境（L503-509），Windows/Unix 分支取不同 pip/python 路径（L515-520）。
+6. **框架层双重门控**：构造期需 `enable_unsafe_python=True` 才注册（core.py:274-279）；运行期 `_prepare_tool_call`（core.py:1276）检查工具名 ∈ UNSAFE_PYTHON_TOOL_NAMES 且无 SandboxProvider 时直接拒绝执行（requires_sandbox 判定在 core.py:1286）。
 7. **明确不是容器级沙箱**：无 seccomp/namespace/资源限额，子进程与宿主共享内核与文件系统权限。
 
 ## 与其他模块的关系
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| execute_python_code:399 / execute_python_file:525 / execute_python_code_stream:563 | core.py:65-70（import）、core.py:272-278（条件注册） | enable_unsafe_python 开关控制是否注册 |
-| UNSAFE_PYTHON_TOOL_NAMES:40 | core.py:69、core.py:1260 | _prepare_tool_call 据此要求显式 SandboxProvider |
-| execute_python_code_stream:563 | tools.py AsyncToolDispatcher.dispatch:329-331 | 同步生成器被 dispatch 透传，core.py:2014 逐 chunk 消费 |
-| 三工具 tool_info:672/705/739 | tools.py ToolRegistry.register_tool:36 | 以"函数+tool_info"协议登记 |
+| execute_python_code:451 / execute_python_file:577 / execute_python_code_stream:615 | core.py:66-72（import）、core.py:274-279（条件注册） | enable_unsafe_python 开关控制是否注册 |
+| UNSAFE_PYTHON_TOOL_NAMES:40 | core.py:71、core.py:1286 | _prepare_tool_call 据此要求显式 SandboxProvider |
+| execute_python_code_stream:615 | tools.py AsyncToolDispatcher.dispatch:327-329 | 同步生成器被 dispatch 透传，core.py:2105 逐 chunk 消费 |
+| 三工具 tool_info:724/757/791 | tools.py ToolRegistry.register_tool:37 | 以"函数+tool_info"协议登记 |
 
 ## 阅读陷阱
 
-1. **_clean_code_string 是有损清洗**（L110-120）：无条件把 `\\n→\n`、`\"→"`、`\\\\→\`——若模型生成的代码本意就是字面反斜杠序列（正则、Windows 路径），会被悄悄改坏。
+1. **_clean_code_string 是有损清洗**（L157-169）：无条件把 `\\n→\n`、`\"→"`、`\\\\→\`——若模型生成的代码本意就是字面反斜杠序列（正则、Windows 路径），会被悄悄改坏。
 2. **venv 与非 venv 两条路径的安全差异**：有 requirements 时子进程 env 为空（较干净），无 requirements 时继承完整宿主环境变量——后者反而更"暴露"。
 3. **execute_python_file 没有目录限制**：file_path 可指向宿主任意 .py 文件，且会先读入内容再走代码串路径（等于绕过文件直接执行任意代码，仍受 AST 检查约束）。
 4. AST 检查是黑名单而非能力白名单：合法代码可以自由做网络外的事只要不 import 黑名单模块（例如调用已注入的 C 扩展），不要在架构图上把它画成"安全沙箱"，应画成"静态审查 + 临时目录 + 超时"。
 
 ## 高频符号中文短语表
 
-- `UNSAFE_PYTHON_TOOL_NAMES` (L40)：三个高风险工具名集合
-- `_safe_import_check` (L280)：AST 静态危险导入审查
-- `_collect_static_bindings` (L247)：收集别名与常量防绕过
-- `_dynamic_dispatch` (L228)：识别 getattr 动态派发逃逸
-- `_parse_code_parameter` (L47)：多形态代码参数提取
-- `_clean_code_string` (L95)：转义与 JSON 包装清洗
-- `_extract_code_from_text` (L153)：markdown 代码块提取
-- `_install_requirements` (L348)：venv 内带超时装依赖
-- `execute_python_code` (L399)：临时目录隔离子进程执行
-- `execute_python_file` (L525)：读取并执行 py 文件
-- `execute_python_code_stream` (L563)：Popen 流式执行代码
+- `UNSAFE_PYTHON_TOOL_NAMES` (L41)：三个高风险工具名集合
+- `_safe_import_check` (L332)：AST 静态危险导入审查
+- `_collect_static_bindings` (L299)：收集别名与常量防绕过
+- `_dynamic_dispatch` (L280)：识别 getattr 动态派发逃逸
+- `_parse_code_parameter` (L71)：多形态代码参数提取
+- `_clean_code_string` (L140)：转义与 JSON 包装清洗
+- `_extract_code_from_text` (L205)：markdown 代码块提取
+- `_install_requirements` (L400)：venv 内带超时装依赖
+- `execute_python_code` (L451)：临时目录隔离子进程执行
+- `execute_python_file` (L577)：读取并执行 py 文件
+- `execute_python_code_stream` (L615)：Popen 流式执行代码
 
 ---
 
@@ -244,7 +244,7 @@
 
 ## 模块概览
 
-内置"安全表达式计算"工具：一个**纯数据表达式**求值器——自写 AST 递归解释器，只允许常量、列表/元组/集合/字典字面量与白名单算术/一元/比较/布尔运算符，禁止名字、调用、属性访问，并施加节点数/集合长度/字符串长度/整数位宽四重资源上限。它不执行 Python、不触碰文件/网络/进程，是 Agent 构造时**默认注册**的两个内置工具之一（core.py:271），承担"算个数学式子"这类最低风险需求。
+内置"安全表达式计算"工具：一个**纯数据表达式**求值器——自写 AST 递归解释器，只允许常量、列表/元组/集合/字典字面量与白名单算术/一元/比较/布尔运算符，禁止名字、调用、属性访问，并施加节点数/集合长度/字符串长度/整数位宽四重资源上限。它不执行 Python、不触碰文件/网络/进程，是 Agent 构造时**默认注册**的两个内置工具之一（core.py:273），承担"算个数学式子"这类最低风险需求。
 
 ## 类与符号清单
 
@@ -261,7 +261,7 @@
 - `_validate_value` (L47) — 按类型检查上限；调用者：`_evaluate` 各分支（L61、L69、L80、L86、L95）。
 - `_evaluate` (L57) — 分派规则：Constant 仅允许 str/int/float/bool/None（L58-61）；List/Tuple/Set 长度受限（L63-69）；Dict 禁止 `**` 解包（L74-75）、键必须可哈希（L76-79）；UnaryOp/BinOp 只查白名单（L82-97）；BoolOp 手工实现 and/or 短路（L99-116）；Compare 支持链式比较、逐段短路（L118-131）；**其余一切节点抛 SafeExpressionError**（L133）。调用者：`evaluate_safe_expression` (L146) 及自身递归。
 - `evaluate_safe_expression` (L136) — 校验非空字符串 → `ast.parse(expression, mode="eval")` → `ast.walk` 计节点数 >128 拒绝（L144-145）→ 求值；调用者：`safe_expression` (L152)。
-- `safe_expression` (L149) — 工具外壳：捕获 SafeExpressionError 返回"安全表达式错误：…"字符串，成功返回 `repr(value)`；被 core.py:271 默认注册、经 dispatch 调用。
+- `safe_expression` (L149) — 工具外壳：捕获 SafeExpressionError 返回"安全表达式错误：…"字符串，成功返回 `repr(value)`；被 core.py:273 默认注册、经 dispatch 调用。
 
 ## 关键机制细节
 
@@ -275,9 +275,9 @@
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| safe_expression:149 | core.py:72（import）、core.py:271（默认注册） | 常驻内置工具 |
-| safe_expression.tool_info:158 | tools.py ToolRegistry.register_tool:36 | "函数+tool_info"协议登记 |
-| safe_expression:149 | AsyncToolDispatcher.dispatch:336-341 | 同步普通函数路径，结果转字符串 |
+| safe_expression:149 | core.py:74（import）、core.py:273（默认注册） | 常驻内置工具 |
+| safe_expression.tool_info:158 | tools.py ToolRegistry.register_tool:37 | "函数+tool_info"协议登记 |
+| safe_expression:149 | AsyncToolDispatcher.dispatch:334-339 | 同步普通函数路径，结果转字符串 |
 
 ## 阅读陷阱
 
@@ -308,7 +308,7 @@
 ## 关键方法
 
 - `list_skills` (L16-L32, tool_info L35-L40) — 遍历 `skill_manager.skills`，返回每个技能的 name/description/has_scripts/has_references/has_assets 的 JSON；无参数。它调用：SkillManager.skills（属性访问）。
-- `activate_skill` (L42-L56, tool_info L58-L65) — 调 `skill_manager.activate_skill(skill_name)`，把技能 SKILL.md 的正文指令装入上下文；异常捕获为"激活技能失败"字符串。它调用：skills.py:activate_skill (L142)；调用点：模型经 dispatch，以及系统提示里引导模型主动调用（core.py:662）。
+- `activate_skill` (L42-L56, tool_info L58-L65) — 调 `skill_manager.activate_skill(skill_name)`，把技能 SKILL.md 的正文指令装入上下文；异常捕获为"激活技能失败"字符串。它调用：skills.py:activate_skill (L142)；调用点：模型经 dispatch，以及系统提示里引导模型主动调用（core.py:671）。
 - `execute_skill_script` (L67-L79, tool_info L81-L90) — 调 `skill_manager.execute_script(skill_name, script_name, args)`；注意**无 try/except**，SkillManager 侧已把异常转为错误字符串。它调用：skills.py:execute_script (L177)。
 - `read_skill_reference` (L92-L103, tool_info L105-L113) — 调 `skill_manager.read_reference(skill_name, ref_path)` 读取 references/ 下文档。它调用：skills.py:read_reference (L217)。
 - 返回值 (L115) — `[list_skills, activate_skill, execute_skill_script, read_skill_reference]`。
@@ -317,9 +317,9 @@
 
 ### 技能→工具注册流程（与 core/skills 协作）
 
-1. core.py:262 构造 `SkillManager(skills_directories)`；core.py:289 `discover_skills()` 扫描各目录的 `SKILL.md` 仅载元数据。
-2. core.py:294-302：若有技能，调 `create_skill_tools(self.skill_manager)` 工厂生成 4 个闭包工具，逐个 `tool_registry.register_tool(tool_func)` 并写入 `loaded_tools`。
-3. core.py:658-662：`get_skills_xml()` 把技能元数据注入 system prompt 的 `<available_skills>`，并指示模型"需求匹配时先用 activate_skill 加载完整指令"——即**渐进式披露**：提示词只放元数据，正文按需经工具加载。
+1. core.py:264 构造 `SkillManager(skills_directories)`；core.py:291 `discover_skills()` 扫描各目录的 `SKILL.md` 仅载元数据。
+2. core.py:296-303：若有技能，调 `create_skill_tools(self.skill_manager)` 工厂生成 4 个闭包工具，逐个 `tool_registry.register_tool(tool_func)` 并写入 `loaded_tools`。
+3. core.py:667-671：`get_skills_xml()` 把技能元数据注入 system prompt 的 `<available_skills>`，并指示模型"需求匹配时先用 activate_skill 加载完整指令"——即**渐进式披露**：提示词只放元数据，正文按需经工具加载。
 
 ### 安全边界（委托给 SkillManager 实现）
 
@@ -329,10 +329,10 @@
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| create_skill_tools:13 | core.py:45（import）、core.py:295（调用） | Agent 构造时按技能发现结果创建工具 |
+| create_skill_tools:13 | core.py:46（import）、core.py:297（调用） | Agent 构造时按技能发现结果创建工具 |
 | list_skills:16 / activate_skill:42 / execute_skill_script:67 / read_skill_reference:92 | skills.py SkillManager 各方法 | 闭包捕获 skill_manager 实例做透传 |
-| 4 个工具函数 | tools.py ToolRegistry.register_tool:36 | 以"函数+tool_info"协议登记 |
-| activate_skill 工具:42 | core.py:662 系统提示引导 | 提示词明示模型先激活技能再执行 |
+| 4 个工具函数 | tools.py ToolRegistry.register_tool:37 | 以"函数+tool_info"协议登记 |
+| activate_skill 工具:42 | core.py:671 系统提示引导 | 提示词明示模型先激活技能再执行 |
 
 ## 阅读陷阱
 
@@ -365,12 +365,12 @@
 ## 关键方法
 
 - `__init__` (L37) — `skills_directories`（默认 `["skills"]`）、`skills: Dict[str, Skill]`、`skill_conflicts` 列表、logger。
-- `discover_skills` (L43) — 按目录顺序枚举子目录，找到含 `SKILL.md` 的目录则 `_load_skill_metadata`；记录 `source_directory` 与 `precedence`（目录序号）；**同名技能后者覆盖前者并把冲突记入 skill_conflicts**（L63-72，规则注释 "later skills_directories entry wins"）；单技能解析失败仅记 ERROR 日志不中断（L77-79）。调用者：core.py:289。它调用：`_load_skill_metadata` (L59)。
+- `discover_skills` (L43) — 按目录顺序枚举子目录，找到含 `SKILL.md` 的目录则 `_load_skill_metadata`；记录 `source_directory` 与 `precedence`（目录序号）；**同名技能后者覆盖前者并把冲突记入 skill_conflicts**（L63-72，规则注释 "later skills_directories entry wins"）；单技能解析失败仅记 ERROR 日志不中断（L77-79）。调用者：core.py:291。它调用：`_load_skill_metadata` (L59)。
 - `list_conflicts` (L83) — 返回遮蔽冲突的确定性诊断副本。
 - `discover_project_instructions` (L87) — 自工作目录向上到根收集 AGENTS.md（默认），按根→叶拼接并限 100k 字符（超限抛 ValueError）；框架内无其他调用点（供外部/测试使用）。
 - `_load_skill_metadata` (L110) — 正则剥 YAML frontmatter（L118）→ `yaml.safe_load` → 必填 name/description 校验（L125-126）→ 探测 scripts/references/assets 三个可选子目录（L129-131）→ 构造 Skill（不读正文）；调用者：discover_skills (L59)。
-- `activate_skill` (L142) — 校验技能名存在 → 重读 SKILL.md → 正则剥 frontmatter 只留正文（L154）→ 存入 `skill.instructions` 并返回；调用者：skill_tools.py:53（activate_skill 工具）、knowledge.py:365 经能力适配器反射调用。
-- `get_skills_xml` (L160) — 生成 `<available_skills><skill><name/><description/><location/>` XML 清单供系统提示；调用者：core.py:659。
+- `activate_skill` (L142) — 校验技能名存在 → 重读 SKILL.md → 正则剥 frontmatter 只留正文（L154）→ 存入 `skill.instructions` 并返回；调用者：skill_tools.py:53（activate_skill 工具）、knowledge.py:366 经能力适配器反射调用。
+- `get_skills_xml` (L160) — 生成 `<available_skills><skill><name/><description/><location/>` XML 清单供系统提示；调用者：core.py:668。
 - `execute_script` (L177) — 脚本执行（带沙箱，见下）；调用者：skill_tools.py:79。
 - `read_reference` (L217) — references/ 根内路径校验（`is_relative_to`，L227）后读文本；调用者：skill_tools.py:103。
 - `read_asset` (L240) — assets/ 根内路径校验（L250）后读**二进制**返回 bytes；无工具包装（见 skill_tools 陷阱）。它调用：无框架内调用点。
@@ -396,14 +396,14 @@
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| SkillManager:34 | core.py:44（import）、core.py:262（实例化） | 每个 Agent 持有自己的 SkillManager |
-| discover_skills:43 | core.py:289 | 构造期自动发现 |
-| get_skills_xml:160 | core.py:658-662 | 技能清单注入 system prompt |
+| SkillManager:34 | core.py:45（import）、core.py:264（实例化） | 每个 Agent 持有自己的 SkillManager |
+| discover_skills:43 | core.py:291 | 构造期自动发现 |
+| get_skills_xml:160 | core.py:667-671 | 技能清单注入 system prompt |
 | activate_skill:142 | skill_tools.py:53 | activate_skill 工具的后端 |
 | execute_script:177 | skill_tools.py:79 | execute_skill_script 工具的后端 |
 | read_reference:217 | skill_tools.py:103 | read_skill_reference 工具的后端 |
 | Skill:21 | connectors.py:17（import）、connectors.py:249-252 | 连接器校验 Skill 实例的 name/description/path |
-| SkillManager.skills / activate_skill | knowledge.py:363-369 | 能力适配器 skill.* 反射调用 |
+| SkillManager.skills / activate_skill | knowledge.py:363-367 | 能力适配器 skill.* 反射调用 |
 
 ## 阅读陷阱
 
@@ -443,7 +443,7 @@ MCP（Model Context Protocol）客户端管理器：按 `mcpServers` 配置逐�
 - `__init__` (L29) — 持有 config（含 `mcpServers` 字典）、tool_registry 引用、`exit_stack`（AsyncExitStack 统一清理）、`server_sessions`（服务器名→ClientSession）、`last_mcp_errors`、`credential_provider`、`_registered_tools`（服务器名→公开工具名集合）、`_tool_owners`（工具名→服务器名）。
 - `_create_session` (L40) — 建立单服务器会话（三种传输选择，见下节）；末尾 `session.initialize()`（L78）并登记 `server_sessions[server_name]`（L79）。调用者：`register_mcp_tool` (L100)、`call_tool` (L225)。它调用：streamablehttp_client / sse_client / stdio_client + ClientSession。
 - `cleanup` (L81) — 关闭 exit_stack、清空 server_sessions、重建空栈；调用者：register_mcp_tool L162、call_tool L238/L246。
-- `register_mcp_tool` (L88) — 注册主流程（见下节）；调用者：core.py:469（setup_mcp）、`refresh_tools` (L178/L185)。
+- `register_mcp_tool` (L88) — 注册主流程（见下节）；调用者：core.py:471（setup_mcp）、`refresh_tools` (L178/L185)。
 - `refresh_tools` (L165) — 先摘除某服务器（或全部）已注册工具（从 registry 三个视图 + 两本账删除，L168-176），再重注册；指定单服务器时用"临时 disabled 标记"技巧只连一个（L179-187）。
 - `_public_tool_name` (L189) — 计算公开工具名：默认裸原名；`namespace_tools` 开启或**与其他服务器的工具撞名**时用 `{namespace}__{tool}` 命名空间化（L192-197）。
 - `_call_tool_wrapper` (L199) — partial 绑定的适配器：把模型 kwargs 转成 `call_tool(tool_name, arguments, target_server)`；调用者：register_mcp_tool L128（作为 function_mappings 的值，最终由 AsyncToolDispatcher.dispatch 调用）。它调用：`call_tool` (L201)。
@@ -451,7 +451,7 @@ MCP（Model Context Protocol）客户端管理器：按 `mcpServers` 配置逐�
 - `_validate_arguments` (L252) — 只查 required 字段存在性（L254-257）。
 - `_record_error` (L259) — 把服务器名/阶段/异常类型/脱敏消息记入 last_mcp_errors。
 - `_format_tool_not_found` (L268) — 无错误时"未找到"；有错误时拼前 3 条 MCP 诊断（L272-278）——**把真实连接/执行失败与"工具不存在"区分开**。
-- `_sanitize_error_message` (L280, staticmethod) — 正则抹掉 `Bearer xxx` 与 `sk-...` 凭据（L282-283）。
+- `_sanitize_error_message` (L281, staticmethod) — 正则抹掉 `Bearer xxx` 与 `sk-...` 凭据（L282-283）。
 
 ## 关键机制细节
 
@@ -486,11 +486,11 @@ credential_provider 统一注入点在 L42-48：`resolver(server_name, config)` 
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| MCPClientManager:26 | core.py:43（import）、core.py:468（setup_mcp 实例化） | Agent.setup_mcp 持有 mcp_client |
-| register_mcp_tool:88 | core.py:469 | setup_mcp 触发注册 |
-| function_mappings 值 partial→_call_tool_wrapper:199 | tools.py AsyncToolDispatcher.dispatch:313-315 | 包装函数是协程，dispatch await 之 |
-| 直写 function_info/mappings/schemas:127-150 | tools.py ToolRegistry:26 | 绕过 register_tool 的直写通道 |
-| _public_tool_name:189 | tools.py ToolRegistry.function_mappings:31 | 撞名检测依据注册表现状 |
+| MCPClientManager:26 | core.py:44（import）、core.py:470（setup_mcp 实例化） | Agent.setup_mcp 持有 mcp_client |
+| register_mcp_tool:88 | core.py:471 | setup_mcp 触发注册 |
+| function_mappings 值 partial→_call_tool_wrapper:199 | tools.py AsyncToolDispatcher.dispatch:320-322 | 包装函数是协程，dispatch await 之 |
+| 直写 function_info/mappings/schemas:127-150 | tools.py ToolRegistry:27 | 绕过 register_tool 的直写通道 |
+| _public_tool_name:189 | tools.py ToolRegistry.function_mappings:32 | 撞名检测依据注册表现状 |
 | refresh_tools:165 | 自身 register_mcp_tool:178/185 | 摘除后重注册 |
 
 ## 阅读陷阱
@@ -512,7 +512,7 @@ credential_provider 统一注入点在 L42-48：`resolver(server_name, config)` 
 - `call_tool` (L207)：按需重连调用远端工具
 - `_validate_arguments` (L252)：必填参数存在性校验
 - `_record_error` (L259)：记录脱敏 MCP 诊断
-- `_sanitize_error_message` (L280)：抹除 Bearer/sk- 凭据
+- `_sanitize_error_message` (L281)：抹除 Bearer/sk- 凭据
 
 ---
 
@@ -526,7 +526,7 @@ credential_provider 统一注入点在 L42-48：`resolver(server_name, config)` 
 
 - 清单/诊断用正则与黑名单表 (L21-L58)：`_CONNECTOR_NAME_PATTERN`、`_VERSION_PATTERN`（语义版本）、`_EXTRA_NAME_PATTERN`、`_REQUIREMENT_PATTERN`、`_SECRET_FIELD_PATTERN`（api_key/token/secret/password/authorization）、`_PLACEHOLDER_PATTERN`（${}/{}/<...>/your_/replace_/env:）、`_UNSAFE_IMPORT_HINTS`（ctypes/importlib/os/pickle/pty/shutil/socket/subprocess 及风险说明）、`_NETWORK_IMPORT_HINTS`（aiohttp/httpx/requests/urllib）、`_HOOK_PHASES`（18 个生命周期钩子名）。
 - `_as_tuple` (L61-L68)：把 None/单值/序列统一成 tuple（manifest 的 __post_init__ 用）。
-- `ConnectorManifest` (L72-L94)：@dataclass(frozen)（装饰器 L71），字段 name/version/description/tools/skills/mcp_servers/hooks/memory_adapters/extras/docs；类 docstring 明示"构造或校验清单绝不启动 MCP 服务器、不导入可选 SDK、不调用工具或钩子"（L74-77）。
+- `ConnectorManifest` (L72-L94)：@dataclass(frozen)（装饰器 L71），字段 name/version/description/tools/skills/mcp_servers/hooks/memory_adapters/extras/docs；类 docstring 明示"构造或校验清单绝不启动 MCP 服务器、不导入可选 SDK、不调用工具或钩子"（L73-77）。
 - `ConnectorDiagnostic` (L98-L116)：@dataclass(frozen)，单条诊断（connector/level/field/message/component）+ to_dict。
 - `ConnectorValidationReport` (L120-L143)：@dataclass(frozen)，诊断集合 + `valid`/`errors`/`warnings` 属性 + to_dict。
 - `ConnectorValidator` (L146-L351)：校验器（全部静态/实例小方法）。
@@ -556,19 +556,19 @@ credential_provider 统一注入点在 L42-48：`resolver(server_name, config)` 
 
 ### 与 ToolRegistry / Skill 的复用关系
 
-- 工具合法性完全复用 `ToolRegistry.validate_tool_info`（tools.py:97）——连接器不另立 tool_info 标准。
-- Skill 实例来自 `skills.py:20`——校验其 name/description 非空与路径下 SKILL.md 存在。
+- 工具合法性完全复用 `ToolRegistry.validate_tool_info`（tools.py:99）——连接器不另立 tool_info 标准。
+- Skill 实例来自 `skills.py:21`——校验其 name/description 非空与路径下 SKILL.md 存在。
 
 ## 与其他模块的关系
 
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| ConnectorManifest.skills:83 | skills.py Skill:20 | 清单引用技能实例或路径 |
-| _validate_tools→ToolRegistry.validate_tool_info:200 | tools.py ToolRegistry.validate_tool_info:97 | 复用工具元数据诊断 |
+| ConnectorManifest.skills:83 | skills.py Skill:21 | 清单引用技能实例或路径 |
+| _validate_tools→ToolRegistry.validate_tool_info:200 | tools.py ToolRegistry.validate_tool_info:99 | 复用工具元数据诊断 |
 | ConnectorManifest.mcp_servers:84 | mcp_client_manager 的 mcpServers 配置 | 清单声明的服务器配置与 MCP 管理器消费的 config 同构（url/command/args/env） |
-| ConnectorManifest.tools:82 | ToolRegistry.register_tool:36（经 core 装配） | 清单中的工具最终仍以"函数+tool_info"注册进 registry |
+| ConnectorManifest.tools:82 | ToolRegistry.register_tool:37（经 core 装配） | 清单中的工具最终仍以"函数+tool_info"注册进 registry |
 | ConnectorManifest.hooks:85 | hooks.py HookManager 生命周期阶段 | _HOOK_PHASES 名单与钩子系统阶段对应 |
-| validate_connector:354 | __init__.py:66-69 | 顶层导出给外部打包者使用 |
+| validate_connector:354 | __init__.py:66-70 | 顶层导出给外部打包者使用 |
 
 ## 阅读陷阱
 

@@ -182,12 +182,12 @@
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 200,
+          "line": 225,
           "label": "ToolLoader"
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 255,
+          "line": 295,
           "label": "dispatch()"
         }
       ]
@@ -209,12 +209,12 @@
       "sources": [
         {
           "path": "LightAgent/runtime.py",
-          "line": 897,
+          "line": 901,
           "label": "AgentRuntime"
         },
         {
           "path": "LightAgent/runtime.py",
-          "line": 325,
+          "line": 329,
           "label": "BudgetManager"
         }
       ]
@@ -236,12 +236,12 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 114,
+          "line": 118,
           "label": "LightAgent"
         },
         {
           "path": "LightAgent/core.py",
-          "line": 478,
+          "line": 482,
           "label": "run()"
         },
         {
@@ -326,17 +326,17 @@
       "sources": [
         {
           "path": "LightAgent/session.py",
-          "line": 195,
+          "line": 212,
           "label": "Session"
         },
         {
           "path": "LightAgent/session.py",
-          "line": 377,
+          "line": 425,
           "label": "SessionStore"
         },
         {
           "path": "LightAgent/session.py",
-          "line": 644,
+          "line": 714,
           "label": "ContextProjector"
         }
       ]
@@ -363,7 +363,7 @@
         },
         {
           "path": "LightAgent/protocol.py",
-          "line": 232,
+          "line": 290,
           "label": "MemoryPolicy"
         },
         {
@@ -528,7 +528,7 @@
       "items": [
         "手写函数 + tool_info → register_tool（tools.py:37，同名静默覆盖）",
         "MCP 远端 → 直写注册表三视图（mcp_client_manager.py:127-150，绕过 register_tool）",
-        "tools/ 目录与技能四件套 → ToolLoader / create_skill_tools（tools.py:240、skill_tools.py:13）"
+        "tools/ 目录与技能四件套 → ToolLoader / create_skill_tools（tools.py:274、skill_tools.py:13）"
       ]
     },
     {
@@ -536,7 +536,7 @@
       "title": "独立的小世界",
       "items": [
         "flow.py / runtime.py / knowledge.py 各自成体系，经 Session 事件互通",
-        "runtime 不驱动对话循环，只是事件即持久化的状态管家（runtime.py:897）",
+        "runtime 不驱动对话循环，只是事件即持久化的状态管家（runtime.py:901）",
         "knowledge 无向量库依赖，SQLite FTS5 就能跑，缺失时降级 LIKE（knowledge.py:222）"
       ]
     }

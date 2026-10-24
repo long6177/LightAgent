@@ -1,22 +1,22 @@
 # 04 支撑模块源码知识库（supporting modules）
 
 > 覆盖：`__init__.py` 公共 API 面 + errors / result / version / logger / hooks / guardrails / review / tracing / evaluation / capabilities / knowledge / litellm_client。
-> 行号均为 2026-09-28 工作树实测 `def/class` 行号，可直接用于架构图节点定位。
+> 行号均为 2026-10-24 工作树（提交 ac177ca，含学习注释）实测 `def/class` 行号，可直接用于架构图节点定位。
 
 ---
 
 # __init__.py 公共 API 面（LightAgent/__init__.py）
 
-文件结构：L1-L161 为各子模块 re-import，L163-L309 为 `__all__`（约 147 个导出）。本包是纯"门面"，自身无逻辑。
+文件结构：L1-L189 为各子模块 re-import，L191-L361 为 `__all__`（约 147 个导出）。本包是纯"门面"，自身无逻辑。
 
 用户最常用导出（来源模块:行号，行号已在对应源文件核实）：
 
 | 导出符号 | 来源 | 一句话 |
 |---|---|---|
 | `__version__` | version.py:9 | 版本号，当前 "0.10.1" |
-| `LightAgent` | core.py:116 | 核心单 Agent 类 |
-| `LightSwarm` | core.py:3173 | 多 Agent 编排（教学级） |
-| `ToolRegistry` / `ToolLoader` / `AsyncToolDispatcher` | tools.py:26 / 224 / 281 | 工具注册、加载、异步分发 |
+| `LightAgent` | core.py:118 | 核心单 Agent 类 |
+| `LightSwarm` | core.py:3264 | 多 Agent 编排（教学级） |
+| `ToolRegistry` / `ToolLoader` / `AsyncToolDispatcher` | tools.py:27 / 225 / 282 | 工具注册、加载、异步分发 |
 | `LightAgentErrorInfo` / `LightAgentError` / `ERROR_TAXONOMY` | errors.py:14 / 21 / 45 | 错误信息结构 / 可捕获异常 / 错误码表 |
 | `classify_exception` / `format_lightagent_error` / `format_error_code` | errors.py:154 / 197 / 206 | 异常归类 / 格式化异常 / 格式化错误码 |
 | `RunResult` / `StreamEvent` | result.py:14 / 30 | 非流式结构化结果 / 流式事件 |
@@ -26,12 +26,12 @@
 | `HookContext` / `HookDecision` / `HookManager` / `PolicyHook` | hooks.py:26 / 43 / 95 / 73 | 钩子上下文 / 决策 / 管理器 / 策略钩子 |
 | `ApprovalRequest` / `ApprovalDecision` / `HumanApprovalHook` / `HumanFeedback` / `InMemoryReviewStore` / `JsonReviewStore` | review.py:37 / 65 / 235 / 110 / 127 / 181 | 人工审批请求 / 决策 / 失败关闭审批钩子 / 人评标注 / 审批存储 |
 | `GuardrailDecision` / `GuardrailManager` / `DEFAULT_PRIVACY_PATTERNS` / `privacy_input_guardrail` / `sensitive_tool_confirmation_guardrail` / `high_risk_parameter_guardrail` / `output_redaction_guardrail` | guardrails.py:15 / 24 / 88 / 96 / 113 / 130 / 150 | 护栏决策 / 护栏管理器 / 隐私正则 / 四个内置护栏工厂 |
-| `CapabilityScope` / `CapabilityRisk` / `CapabilitySpec` / `CapabilityRegistry` / `PolicyEngine` / `PolicyDecision` / `PermissionSet` / `BaseCapabilityProvider` / `ToolProviderAdapter` / `MemoryProviderAdapter` | capabilities.py:16 / 23 / 30 / 370 / 293 / 269 / 213 / 175 / 578 / 603 | 能力作用域 / 风险级 / 能力规格 / 注册表 / 策略引擎 / 策略决策 / 权限集 / 生命周期基类 / 两个适配器 |
+| `CapabilityScope` / `CapabilityRisk` / `CapabilitySpec` / `CapabilityRegistry` / `PolicyEngine` / `PolicyDecision` / `PermissionSet` / `BaseCapabilityProvider` / `ToolProviderAdapter` / `MemoryProviderAdapter` | capabilities.py:16 / 23 / 33 / 382 / 305 / 281 / 225 / 187 / 619 / 644 | 能力作用域 / 风险级 / 能力规格 / 注册表 / 策略引擎 / 策略决策 / 权限集 / 生命周期基类 / 两个适配器 |
 | `RetrievalDocument` / `RetrievalResult` / `RetrievalProvider` / `SqliteFTSRetrievalProvider` / `SessionSearchProvider` / `SkillProviderAdapter` / `MCPProviderAdapter` / `WorkflowProviderAdapter` | knowledge.py:23 / 39 / 58 / 78 / 302 / 341 / 370 / 393 | 检索文档 / 检索结果 / Provider 协议 / SQLite FTS5 RAG / 会话搜索 / 三个适配器 |
 | `LiteLLMClient` | litellm_client.py:33 | openai.OpenAI 替身，走 litellm |
 | `LoggerManager` | logger.py:14 | 日志集中管理 |
-| `Session` / `SessionStore` / `InMemorySessionStore` / `JsonlSessionStore` / `SqliteSessionStore` | session.py:195 / 377 / 394 / 435 / 521 | 会话与三种存储（非本次精读范围） |
-| `LightFlow` / `LightFlowStep` / `LightFlowResult` / `JsonLightFlowStore` | flow.py:132 / 41 / 83 / 102 | 轻流程编排（非本次精读范围） |
+| `Session` / `SessionStore` / `InMemorySessionStore` / `JsonlSessionStore` / `SqliteSessionStore` | session.py:196 / 425 / 456 / 497 / 588 | 会话与三种存储（非本次精读范围） |
+| `LightFlow` / `LightFlowStep` / `LightFlowResult` / `JsonLightFlowStore` | flow.py:140 / 43 / 89 / 110 | 轻流程编排（非本次精读范围） |
 | `SkillManager` / `Skill` | skills.py:34 / 21 | 技能管理（非本次精读范围） |
 | `MCPClientManager` | mcp_client_manager.py:26 | MCP 客户端管理（非本次精读范围） |
 | `SharedMemoryPool` / `SharedMemoryRecord` | shared_memory.py:40 / 20 | 共享内存池（非本次精读范围） |
@@ -54,8 +54,8 @@
 ## 关键方法
 - `LightAgentError.__init__` (L24-L36) — 用 code 查 `ERROR_TAXONOMY` 填默认 message/guidance，message/guidance 可覆盖；被用户代码捕获使用（框架主循环内部不抛它，见"阅读陷阱"）。
 - `classify_exception` (L154) — 先读 `exc.status_code`（无则读 `exc.response.status_code`，L156-L158），HTTP 400/401/403/404/408/413/429/500|502/503|504 直接映射（L160-L177）；再按异常类名/消息文本关键词匹配 authentication、permission、not found、timeout、rate limit、context length（L179-L192）；兜底 default_code。调用方：`format_lightagent_error` (errors.py:199)。
-- `format_lightagent_error` (L197) — `classify_exception` + 拼 Action/Guidance/Details；调用方：core.py:729、2099、2376、2466、2589、2649（模型请求/工具执行/流式/移交等 catch 点），tools.py:343。
-- `format_error_code` (L206) — 已知码 + details 直接格式化；调用方：core.py:1017/1084/1139（LA-BUDGET）、1070（LA-HOOK）、1206（LA-GUARDRAIL）、1271（LA-SANDBOX）、1287（LA-POLICY 文本）、1951、2359（LA-JSON），tools.py:305/362/370/374（LA-TOOL）。
+- `format_lightagent_error` (L197) — `classify_exception` + 拼 Action/Guidance/Details；调用方：core.py:739、2190、2467、2557、2680、2740（模型请求/工具执行/流式/移交等 catch 点），tools.py:341。
+- `format_error_code` (L206) — 已知码 + details 直接格式化；调用方：core.py:1040/1120/1175（LA-BUDGET）、1093（LA-HOOK）、1242（LA-GUARDRAIL）、1299（LA-SANDBOX）、1315（LA-POLICY 文本）、2042、2450（LA-JSON），tools.py:310/360/368/372（LA-TOOL）。
 
 ## 关键机制细节
 ### 错误码清单（码值 → 含义 → 指导方向）
@@ -91,13 +91,13 @@
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `format_lightagent_error`/`format_error_code`:197/206 | core.py:38（import） | 主循环所有 catch 点的统一错误文案出口 |
+| `format_lightagent_error`/`format_error_code`:197/206 | core.py:39（import） | 主循环所有 catch 点的统一错误文案出口 |
 | 同上 :206 | tools.py:19（import） | 工具执行/参数校验失败文案（LA-TOOL） |
-| `ERROR_TAXONOMY`:45 | core.py:1017/1070/1206/1271/2359 | LA-BUDGET/LA-HOOK/LA-GUARDRAIL/LA-SANDBOX/LA-JSON 的具体产出点 |
+| `ERROR_TAXONOMY`:45 | core.py:1040/1093/1242/1299/2450 | LA-BUDGET/LA-HOOK/LA-GUARDRAIL/LA-SANDBOX/LA-JSON 的具体产出点 |
 | `LightAgentError`:21 | `__init__.py:20-27` | 仅作为公共 API 导出给用户捕获 |
 
 ## 阅读陷阱
-1. 框架主循环几乎不 `raise LightAgentError`：core.py 只 import 了两个格式化函数（core.py:38），错误以**字符串**写进返回值/trace，`LightAgentError` 是给用户侧代码用的异常形态。
+1. 框架主循环几乎不 `raise LightAgentError`：core.py 只 import 了两个格式化函数（core.py:39），错误以**字符串**写进返回值/trace，`LightAgentError` 是给用户侧代码用的异常形态。
 2. `classify_exception` 的文本匹配是"包含子串"（如消息里含 "too large" 就判 LA-413），可能误归类。
 3. 未知 code 传入 `LightAgentError` 不报错，静默变成 LA-UNKNOWN（L31）；自定义新码必须先进 `ERROR_TAXONOMY`。
 4. LA-500 覆盖 502、LA-503 覆盖 504，与直觉的"每个状态码一项"不同。
@@ -123,7 +123,7 @@
 - `__version__` (L9)：包版本字符串。
 
 ## 关键方法
-无。`__init__.py:9` re-export；core.py:28-117 将其挂到 LightAgent 实例属性 `__version__`（core.py:117）。
+无。`__init__.py:9` re-export；core.py:28-119 将其挂到 LightAgent 实例属性 `__version__`（core.py:119）。
 
 ## 关键机制细节
 - 版本号 "0.10.1" 与本地 editable 安装元数据 0.10.0 存在偏差（见 AGENTS.md 工作区说明），以源码 L9 为准。
@@ -134,7 +134,7 @@
 | `__version__`:9 | `__init__.py:9` / core.py:28 | 导出与实例属性来源 |
 
 ## 阅读陷阱
-1. `__version__` 在 core.py:117 被赋成实例属性，同名但作用域不同（实例级 vs 模块级）。
+1. `__version__` 在 core.py:119 被赋成实例属性，同名但作用域不同（实例级 vs 模块级）。
 
 ## 高频符号中文短语表
 | 符号 | 中文短语 |
@@ -157,14 +157,14 @@
 - `StreamEvent.__str__` (L38) — 打印即输出 data。
 
 ## 关键机制细节
-- 构造点：core.py:1394 在 `_format_run_result`（core.py:1384）里组装 `RunResult`；core.py:1424-L1434 在 `_stream_as_events`（core.py:1415）里把流 chunk 包装为 `StreamEvent(type="error|tool_result|tool_call|event|content", ...)`。
-- `run()` 的返回类型注解 `Union[Generator, str, RunResult]`（core.py:498），`result_format="object"→RunResult`、"event"→StreamEvent、"str"→兼容旧字符串。
+- 构造点：core.py:1422 在 `_format_run_result`（core.py:1406）里组装 `RunResult`；core.py:1450-1462 在 `_stream_as_events`（core.py:1443）里把流 chunk 包装为 `StreamEvent(type="error|tool_result|tool_call|event|content", ...)`。
+- `run()` 的返回类型注解 `Union[Generator, str, RunResult]`（core.py:502），`result_format="object"→RunResult`、"event"→StreamEvent、"str"→兼容旧字符串。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `RunResult`:14 | core.py:39（import）、1394 | run() 非流式结构化返回 |
-| `StreamEvent`:30 | core.py:39（import）、1424-1434 | run(stream=True, result_format="event") 的产出 |
+| `RunResult`:14 | core.py:40（import）、1422 | run() 非流式结构化返回 |
+| `StreamEvent`:30 | core.py:40（import）、1450-1462 | run(stream=True, result_format="event") 的产出 |
 | `RunResult.trace/usage` | tracing.py:summarize_trace:152 | 被 evaluation.py:127-131 直接消费 |
 
 ## 阅读陷阱
@@ -192,8 +192,8 @@
 ## 关键方法
 - `__init__` (L17-L21) — 保存 name/debug/traceid，调用 `_setup_logger`。
 - `_setup_logger` (L23-L45) — `logging.getLogger(name)`；`propagate=False`（L26）；debug 时加 StreamHandler（L30-L33）；log_file 时建目录并加 FileHandler（L35-L43）。调用方：`__init__`（L20）。
-- `log` (L47-L61) — **非 debug 直接 return（L49-L50）**；拼 TraceID 前缀，UTF-8 清洗后按 DEBUG/INFO/ERROR 三级输出。调用方：core.py:478（`self.logger.log(level, action, data)` 封装）。
-- `set_traceid` (L63-L65) — 设置当前跟踪 ID；调用方：core.py:571。
+- `log` (L47-L61) — **非 debug 直接 return（L49-L50）**；拼 TraceID 前缀，UTF-8 清洗后按 DEBUG/INFO/ERROR 三级输出。调用方：core.py:480（`self.logger.log(level, action, data)` 封装）。
+- `set_traceid` (L63-L65) — 设置当前跟踪 ID；调用方：core.py:579。
 
 ## 关键机制细节
 - 日志格式固定 `%(asctime)s [%(levelname)s] %(message)s`（L28）。
@@ -203,9 +203,9 @@
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `LoggerManager`:14 | core.py:36（import）、253 | LightAgent.__init__ 里构造 |
-| `log`:47 | core.py:478 | 过程日志统一出口 |
-| `set_traceid`:63 | core.py:571 | run() 开始时绑定 traceid |
+| `LoggerManager`:14 | core.py:36（import）、255 | LightAgent.__init__ 里构造 |
+| `log`:47 | core.py:480 | 过程日志统一出口 |
+| `set_traceid`:63 | core.py:579 | run() 开始时绑定 traceid |
 
 ## 阅读陷阱
 1. **log_file 依赖 debug 开关**：`log()` 开头非 debug 即 return（L49），不开 debug 连文件都不写。
@@ -234,7 +234,7 @@
 - `HookManager` (L95-L179)：按序运行钩子并归一决策。
 
 ## 关键方法
-- `HookManager.run` (L101) — 主流程：按列表序执行；PolicyHook 先做 phase 过滤（L109-L110）；异常时无 policy → 记 error 事件后 continue（L120-L140），policy.failure_mode="block" → fail-closed 返回 block（L130-L139）；`replace` 覆盖 payload 后继续（L145-L153）；`metadata` 只记事件（L155-L161）；`block/retry/fallback` 立即返回并附加累积 metadata 与 hook_events（L163-L173）；全部通过则返回 continue + 最终 payload（L175-L179）。调用方：core.py:956（`_run_hooks` 内 `self.hooks.run(context)`），flow.py:805 附近（步骤钩子）。
+- `HookManager.run` (L101) — 主流程：按列表序执行；PolicyHook 先做 phase 过滤（L109-L110）；异常时无 policy → 记 error 事件后 continue（L120-L140），policy.failure_mode="block" → fail-closed 返回 block（L130-L139）；`replace` 覆盖 payload 后继续（L145-L153）；`metadata` 只记事件（L155-L161）；`block/retry/fallback` 立即返回并附加累积 metadata 与 hook_events（L163-L173）；全部通过则返回 continue + 最终 payload（L175-L179）。调用方：core.py:986（`_run_hooks` 内 `self.hooks.run(context)`），flow.py:1020 附近（步骤钩子）。
 - `_call_hook` (L181) — 鸭子类型分发：钩子若实现了与 phase 同名方法（如 `before_tool_call`）则调用它，否则把钩子本身当可调用对象调用（L182-L188）。
 - `_invoke_hook` (L190) — 带超时版本：隔离 HookContext 副本 + 单线程 ThreadPoolExecutor，超时抛 TimeoutError（L213-L221）。
 - `_call_and_resolve` (L223) / `_run_awaitable` (L230) — 同步/异步统一：返回 awaitable 时，无运行中事件循环则 `asyncio.run`；有则另起线程跑新事件循环（L230-L239）。
@@ -244,33 +244,33 @@
 ### 事件（phase）类型清单与触发时机（core.py 调用点实测）
 | phase 字符串 | 触发时机 | core.py 调用点 |
 |---|---|---|
-| `before_run` | run() 入口、参数与预算检查前 | L580 |
-| `before_model_request` | 每次调用模型前（含重试轮） | L1074 |
-| `before_tool_call` | 工具分发前（含沙箱/策略检查后） | L1301 |
-| `after_tool_result` | 工具结果回填前 | L1314 |
-| `after_model_response` | 模型最终回复产出后、输出护栏前后 | L1325 |
-| `on_error` | 任意错误发生时 | L1028、L1063 |
-| `after_run` | run 收尾（on_error 之后） | L1029 |
-| `on_handoff` | Swarm 子代理移交前 | L2540 |
-| `before/after_memory_retrieve` | 记忆检索前后 | L1495 / L1515 |
-| `before/after_memory_write` | 记忆写入前后 | L1559 / L1631、L1799 |
-| `before/after_memory_promote` | 记忆候选晋升前后 | L1696 / L1790 |
+| `before_run` | run() 入口、参数与预算检查前 | core.py:589 |
+| `before_model_request` | 每次调用模型前（含重试轮） | core.py:1110 |
+| `before_tool_call` | 工具分发前（含沙箱/策略检查后） | core.py:1329 |
+| `after_tool_result` | 工具结果回填前 | core.py:1342 |
+| `after_model_response` | 模型最终回复产出后、输出护栏前后 | core.py:1353 |
+| `on_error` | 任意错误发生时 | core.py:1051、core.py:1086 |
+| `after_run` | run 收尾（on_error 之后） | core.py:1052 |
+| `on_handoff` | Swarm 子代理移交前 | core.py:2631 |
+| `before/after_memory_retrieve` | 记忆检索前后 | core.py:1534 / core.py:1557 |
+| `before/after_memory_write` | 记忆写入前后 | core.py:1615 / core.py:1692、core.py:1870 |
+| `before/after_memory_promote` | 记忆候选晋升前后 | core.py:1762 / core.py:1861 |
 
-LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构建 HookContext，flow.py:445/805 检查 HOOK_BLOCK。
+LightFlow 的步骤钩子：flow.py:146 构造 HookManager，flow.py:1002-1011 构建 HookContext，flow.py:571/1020 检查 HOOK_BLOCK。
 
 ### 决策流转
 - `replace`：替换后续 payload（可改写工具参数、模型请求参数），链式传给下一个钩子。
-- `block`：中断当前操作；core.py:971 将其镜像为 trace 事件 `hook_block`。
-- `hook_events`：每个钩子的执行结果事件数组附在最终决策 metadata 里，core.py:957-968 逐条转成 `hook_decision` trace 事件；review 的 `review_events` 也在 metadata 里被同段代码转为 `approval_*` trace 事件。
+- `block`：中断当前操作；core.py:994 将其镜像为 trace 事件 `hook_block`。
+- `hook_events`：每个钩子的执行结果事件数组附在最终决策 metadata 里，core.py:987-992 逐条转成 `hook_decision` trace 事件；review 的 `review_events` 也在 metadata 里被同段代码转为 `approval_*` trace 事件。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `HookManager`:95 / `HookContext`:26 | core.py:41（import）、226、941-956 | 主循环钩子调度 |
+| `HookManager`:95 / `HookContext`:26 | core.py:42（import）、228、964-986 | 主循环钩子调度 |
 | `HookDecision`:43 | review.py:16（import） | HumanApprovalHook 的返回类型 |
-| `HookDecision`:43 | flow.py:20、138、786 | LightFlow 步骤钩子 |
-| `PolicyHook`:73 | core.py:41（import）、146 | 构造参数 `hooks: List[Callable | PolicyHook]` |
-| `HOOK_BLOCK`:20 | core.py:41、970 | 主循环只消费 block 决策 |
+| `HookDecision`:43 | flow.py:23、146、1002 | LightFlow 步骤钩子 |
+| `PolicyHook`:73 | core.py:42（import）、148 | 构造参数 `hooks: List[Callable | PolicyHook]` |
+| `HOOK_BLOCK`:20 | core.py:42、993 | 主循环只消费 block 决策 |
 
 ## 阅读陷阱
 1. **默认吞异常**：普通钩子抛异常被静默 continue（L120），只有包成 `PolicyHook(failure_mode="block")` 才 fail-closed——想让钩子失败可感知必须用 PolicyHook。
@@ -307,9 +307,9 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 - `output_redaction_guardrail` (L150-L164)：输出护栏工厂，命中替换为 `[redacted]`，**永远 allowed**。
 
 ## 关键方法
-- `check_input` (L38) — 对 query 跑输入链；调用方：core.py:598（run 入口，命中记 trace `guardrail_block` core.py:611）。
-- `check_tool` (L41) — payload 打包为 `{"tool_name", "arguments"}` 后跑工具链；调用方：core.py:1209（工具执行前，trace L1233）。
-- `check_output` (L50) — 对最终输出跑输出链；调用方：core.py:1330（`after_model_response` 钩子之后，trace L1342）。
+- `check_input` (L38) — 对 query 跑输入链；调用方：core.py:607（run 入口，命中记 trace `guardrail_block` core.py:620）。
+- `check_tool` (L41) — payload 打包为 `{"tool_name", "arguments"}` 后跑工具链；调用方：core.py:1245（工具执行前，trace core.py:1269）。
+- `check_output` (L50) — 对最终输出跑输出链；调用方：core.py:1358（`after_model_response` 钩子之后，trace core.py:1370）。
 - `_run_guardrails` (L53) — 链式执行：每级收到 `current_value`，allowed 且 value 非 None 则更新 current_value（L65-L66），实现"改写传递"；首个拒绝短路返回。
 - `_coerce_decision` (L69) — 返回值归一：GuardrailDecision 原样；None/True→allow；False→block（通用文案）；str→block(reason=str)；dict→显式字段；**其他任意对象→allow 且 value=该对象**（L85）。
 - `privacy_input_guardrail` (L96) — 编译正则后返回闭包 guardrail(value, context)。
@@ -319,19 +319,19 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 ### 三个检查点与拦截行为
 | 检查点 | 输入形态 | 拦截后行为 |
 |---|---|---|
-| input（core.py:598） | str query | 直接返回 LA-GUARDRAIL 错误文本（core.py:1206），记 `guardrail_block` trace |
-| tool（core.py:1209） | dict `{"tool_name","arguments"}` | 工具不执行，返回 LA-GUARDRAIL |
-| output（core.py:1330） | str 输出 | 返回 LA-GUARDRAIL（脱敏类护栏则改写后放行） |
+| input（core.py:607） | str query | 直接返回 LA-GUARDRAIL 错误文本（core.py:1242），记 `guardrail_block` trace |
+| tool（core.py:1245） | dict `{"tool_name","arguments"}` | 工具不执行，返回 LA-GUARDRAIL |
+| output（core.py:1358） | str 输出 | 返回 LA-GUARDRAIL（脱敏类护栏则改写后放行） |
 
 - 护栏签名统一为 `guardrail(value, context) -> GuardrailDecision|None|bool|str|dict|Any`。
-- 改写（redaction）与拦截的区别：`output_redaction_guardrail` 返回 allowed=True + value=替换文本，链路继续用改写值；core.py:1346 因此记 `replace` 适配器事件。
+- 改写（redaction）与拦截的区别：`output_redaction_guardrail` 返回 allowed=True + value=替换文本，链路继续用改写值；core.py:1374 因此记 `replace` 适配器事件。
 - `sensitive_tool_confirmation_guardrail` 的 `approved` 是工厂调用时固定的布尔闭包变量（L119），不能运行期翻转为 True。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `GuardrailManager`:24 | core.py:42（import）、221 | 构造时传入 input/tool/output 护栏列表 |
-| `check_input/check_tool/check_output`:38/41/50 | core.py:598/1209/1330 | 三检查点 |
+| `GuardrailManager`:24 | core.py:43（import）、223 | 构造时传入 input/tool/output 护栏列表 |
+| `check_input/check_tool/check_output`:38/41/50 | core.py:607/1245/1358 | 三检查点 |
 | `GuardrailDecision`:15 | errors.py `LA-GUARDRAIL`（errors.py:101） | 拒绝后由 core 格式化为错误文本 |
 | 内置护栏工厂 :96/113/130/150 | `__init__.py:49-57` | 公共 API 导出 |
 
@@ -370,7 +370,7 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 - `HumanApprovalHook` (L235-L442)：fail-closed 审批钩子（可作 HookManager 成员直接使用）。
 
 ## 关键方法
-- `HumanApprovalHook.__call__` (L263) — 主逻辑：phase 不在白名单或工具不在名单 → None（不表态，L264-L269）；payload 带 `approval_id` → 查历史决策复用（匹配 L275-L276 放行；不匹配或未找到/未决 → block，L277-L303）；否则 `_build_request` 存库：无 reviewer → pending 并 block（L305-L312）；有 reviewer → 调用并归一（reviewer 异常 → reject，L317-L321），resolve 后返回决策。调用方：经 HookManager.run（hooks.py:101）→ core.py:941 `_run_hooks`。
+- `HumanApprovalHook.__call__` (L263) — 主逻辑：phase 不在白名单或工具不在名单 → None（不表态，L264-L269）；payload 带 `approval_id` → 查历史决策复用（匹配 L275-L276 放行；不匹配或未找到/未决 → block，L277-L303）；否则 `_build_request` 存库：无 reviewer → pending 并 block（L305-L312）；有 reviewer → 调用并归一（reviewer 异常 → reject，L317-L321），resolve 后返回决策。调用方：经 HookManager.run（hooks.py: 101）→ core.py:964 `_run_hooks`。
 - `_call_reviewer` (L325) — 可选超时的 reviewer 调用（单线程 executor，超时抛 TimeoutError）。
 - `_normalize_decision` (L338) — reviewer 返回值归一：ApprovalDecision 原样；True/None→approve；False→reject；str→reject(reason)；dict→action 或 approved/allowed 字段。
 - `_build_request` (L364) — 从 HookContext 组装请求；`on_handoff` 阶段把 payload.query 并入 arguments（L367-L368）。
@@ -387,7 +387,7 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 - fail-closed：reviewer 抛异常也按 reject 处理（L317-L321），绝不让未审批动作通过。
 
 ### review_events 与 trace
-`_hook_decision` 与 `__call__` 的 block 分支都在 metadata 放 `review_events`（type ∈ approval_required/approve/reject/edit/respond）；core.py:963-L968 把它们逐条转成 `approval_*` trace 事件，并计入 TraceSummary.review_counts（tracing.py:183-L184）。
+`_hook_decision` 与 `__call__` 的 block 分支都在 metadata 放 `review_events`（type ∈ approval_required/approve/reject/edit/respond）；core.py:989-992 把它们逐条转成 `approval_*` trace 事件，并计入 TraceSummary.review_counts（tracing.py:183-184）。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
@@ -434,32 +434,32 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 - `TraceRecorder` (L229-L293)：enabled 开关 + trace 标识 + 事件缓冲。
 
 ## 关键方法
-- `TraceRecorder.record` (L245) — 未启用返回 None（L246-L247），启用则构建 TraceEvent 入列表；调用方：core.py:936-938（`_record_trace`，定义于 core.py:910）。
-- `TraceRecorder.to_list` (L258) — 事件转 dict 列表；调用方：core.py:1158（export_trace 方法）、1167（summarize_trace 方法）、evaluation.py:129（result.trace 即它）。
+- `TraceRecorder.record` (L245) — 未启用返回 None（L246-L247），启用则构建 TraceEvent 入列表；调用方：core.py:959-961（`_record_trace`，定义于 core.py:932）。
+- `TraceRecorder.to_list` (L258) — 事件转 dict 列表；调用方：core.py:1194（export_trace 方法）、1201（summarize_trace 方法）、evaluation.py:129（result.trace 即它）。
 - `TraceRecorder.record_feedback` (L261) — 人工标注转 `human_feedback` 事件。
 - `TraceRecorder.summarize/export` (L271/L279) — 便捷聚合与导出。
-- `summarize_trace` (L152) — 识别的事件类型：`model_request`（计数+延迟+usage，L165-L170）、`tool_call`（L171-L172）、`tool_result`（无 error 记成功，L173-L176）、`error`（按 category/stage 分类，含 "retry" 则 retry_count+1，L177-L182）、`approval_*`/`human_feedback`（review_counts，L183-L184）、`run_end`（duration_ms、retry_count 上限，L185-L188）；显式 usage 参数优先于事件聚合（L196）；pricing 可估成本（L198-L207）。调用方：core.py:1165-1168、evaluation.py:131。
-- `normalize_usage` (L122) — 支持 pydantic `model_dump`（L126-L127）、属性访问兜底（L129-L139）、input_tokens/output_tokens 别名（L140-L141）；调用方：core.py:1047/1118/1145、tracing.py:168/196。
-- `export_trace` (L211) — 统一导出入口；调用方：core.py:1173 `export_trace_to` 及 TraceRecorder.export。
+- `summarize_trace` (L152) — 识别的事件类型：`model_request`（计数+延迟+usage，L165-L170）、`tool_call`（L171-L172）、`tool_result`（无 error 记成功，L173-L176）、`error`（按 category/stage 分类，含 "retry" 则 retry_count+1，L177-L182）、`approval_*`/`human_feedback`（review_counts，L183-L184）、`run_end`（duration_ms、retry_count 上限，L185-L188）；显式 usage 参数优先于事件聚合（L196）；pricing 可估成本（L198-L207）。调用方：core.py:1203-1206、evaluation.py:131。
+- `normalize_usage` (L122) — 支持 pydantic `model_dump`（L126-L127）、属性访问兜底（L129-L139）、input_tokens/output_tokens 别名（L140-L141）；调用方：core.py:1070/1154/1181、tracing.py:168/196。
+- `export_trace` (L211) — 统一导出入口；调用方：core.py:1209 `export_trace_to` 及 TraceRecorder.export。
 - `JsonlTraceExporter.export` (L103) — 追加一行 JSON envelope，返回文件路径。
 
 ## 关键机制细节
 ### 事件类型与落点
-- core.py 实际产出的事件 type（`_record_trace` 调用点实测）：`run_start`(573)、`run_end`(1050)、`model_request`(1088)、`model_response`(2075/2223)、`tool_call`(1941/2252)、`tool_result`(2054/2315/2337)、`error`(731/1955/1978/2101/2108 等)、`guardrail_block`(611/1233/1342)、`hook_decision`(965/993)、`hook_block`(971)、`memory_write`(1643/1812)、`memory_retrieve_block`(1503/1524)、`memory_write_block`(1567)、`memory_retrieve_filter`(1889)、`memory_promotion_*`(417/1693/1707/1757/1784)。
-- 消费落点：`TraceRecorder.events`（内存）→ `to_list` → 用户侧 `export_trace_to`(core.py:1173) / `JsonlTraceExporter` / `summarize_trace`；`RunResult.trace` 与 Session 事件存储是另一条持久化路径。
-- trace 开关：core.py:328 先建 `TraceRecorder(enabled=False)`，run(trace=True) 时在 core.py:540 重建启用。
+- core.py 实际产出的事件 type（`_record_trace` 调用点实测）：`run_start`(581)、`run_end`(1073)、`model_request`(1124)、`model_response`(2166/2314)、`tool_call`(2032/2343)、`tool_result`(2145/2406/2428)、`error`(741/2046/2069/2192/2199 等)、`guardrail_block`(620/1269/1370)、`hook_decision`(988/1016)、`hook_block`(994)、`memory_write`(1704/1883)、`memory_retrieve_block`(1542/1566)、`memory_write_block`(1623)、`memory_retrieve_filter`(1980)、`memory_promotion_*`(419/1758/1773/1824/1855)。
+- 消费落点：`TraceRecorder.events`（内存）→ `to_list` → 用户侧 `export_trace_to`(core.py:1209) / `JsonlTraceExporter` / `summarize_trace`；`RunResult.trace` 与 Session 事件存储是另一条持久化路径。
+- trace 开关：core.py:330 先建 `TraceRecorder(enabled=False)`，run(trace=True) 时在 core.py:548 重建启用。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `TraceRecorder`:229 | core.py:40（import）、328/540、910 | `_record_trace` 的承载者 |
-| `summarize_trace`:152 | core.py:1165 / evaluation.py:12,131 | run 汇总与评测指标 |
-| `normalize_usage`:122 | core.py:1047/1118/1145 | usage 归一 |
-| `TraceSummary.review_counts` | review.py `review_events`（L413-L427） | approval_* 事件计入 |
+| `TraceRecorder`:229 | core.py:41（import）、330/548、932 | `_record_trace` 的承载者 |
+| `summarize_trace`:152 | core.py:1203 / evaluation.py:12,131 | run 汇总与评测指标 |
+| `normalize_usage`:122 | core.py:1070/1154/1181 | usage 归一 |
+| `TraceSummary.review_counts` | review.py `review_events`（review.py:413-427） | approval_* 事件计入 |
 | `JsonlTraceExporter`:97 | `__init__.py:29-38` | 公共 API 导出 |
 
 ## 阅读陷阱
-1. `record` 未启用时返回 None，调用方必须判空（core.py:938 正确处理）；直接链式使用会 AttributeError。
+1. `record` 未启用时返回 None，调用方必须判空（core.py:961 正确处理）；直接链式使用会 AttributeError。
 2. `TraceSummary.retry_count` 依赖 error 事件 category **字符串含 "retry"**（L181-L182），或 run_end 事件的 retry_count 字段（L188），否则恒 0。
 3. `tool_success_count` 被钳制不超过 `tool_call_count`（L192-L195），且依赖 tool_result 事件带 error 字段判失败。
 4. usage 优先级：显式传入的 usage 覆盖事件聚合 usage（L196），两者可能不一致。
@@ -506,7 +506,7 @@ LightFlow 的步骤钩子：flow.py:138 构造 HookManager，flow.py:786-787 构
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `LightEvaluator`:103 | core.py:LightAgent.run:498 | 评测目标（要求 result_format/trace 兼容） |
+| `LightEvaluator`:103 | core.py:LightAgent.run:502 | 评测目标（要求 result_format/trace 兼容） |
 | `summarize_trace`（:12 import） | tracing.py:152 | 单例指标 |
 | `EvaluationCaseResult.summary` | tracing.py:TraceSummary:42 | 复用观测指标结构 |
 | 全模块 | `__init__.py:39` | 公共 API 导出 |
@@ -536,64 +536,64 @@ v0.10 能力系统的核心：统一的能力声明（`CapabilitySpec`，带风�
 
 ## 类与符号清单
 - `CapabilityScope` (L16-L20)：DEFAULT/RUNTIME/SESSION/AGENT 四级作用域。
-- `CapabilityRisk` (L23-L27)：L0 READ_ONLY / L1 ISOLATED_WRITE / L2 SENSITIVE / L3 DESTRUCTIVE。
-- `CapabilitySpec` (L30-L60)：frozen 能力规格——name、read/write/network/execute/persistent/cancellable/resumable、timeout、output_limit、requires_sandbox、requires_approval；`__post_init__` 校验（L49-L55）。
-- `ProviderHealth` (L63-L72)：健康状态（healthy/status/message/degraded_capabilities）。
-- `RuntimeContext` (L75-L84)：runtime/session/agent/user/turn/run id + `permissions: PermissionSet`。
-- `CapabilityProvider` (L87-L108)：Protocol——mount/start/health/reload/stop/unmount。
-- 16 个标记 Protocol（L111-L172）：Model/Tool/FileSystem/Shell/Terminal/Browser/Web/LSP/Memory/RAG/Subagent/Workflow/Interaction/Sandbox/Credential/TelemetryProvider，全部为空子类，仅作类型标注。
-- `BaseCapabilityProvider` (L175-L210)：Python 原生 Provider 的参考生命周期实现（start 前必须 mount，L192-L194）。
-- `PermissionSet` (L213-L258)：allowed/denied/max_risk；`allows` (L221) 与 `narrow` (L234)。
-- `PolicyRequest` (L261-L266) / `PolicyDecision` (L269-L287)：策略输入与输出（allow/block/approval 三构造器）。
-- `PolicyCallable` (L290)：策略函数类型。
-- `PolicyEngine` (L293-L359)：有序 fail-closed 策略评估。
-- `ProviderRegistration` (L362-L367)：注册记录（provider/scope/owner_id/order）。
-- `CapabilityRegistry` (L370-L575)：注册、解析、生命周期、审计、策略执行。
-- `ToolProviderAdapter` (L578-L600) / `MemoryProviderAdapter` (L603-L627)：旧组件适配。
-- `_run_sync` (L630-L650)：同步环境运行协程的工具函数。
+- `CapabilityRisk` (L23-L30)：L0 READ_ONLY / L1 ISOLATED_WRITE / L2 SENSITIVE / L3 DESTRUCTIVE。
+- `CapabilitySpec` (L33-L67)：frozen 能力规格——name、read/write/network/execute/persistent/cancellable/resumable、timeout、output_limit、requires_sandbox、requires_approval；`__post_init__` 校验（L56-L62）。
+- `ProviderHealth` (L70-L79)：健康状态（healthy/status/message/degraded_capabilities）。
+- `RuntimeContext` (L82-L96)：runtime/session/agent/user/turn/run id + `permissions: PermissionSet`。
+- `CapabilityProvider` (L99-L120)：Protocol——mount/start/health/reload/stop/unmount。
+- 16 个标记 Protocol（L123-L184）：Model/Tool/FileSystem/Shell/Terminal/Browser/Web/LSP/Memory/RAG/Subagent/Workflow/Interaction/Sandbox/Credential/TelemetryProvider，全部为空子类，仅作类型标注。
+- `BaseCapabilityProvider` (L187-L222)：Python 原生 Provider 的参考生命周期实现（start 前必须 mount，L204-L206）。
+- `PermissionSet` (L225-L270)：allowed/denied/max_risk；`allows` (L233) 与 `narrow` (L246)。
+- `PolicyRequest` (L273-L278) / `PolicyDecision` (L281-L299)：策略输入与输出（allow/block/approval 三构造器）。
+- `PolicyCallable` (L302)：策略函数类型。
+- `PolicyEngine` (L305-L371)：有序 fail-closed 策略评估。
+- `ProviderRegistration` (L374-L379)：注册记录（provider/scope/owner_id/order）。
+- `CapabilityRegistry` (L382-L616)：注册、解析、生命周期、审计、策略执行。
+- `ToolProviderAdapter` (L619-L641) / `MemoryProviderAdapter` (L644-L668)：旧组件适配。
+- `_run_sync` (L671-L691)：同步环境运行协程的工具函数。
 
 ## 关键方法
-- `PermissionSet.allows` (L221) — denied 优先 → allowed 白名单（非空时必须包含）→ 风险级不超过 max_risk（L221-L232）。调用方：PolicyEngine.evaluate（capabilities.py:305）。
-- `PermissionSet.narrow` (L234) — 派生更窄权限；试图新增能力或提高 max_risk 抛 ValueError（L242-L253）。
-- `PolicyEngine.evaluate` (L303) — 三段：① context.permissions 快照检查（L304-L306）；② spec.requires_approval 直接返回 approval 决策（L307-L308）；③ 按序跑策略函数（参数深拷贝隔离，L310-L319），策略异常时 fail_closed 则 block（L323-L327），allowed=False 短路，arguments 可被策略改写传递（L334-L335）。调用方：CapabilityRegistry.invoke:510。
-- `PolicyEngine.evaluate_sync` (L338) — `_run_sync` 包装；调用方：core.py:1272（工具的策略检查）。
-- `PolicyEngine._coerce` (L341) — 策略返回值归一：None/True→allow，False→block，dict 支持 requires_approval/allowed/reason/arguments（L341-L359）。
-- `CapabilityRegistry.register` (L392) — SESSION/AGENT 作用域必须给 owner_id（L400-L401）；同 name+scope+owner 重复注册抛 ValueError（L402-L408）；能力重叠时记录冲突（后注册者胜，L410-L420）。调用方：core.py:887/889。
-- `CapabilityRegistry.resolve` (L454) — 按 capability 名在 `_matching`（L535：DEFAULT/RUNTIME 恒可见，SESSION 按 session_id、AGENT 按 agent_id 匹配）中找，按 `(scope优先级, 注册顺序)` 降序取第一个（L462-L463）；无匹配抛 LookupError。调用方：CapabilityRegistry.invoke:508。
-- `CapabilityRegistry.invoke` (L500) — 完整执行管线：resolve → `policy_engine.evaluate`（L510-L515）→ 审计 `policy.decision`（L516-L521）→ 拒绝抛 PermissionError（L522-L524）→ 调 `provider.invoke(capability, **arguments)`，协程按 spec.timeout 用 `asyncio.wait_for`（L530），输出按 output_limit 截断（L531-L532）。调用方：core.py:846（arun 的异步 Provider 路径）。
-- `CapabilityRegistry.mount/stop` (L427/L494) — 按匹配序 mount+start / stop+unmount 并审计。
-- `CapabilityRegistry._configuration_digest` (L567) — 配置中 key/token/secret/password 字段替换为 `[redacted]` 后 sha256（L568-L575）。
-- `ToolProviderAdapter.invoke` (L595) — `tool.<name>` → 每次调用新建 `AsyncToolDispatcher` 分发（L597-L600）。
-- `_run_sync` (L630) — 无事件循环直接 `asyncio.run`；有则起 daemon 线程跑（L636-L650）。
+- `PermissionSet.allows` (L233) — denied 优先 → allowed 白名单（非空时必须包含）→ 风险级不超过 max_risk（L233-L244）。调用方：PolicyEngine.evaluate（capabilities.py:315）。
+- `PermissionSet.narrow` (L246) — 派生更窄权限；试图新增能力或提高 max_risk 抛 ValueError（L254-L265）。
+- `PolicyEngine.evaluate` (L315) — 三段：① context.permissions 快照检查（L316-L318）；② spec.requires_approval 直接返回 approval 决策（L319-L320）；③ 按序跑策略函数（参数深拷贝隔离，L322-L331），策略异常时 fail_closed 则 block（L335-L339），allowed=False 短路，arguments 可被策略改写传递（L343-L347）。调用方：CapabilityRegistry.invoke:540。
+- `PolicyEngine.evaluate_sync` (L350) — `_run_sync` 包装；调用方：core.py:1300（工具的策略检查）。
+- `PolicyEngine._coerce` (L354) — 策略返回值归一：None/True→allow，False→block，dict 支持 requires_approval/allowed/reason/arguments（L354-L371）。
+- `CapabilityRegistry.register` (L408) — SESSION/AGENT 作用域必须给 owner_id（L416-L417）；同 name+scope+owner 重复注册抛 ValueError（L418-L424）；能力重叠时记录冲突（后注册者胜，L426-L436）。调用方：core.py:898/900。
+- `CapabilityRegistry.resolve` (L471) — 按 capability 名在 `_matching`（L576：DEFAULT/RUNTIME 恒可见，SESSION 按 session_id、AGENT 按 agent_id 匹配）中找，按 `(scope优先级, 注册顺序)` 降序取第一个（L479-L480）；无匹配抛 LookupError。调用方：CapabilityRegistry.invoke:538。
+- `CapabilityRegistry.invoke` (L518) — 完整执行管线：resolve → `policy_engine.evaluate`（L538-L545）→ 审计 `policy.decision`（L546-L551）→ 拒绝抛 PermissionError（L552-L554）→ 调 `provider.invoke(capability, **arguments)`，协程按 spec.timeout 用 `asyncio.wait_for`（L560），输出按 output_limit 截断（L561-L562）。调用方：core.py:857（arun 的异步 Provider 路径）。
+- `CapabilityRegistry.mount/stop` (L443/L511) — 按匹配序 mount+start / stop+unmount 并审计。
+- `CapabilityRegistry._configuration_digest` (L609) — 配置中 key/token/secret/password 字段替换为 `[redacted]` 后 sha256（L610-L616）。
+- `ToolProviderAdapter.invoke` (L636) — `tool.<name>` → 每次调用新建 `AsyncToolDispatcher` 分发（L638-L641）。
+- `_run_sync` (L671) — 无事件循环直接 `asyncio.run`；有则起 daemon 线程跑（L677-L691）。
 
 ## 关键机制细节
 ### 注册与生效机制
-1. **声明**：Provider 构造时给 `CapabilitySpec` 列表（如 SqliteFTSRetrievalProvider 的 6 个 rag.* 规格，knowledge.py:94-L101）。
-2. **注册**：`registry.register(provider, scope=..., owner_id=...)`；core.py:329 建默认注册表（可注入 policy_engine），core.py:887/889 自动把 ToolRegistry 和 memory 后端以 RUNTIME 作用域注册为 Adapter。
+1. **声明**：Provider 构造时给 `CapabilitySpec` 列表（如 SqliteFTSRetrievalProvider 的 6 个 rag.* 规格，knowledge.py:94-101）。
+2. **注册**：`registry.register(provider, scope=..., owner_id=...)`；core.py:331 建默认注册表（可注入 policy_engine），core.py:898/900 自动把 ToolRegistry 和 memory 后端以 RUNTIME 作用域注册为 Adapter。
 3. **挂载**：`mount(context)` 逐个 provider.mount + start，审计 `provider.started`。
-4. **解析**：`resolve(capability, context)` 按 AGENT > SESSION > RUNTIME > DEFAULT 优先级（`_precedence` L373-L378，降序排序 L462）。
+4. **解析**：`resolve(capability, context)` 按 AGENT > SESSION > RUNTIME > DEFAULT 优先级（`_precedence` L389-L394，降序排序 L479）。
 5. **执行**：`invoke` 前置策略评估（权限快照 → requires_approval → 策略链），拒绝抛 PermissionError；通过后按 spec.timeout/output_limit 执行。
-6. **审计**：`_audit`（L546）输出 provider/scope/owner/配置摘要等结构化事件，core.py 将其写入 session 事件（`policy.decision`，core.py:1265-1284 一带）。
+6. **审计**：`_audit`（L587）输出 provider/scope/owner/配置摘要等结构化事件，core.py 将其写入 session 事件（`policy.decision`，core.py:1306-1318 一带）。
 
 ### 风险级与审批
-- L0-L3 四级风险（L23-L27）参与 PermissionSet 检查；`requires_sandbox` 在 core.py:1262 单独检查（无沙箱 Provider → LA-SANDBOX，core.py:1271）；`requires_approval` 在 PolicyEngine 短路返回 approval 决策（L307-L308）。
+- L0-L3 四级风险（L23-L30）参与 PermissionSet 检查；`requires_sandbox` 在 core.py:1290 单独检查（无沙箱 Provider → LA-SANDBOX，core.py:1299）；`requires_approval` 在 PolicyEngine 短路返回 approval 决策（L319-L320）。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `CapabilityRegistry/PolicyEngine/CapabilitySpec/PolicyRequest` | core.py:47-54（import）、329、1254、1272 | 主循环能力化路径 |
-| `CapabilityRegistry`:370 | runtime.py:13、721-729 | AgentRuntime 持有注册表与 RuntimeContext |
-| `ToolProviderAdapter`:578 | tools.py:AsyncToolDispatcher:281 | 适配旧工具分发 |
-| `MemoryProviderAdapter`:603 | 记忆后端 retrieve/store | 记忆能力化 |
-| `BaseCapabilityProvider`:175 | knowledge.py:14-19（import） | 检索 Provider 的基类 |
-| `PermissionSet`:213 | RuntimeContext.permissions:83 | 运行期权限快照 |
-| 拒绝 PermissionError:524 | core.py:1286-1289 → errors.py `LA-POLICY`（errors.py:111） | 拒绝信息格式化 |
+| `CapabilityRegistry/PolicyEngine/CapabilitySpec/PolicyRequest` | core.py:47-56（import）、331、1280、1300 | 主循环能力化路径 |
+| `CapabilityRegistry`:382 | runtime.py:15、914-916 | AgentRuntime 持有注册表与 RuntimeContext |
+| `ToolProviderAdapter`:619 | tools.py:AsyncToolDispatcher:282 | 适配旧工具分发 |
+| `MemoryProviderAdapter`:644 | 记忆后端 retrieve/store | 记忆能力化 |
+| `BaseCapabilityProvider`:187 | knowledge.py:14-19（import） | 检索 Provider 的基类 |
+| `PermissionSet`:225 | RuntimeContext.permissions:94 | 运行期权限快照 |
+| 拒绝 PermissionError:554 | core.py:1313-1318 → errors.py `LA-POLICY`（errors.py:111） | 拒绝信息格式化 |
 
 ## 阅读陷阱
-1. 能力冲突解析是"同作用域内后注册者胜"（L419），且冲突只记录到 `conflicts()` 不报错。
+1. 能力冲突解析是"同作用域内后注册者胜"（L435），且冲突只记录到 `conflicts()` 不报错。
 2. `invoke` 拒绝抛的是**裸 PermissionError**，不带 LA- 码；LA-POLICY 文本由 core.py 后续格式化——捕获异常时要按 PermissionError 处理。
-3. `evaluate_sync` 在已有事件循环里会**起线程跑新 loop**（L636-L650），不是"当前 loop 内同步执行"。
-4. 16 个 `XxxProvider` Protocol 都是空标记（L111-L172），真正可复用的实现只有 `BaseCapabilityProvider` 和两个 Adapter。
+3. `evaluate_sync` 在已有事件循环里会**起线程跑新 loop**（L677-L691），不是"当前 loop 内同步执行"。
+4. 16 个 `XxxProvider` Protocol 都是空标记（L123-L184），真正可复用的实现只有 `BaseCapabilityProvider` 和两个 Adapter。
 
 ## 高频符号中文短语表
 | 符号 | 中文短语 |
@@ -660,12 +660,12 @@ v0.10 能力系统的核心：统一的能力声明（`CapabilitySpec`，带风�
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `BaseCapabilityProvider/CapabilitySpec/CapabilityRisk/ProviderHealth`（:14-19 import） | capabilities.py:175/30/23/63 | 能力体系基座 |
-| `SessionStore/_utc_now`（:20 import） | session.py:377 | SessionSearchProvider 的存储来源 |
+| `BaseCapabilityProvider/CapabilitySpec/CapabilityRisk/ProviderHealth`（:14-19 import） | capabilities.py:187/33/23/70 | 能力体系基座 |
+| `SessionStore/_utc_now`（:20 import） | session.py:425 | SessionSearchProvider 的存储来源 |
 | `SkillProviderAdapter`:341 | skills.py:SkillManager:34 | 技能能力化 |
 | `MCPProviderAdapter`:370 | mcp_client_manager.py:MCPClientManager:26 的 call_tool | MCP 工具能力化 |
-| `WorkflowProviderAdapter`:393 | flow.py:LightFlow:132 | 工作流能力化 |
-| 全模块 | `__init__.py:141-150` | 公共 API 导出 |
+| `WorkflowProviderAdapter`:393 | flow.py:LightFlow:140 | 工作流能力化 |
+| 全模块 | `__init__.py:169-178` | 公共 API 导出 |
 
 ## 阅读陷阱
 1. `search` 的 scope/owner/tenant 过滤发生在**超取 10 倍之后**（L234-L244）：若前 10×limit 条全被过滤，即使库里有更多匹配也返回不足 limit——不是 SQL 层精确分页。
@@ -701,25 +701,25 @@ v0.10 能力系统的核心：统一的能力声明（`CapabilitySpec`，带风�
 - `LiteLLMClient` (L33-L43)：模拟 `openai.OpenAI` 客户端外壳。
 
 ## 关键方法
-- `_LiteLLMCompletions.create` (L24) — 封装点三部曲：`api_key` 原样注入（L25-L26）；`base_url` 映射为 LiteLLM 的 `api_base`（L27-L28）；`drop_params=True` 默认开启（L29，静默丢弃 LiteLLM 不支持的参数）；最终 `self._litellm.completion(**params)`（L30）。调用方：core.py:726、2096、2463（主循环/工具轮/流式模型调用）、2776/2788/2813（ToT 客户端）、2868/2993（辅助生成）。
+- `_LiteLLMCompletions.create` (L24) — 封装点三部曲：`api_key` 原样注入（L25-L26）；`base_url` 映射为 LiteLLM 的 `api_base`（L27-L28）；`drop_params=True` 默认开启（L29，静默丢弃 LiteLLM 不支持的参数）；最终 `self._litellm.completion(**params)`（L30）。调用方：core.py:736、2187、2554（主循环/工具轮/流式模型调用）、2867/2879/2904（ToT 客户端）、2959/3084（辅助生成）。
 - `__init__` 们（L11-L22、L36-L43）— 懒加载 litellm，缺失时提示 `pip install LightAgent[litellm]`（L18-L21）；litellm_module 参数便于测试注入。
 
 ## 关键机制细节
-- core.py 的接入点：`_initialize_clients`（core.py:344）在 `provider == "litellm"` 时构造 `LiteLLMClient`（core.py:348-L356）；base_url 等于 OpenAI 默认值时不传（core.py:350-L351），tree_of_thought 另建 tot_client（core.py:353-L356）。
-- 调用形状：`client.chat.completions.create(**self.chat_params)`（core.py:726 等 8 处），与 openai SDK 完全同形。
+- core.py 的接入点：`_initialize_clients`（core.py:347）在 `provider == "litellm"` 时构造 `LiteLLMClient`（core.py:351-359）；base_url 等于 OpenAI 默认值时不传（core.py:353-354），tree_of_thought 另建 tot_client（core.py:356-359）。
+- 调用形状：`client.chat.completions.create(**self.chat_params)`（core.py:736 等 8 处），与 openai SDK 完全同形。
 - 返回值为 litellm 的 ModelResponse，属性访问与 openai ChatCompletion 兼容，但类型不同。
 
 ## 与其他模块的关系
 | 本模块符号:行号 | 对方模块.符号 | 说明 |
 |---|---|---|
-| `LiteLLMClient`:33 | core.py:348-356 | provider=="litellm" 时替换 self.client |
-| `_LiteLLMCompletions.create`:24 | core.py:726/2096/2463/2776/2813/2868/2993 | 所有 chat.completions.create 调用点 |
+| `LiteLLMClient`:33 | core.py:351-359 | provider=="litellm" 时替换 self.client |
+| `_LiteLLMCompletions.create`:24 | core.py:736/2187/2554/2867/2904/2959/3084 | 所有 chat.completions.create 调用点 |
 | `__init__.py:33`（import 处） | `__init__.py` | 注意：LiteLLMClient **不在** `__all__`（用户直接 from LightAgent.litellm_client import） |
 
 ## 阅读陷阱
 1. 只封装 `chat.completions.create` 一个入口——无 embeddings、无 Responses API、无流式专门处理（流式仍走同一 create，靠 params.stream）。
 2. `drop_params=True` 会**静默丢弃**目标厂商不支持的参数（L29），排查参数不生效时先想到它。
-3. `LiteLLMClient` 未列入包 `__all__`（`__init__.py:163-309` 无此名），但它仍从 `__init__.py:33` 之外的位置（core.py:348 懒导入）可用。
+3. `LiteLLMClient` 未列入包 `__all__`（`__init__.py:191-361` 无此名），但它仍从 `__init__.py:33` 之外的位置（core.py:350 懒导入）可用。
 4. `api_key/base_url` 为 None 时不注入参数，交由 litellm 读环境变量等默认行为。
 
 ## 高频符号中文短语表

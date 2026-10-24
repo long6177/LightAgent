@@ -16,13 +16,13 @@
   ],
   "mainPath": ["entry", "intent", "hook", "target", "reply"],
   "nodes": [
-    { "id": "register", "lane": "swarm", "col": 0, "type": "backend", "label": "注册几个 Agent", "sublabel": "register_agent 重名不覆盖", "tag": "core.py:3145", "width": 150 },
-    { "id": "entry", "lane": "swarm", "col": 1, "type": "backend", "label": "从主 Agent 进入", "sublabel": "swarm.run(agent, query)", "tag": "core.py:3160", "width": 150 },
-    { "id": "intent", "lane": "primary", "col": 2, "type": "backend", "label": "先判断该谁来做", "sublabel": "_detect_intent 问一次模型", "tag": "core.py:2807", "width": 150 },
-    { "id": "hook", "lane": "primary", "col": 3, "type": "security", "label": "转交前过钩子", "sublabel": "on_handoff 可拦截改写", "tag": "core.py:2508", "width": 150 },
-    { "id": "invalid", "lane": "swarm", "col": 3, "type": "external", "label": "目标不存在则报错", "sublabel": "_finish_run(stage=handoff)", "tag": "core.py:2500", "width": 150, "yOffset": 0 },
-    { "id": "target", "lane": "others", "col": 4, "type": "backend", "label": "目标 Agent 接手", "sublabel": "target_agent.run(context)", "tag": "core.py:2611", "width": 150 },
-    { "id": "reply", "lane": "primary", "col": 5, "type": "backend", "label": "结果交回调用方", "sublabel": "同一个 run() 的返回值", "tag": "core.py:2667", "width": 150 }
+    { "id": "register", "lane": "swarm", "col": 0, "type": "backend", "label": "注册几个 Agent", "sublabel": "register_agent 重名不覆盖", "tag": "core.py:3268", "width": 150 },
+    { "id": "entry", "lane": "swarm", "col": 1, "type": "backend", "label": "从主 Agent 进入", "sublabel": "swarm.run(agent, query)", "tag": "core.py:3283", "width": 150 },
+    { "id": "intent", "lane": "primary", "col": 2, "type": "backend", "label": "先判断该谁来做", "sublabel": "_detect_intent 问一次模型", "tag": "core.py:2930", "width": 150 },
+    { "id": "hook", "lane": "primary", "col": 3, "type": "security", "label": "转交前过钩子", "sublabel": "on_handoff 可拦截改写", "tag": "core.py:2631", "width": 150 },
+    { "id": "invalid", "lane": "swarm", "col": 3, "type": "external", "label": "目标不存在则报错", "sublabel": "_finish_run(stage=handoff)", "tag": "core.py:2623", "width": 150, "yOffset": 0 },
+    { "id": "target", "lane": "others", "col": 4, "type": "backend", "label": "目标 Agent 接手", "sublabel": "target_agent.run(context)", "tag": "core.py:2734", "width": 150 },
+    { "id": "reply", "lane": "primary", "col": 5, "type": "backend", "label": "结果交回调用方", "sublabel": "同一个 run() 的返回值", "tag": "core.py:2790", "width": 150 }
   ],
   "edges": [
     { "from": "register", "to": "entry", "role": "main", "label": "登记进名字表" },
@@ -37,7 +37,7 @@
     {
       "dot": "cyan", "title": "什么是 LightSwarm",
       "items": [
-        "极简调度台：一个 agents 字典 + 按名转交（core.py:3141-3171）",
+        "极简调度台：一个 agents 字典 + 按名转交（core.py:3264-3294）",
         "没有复杂协议，转交就是换个 Agent 继续跑 run()",
         "对调用方透明：返回值结构与单 Agent 一致"
       ]
@@ -45,7 +45,7 @@
     {
       "dot": "emerald", "title": "怎么决定转交",
       "items": [
-        "_detect_intent 额外问一次模型（core.py:2836），这次调用不扣预算不走钩子",
+        "_detect_intent 额外问一次模型（core.py:2959），这次调用不扣预算不走钩子",
         "解析只是 \"transfer to {name}\" 子串匹配（:2853）",
         "转交判定入口在 _handle_task_transfer（:2466）"
       ]

@@ -24,7 +24,7 @@
       "col": 0,
       "label": "进入 run()",
       "sublabel": "生成 traceid",
-      "tag": "core.py:489"
+      "tag": "core.py:493"
     },
     {
       "id": "prepare",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "准备与检查",
       "sublabel": "开会话·钩子·护栏",
-      "tag": "core.py:854/603"
+      "tag": "core.py:863/607"
     },
     {
       "id": "assemble",
@@ -42,7 +42,7 @@
       "col": 2,
       "label": "组装上下文",
       "sublabel": "记忆注入 + ToT",
-      "tag": "core.py:1481/2790"
+      "tag": "core.py:1516/2913"
     },
     {
       "id": "loop",
@@ -51,7 +51,7 @@
       "col": 3,
       "label": "模型与工具循环",
       "sublabel": "create ↔ dispatch",
-      "tag": "core.py:742/2045"
+      "tag": "core.py:749/2146"
     },
     {
       "id": "finish",
@@ -60,7 +60,7 @@
       "col": 4,
       "label": "正常收尾",
       "sublabel": "_finish_run",
-      "tag": "core.py:1011"
+      "tag": "core.py:1032"
     },
     {
       "id": "halted",
@@ -69,7 +69,7 @@
       "col": 1,
       "label": "中止",
       "sublabel": "拦截·预算·超限",
-      "tag": "core.py:617/1010"
+      "tag": "core.py:621/1031"
     },
     {
       "id": "modelfail",

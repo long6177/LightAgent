@@ -5062,7 +5062,7 @@
           <rect x="182.075" y="140" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="150" class="t-backend" font-size="9" text-anchor="middle">run(query, stream=True)</text>
         </g>
-        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:744｜返回同步生成器</text>
+        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:752｜返回同步生成器</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="create(stream=True)" data-edge-key="1">
@@ -5071,7 +5071,7 @@
           <rect x="396.225" y="184" width="110.8" height="16" rx="3" class="c-mask"/>
           <text x="451.625" y="194" class="t-backend" font-size="9" text-anchor="middle">create(stream=True)</text>
         </g>
-        <text data-detail="fine" x="368.75" y="222" class="t-dim" font-size="7">core.py:729｜首轮流式请求</text>
+        <text data-detail="fine" x="368.75" y="222" class="t-dim" font-size="7">core.py:736｜首轮流式请求</text>
         </g>
 
         <g data-edge-from="llm" data-edge-to="core" data-edge-label="chunk 增量（reasoning / content）" data-edge-key="2">
@@ -5096,7 +5096,7 @@
           <rect x="466.9" y="300" width="173.20000000000002" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="310" class="t-backend" font-size="9" text-anchor="middle">run_async_safely(dispatch(...))</text>
         </g>
-        <text data-detail="fine" x="368.75" y="338" class="t-dim" font-size="7">core.py:2260｜tool_calls 拼装后</text>
+        <text data-detail="fine" x="368.75" y="338" class="t-dim" font-size="7">core.py:2376｜tool_calls 拼装后</text>
         </g>
 
         <g data-edge-from="disp" data-edge-to="tool" data-edge-label="tool_call(**params)" data-edge-key="5">
@@ -5113,7 +5113,7 @@
           <rect x="495.5" y="372" width="116" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="382" class="t-muted" font-size="9" text-anchor="middle">Generator / str 结果</text>
         </g>
-        <text data-detail="fine" x="368.75" y="410" class="t-dim" font-size="7">tools.py:282 透传 / 291 序列化</text>
+        <text data-detail="fine" x="368.75" y="410" class="t-dim" font-size="7">tools.py:329 透传 / 291 序列化</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="带工具结果再次 create(stream=True)" data-edge-key="7">
@@ -5130,7 +5130,7 @@
           <rect x="187.275" y="444" width="121.2" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="454" class="t-muted" font-size="9" text-anchor="middle">yield 最终回复 → 结束</text>
         </g>
-        <text data-detail="fine" x="165" y="482" class="t-dim" font-size="7">core.py:2375｜max_tool_iterations 上限</text>
+        <text data-detail="fine" x="165" y="482" class="t-dim" font-size="7">core.py:2491｜max_tool_iterations 上限</text>
         </g>
 
         <!-- Segment Labels -->
@@ -5408,8 +5408,8 @@
           <h3>流式协议：chunk 与 tool_calls</h3>
         </div>
         <ul>
-          <li>&bull; 模型按 delta 下发 reasoning / content，累积后产出最终消息（core.py:2149）</li>
-          <li>&bull; tool_calls 按 index 分片到达，在流结束后拼装（core.py:2210）</li>
+          <li>&bull; 模型按 delta 下发 reasoning / content，累积后产出最终消息（core.py:2264）</li>
+          <li>&bull; tool_calls 按 index 分片到达，在流结束后拼装（core.py:2326）</li>
           <li>&bull; 每个 chunk 都要经过调用方的 next() 才继续推进</li>
         </ul>
       </div>
@@ -5420,8 +5420,8 @@
           <h3>工具轮仍走同一座桥</h3>
         </div>
         <ul>
-          <li>&bull; 流式工具调用执行方式与非流式一致：run_async_safely(dispatch(...))（core.py:2260）</li>
-          <li>&bull; 同步生成器工具被透传并逐块消费，结果再 yield 给调用方（core.py:2272-2274）</li>
+          <li>&bull; 流式工具调用执行方式与非流式一致：run_async_safely(dispatch(...))（core.py:2376）</li>
+          <li>&bull; 同步生成器工具被透传并逐块消费，结果再 yield 给调用方（core.py:2388-2390）</li>
           <li>&bull; 工具轮结束后回到模型流，继续 yield 直到 finish_reason=stop</li>
         </ul>
       </div>
@@ -5432,9 +5432,9 @@
           <h3>流式专属约束</h3>
         </div>
         <ul>
-          <li>&bull; max_tool_iterations 只约束这条流式路径，默认沿用 max_retry（core.py:530、2375）</li>
+          <li>&bull; max_tool_iterations 只约束这条流式路径，默认沿用 max_retry（core.py:534、2491）</li>
           <li>&bull; yield 的对象既有 ChatCompletionChunk 也有 dict，消费方需自行判型</li>
-          <li>&bull; 想要结构化事件可用 result_format=&quot;event&quot;（core.py:746-747）</li>
+          <li>&bull; 想要结构化事件可用 result_format=&quot;event&quot;（core.py:754-755）</li>
         </ul>
       </div>
     </div>

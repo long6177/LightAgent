@@ -51,7 +51,7 @@
       "type": "backend",
       "label": "LLM 生成落盘",
       "sublabel": "tools/<name>.py",
-      "tag": "core.py:3064",
+      "tag": "core.py:3187",
       "stage": 0,
       "row": 2
     },
@@ -78,7 +78,7 @@
       "type": "database",
       "label": "模型说明书",
       "sublabel": "openai schemas",
-      "tag": "tools.py:59",
+      "tag": "tools.py:64",
       "stage": 2,
       "row": 2
     },
@@ -87,7 +87,7 @@
       "type": "backend",
       "label": "随请求下发",
       "sublabel": "chat_params['tools']",
-      "tag": "core.py:708",
+      "tag": "core.py:713",
       "stage": 3,
       "row": 1
     },
@@ -96,7 +96,7 @@
       "type": "security",
       "label": "按需剪枝",
       "sublabel": "filter_tools 反思过滤",
-      "tag": "tools.py:180",
+      "tag": "tools.py:199",
       "stage": 4,
       "row": 0
     },
@@ -105,7 +105,7 @@
       "type": "cloud",
       "label": "模型看到子集",
       "sublabel": "仅 run_thought 场景",
-      "tag": "core.py:2875",
+      "tag": "core.py:2998",
       "stage": 4,
       "row": 2
     }
@@ -189,7 +189,7 @@
       "items": [
         "MCP 工具绕过 register_tool 直写三视图（mcp_client_manager.py:127-150）",
         "inputSchema 只取顶层 type/description，嵌套结构与 enum 会失真（:121）",
-        "ToT 的 runtime_tools 过滤是空实现，运行时工具原样返回（core.py:2868）"
+        "ToT 的 runtime_tools 过滤是空实现，运行时工具原样返回（core.py:2991）"
       ]
     }
   ]

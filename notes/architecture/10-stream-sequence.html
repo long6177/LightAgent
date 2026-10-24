@@ -5064,7 +5064,7 @@
           <rect x="50.19999999999999" y="155" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
           <text x="116" y="165" class="t-backend" font-size="9" text-anchor="middle">run(query, stream=True)</text>
         </g>
-        <text data-detail="fine" x="81" y="193" class="t-dim" font-size="7">core.py:489</text>
+        <text data-detail="fine" x="81" y="193" class="t-dim" font-size="7">core.py:493</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="create(stream=True)" data-edge-key="1">
@@ -5073,7 +5073,7 @@
           <rect x="168.6" y="195" width="110.8" height="16" rx="3" class="c-mask"/>
           <text x="224" y="205" class="t-backend" font-size="9" text-anchor="middle">create(stream=True)</text>
         </g>
-        <text data-detail="fine" x="189" y="233" class="t-dim" font-size="7">core.py:742</text>
+        <text data-detail="fine" x="189" y="233" class="t-dim" font-size="7">core.py:749</text>
         </g>
 
         <g data-edge-from="llm" data-edge-to="core" data-edge-label="逐块下发 delta" data-edge-key="2">
@@ -5082,7 +5082,7 @@
           <rect x="181.6" y="235" width="84.8" height="16" rx="3" class="c-mask"/>
           <text x="224" y="245" class="t-muted" font-size="9" text-anchor="middle">逐块下发 delta</text>
         </g>
-        <text data-detail="fine" x="189" y="273" class="t-dim" font-size="7">core.py:2186</text>
+        <text data-detail="fine" x="189" y="273" class="t-dim" font-size="7">core.py:2301</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="caller" data-edge-label="yield 文本块" data-edge-key="3">
@@ -5100,7 +5100,7 @@
           <rect x="168.6" y="320" width="110.8" height="16" rx="3" class="c-mask"/>
           <text x="224" y="330" class="t-muted" font-size="9" text-anchor="middle">tool_calls 增量分片</text>
         </g>
-        <text data-detail="fine" x="189" y="358" class="t-dim" font-size="7">按 index 拼接 core.py:2210</text>
+        <text data-detail="fine" x="189" y="358" class="t-dim" font-size="7">按 index 拼接 core.py:2326</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="caller" data-edge-label="yield 工具调用信息" data-edge-key="5">
@@ -5109,7 +5109,7 @@
           <rect x="63.199999999999996" y="360" width="105.60000000000001" height="16" rx="3" class="c-mask"/>
           <text x="116" y="370" class="t-muted" font-size="9" text-anchor="middle">yield 工具调用信息</text>
         </g>
-        <text data-detail="fine" x="81" y="398" class="t-dim" font-size="7">core.py:2300</text>
+        <text data-detail="fine" x="81" y="398" class="t-dim" font-size="7">core.py:2416</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="tool" data-edge-label="dispatch(name, args)" data-edge-key="6">
@@ -5118,7 +5118,7 @@
           <rect x="220" y="400" width="116" height="16" rx="3" class="c-mask"/>
           <text x="278" y="410" class="t-backend" font-size="9" text-anchor="middle">dispatch(name, args)</text>
         </g>
-        <text data-detail="fine" x="189" y="438" class="t-dim" font-size="7">core.py:2330</text>
+        <text data-detail="fine" x="189" y="438" class="t-dim" font-size="7">core.py:2446</text>
         </g>
 
         <g data-edge-from="tool" data-edge-to="core" data-edge-label="执行结果 / 流式输出" data-edge-key="7">
@@ -5127,7 +5127,7 @@
           <rect x="222.6" y="440" width="110.8" height="16" rx="3" class="c-mask"/>
           <text x="278" y="450" class="t-muted" font-size="9" text-anchor="middle">执行结果 / 流式输出</text>
         </g>
-        <text data-detail="fine" x="189" y="478" class="t-dim" font-size="7">tools.py:255</text>
+        <text data-detail="fine" x="189" y="478" class="t-dim" font-size="7">tools.py:295</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="caller" data-edge-label="yield 工具输出" data-edge-key="8">
@@ -5136,7 +5136,7 @@
           <rect x="73.6" y="480" width="84.8" height="16" rx="3" class="c-mask"/>
           <text x="116" y="490" class="t-muted" font-size="9" text-anchor="middle">yield 工具输出</text>
         </g>
-        <text data-detail="fine" x="81" y="518" class="t-dim" font-size="7">core.py:2368</text>
+        <text data-detail="fine" x="81" y="518" class="t-dim" font-size="7">core.py:2484</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="session" data-edge-label="turn/model/tool 事件" data-edge-key="9">
@@ -5145,7 +5145,7 @@
           <rect x="274" y="515" width="116" height="16" rx="3" class="c-mask"/>
           <text x="332" y="525" class="t-messagebus" font-size="9" text-anchor="middle">turn/model/tool 事件</text>
         </g>
-        <text data-detail="fine" x="189" y="553" class="t-dim" font-size="7">core.py:926 双写</text>
+        <text data-detail="fine" x="189" y="553" class="t-dim" font-size="7">core.py:947 双写</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="带工具结果再次请求" data-edge-key="10">
@@ -5154,7 +5154,7 @@
           <rect x="171.2" y="560" width="105.60000000000001" height="16" rx="3" class="c-mask"/>
           <text x="224" y="570" class="t-backend" font-size="9" text-anchor="middle">带工具结果再次请求</text>
         </g>
-        <text data-detail="fine" x="189" y="598" class="t-dim" font-size="7">core.py:2508</text>
+        <text data-detail="fine" x="189" y="598" class="t-dim" font-size="7">core.py:2631</text>
         </g>
 
         <g data-edge-from="llm" data-edge-to="core" data-edge-label="逐块下发至 finish_reason=stop" data-edge-key="11">
@@ -5163,7 +5163,7 @@
           <rect x="142.6" y="600" width="162.8" height="16" rx="3" class="c-mask"/>
           <text x="224" y="610" class="t-muted" font-size="9" text-anchor="middle">逐块下发至 finish_reason=stop</text>
         </g>
-        <text data-detail="fine" x="189" y="638" class="t-dim" font-size="7">core.py:2248</text>
+        <text data-detail="fine" x="189" y="638" class="t-dim" font-size="7">core.py:2364</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="caller" data-edge-label="yield 最终回复" data-edge-key="12">
@@ -5454,7 +5454,7 @@
           <h3>流式循环怎么转</h3>
         </div>
         <ul>
-          <li>&bull; while 循环内：模型流式输出 → 收集 tool_calls → 执行 → 回填 → 再次请求（core.py:2157-2532）</li>
+          <li>&bull; while 循环内：模型流式输出 → 收集 tool_calls → 执行 → 回填 → 再次请求（core.py:2272-2655）</li>
           <li>&bull; 流式工具轮的 assistant 消息是手工 dict，content 必须空串并带 reasoning_content（:2466，DeepSeek 兼容）</li>
           <li>&bull; max_tool_iterations 只约束这条流式路径（:2375）</li>
         </ul>

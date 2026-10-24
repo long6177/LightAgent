@@ -5062,46 +5062,46 @@
           <rect x="174.27499999999998" y="140" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="150" class="t-backend" font-size="9" text-anchor="middle">run(query, session_id=...)</text>
         </g>
-        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:478｜session_id 参数 ::495｜省略则本次运行只用内存 Session</text>
+        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:482｜session_id 参数 ::495｜省略则本次运行只用内存 Session</text>
         </g>
 
-        <g data-edge-from="core" data-edge-to="rt" data-edge-label="_begin_session_run → open_session(...)｜core.py:567、:863" data-edge-key="1">
+        <g data-edge-from="core" data-edge-to="rt" data-edge-label="_begin_session_run → open_session(...)｜core.py:571、:863" data-edge-key="1">
           <path data-composition-edge-from="core" data-composition-edge-to="rt" data-composition-points="356.75,202;546.5,202" d="M 356.75 202 L 546.5 202" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="297.42499999999995" y="182" width="308.40000000000003" height="16" rx="3" class="c-mask"/>
-          <text x="451.625" y="192" class="t-backend" font-size="9" text-anchor="middle">_begin_session_run → open_session(...)｜core.py:567、:863</text>
+          <text x="451.625" y="192" class="t-backend" font-size="9" text-anchor="middle">_begin_session_run → open_session(...)｜core.py:571、:863</text>
         </g>
         </g>
 
-        <g data-edge-from="rt" data-edge-to="store" data-edge-label="get(session_id)｜None 则 create + session.started（runtime.py:928-932）" data-edge-key="2">
+        <g data-edge-from="rt" data-edge-to="store" data-edge-label="get(session_id)｜None 则 create + session.started（runtime.py:932-958）" data-edge-key="2">
           <path data-composition-edge-from="rt" data-composition-edge-to="store" data-composition-points="560.5,232;954,232" d="M 560.5 232 L 954 232" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="566.65" y="212" width="381.2" height="16" rx="3" class="c-mask"/>
-          <text x="757.25" y="222" class="t-backend" font-size="9" text-anchor="middle">get(session_id)｜None 则 create + session.started（runtime.py:928-932）</text>
+          <text x="757.25" y="222" class="t-backend" font-size="9" text-anchor="middle">get(session_id)｜None 则 create + session.started（runtime.py:932-958）</text>
         </g>
         </g>
 
-        <g data-edge-from="rt" data-edge-to="session" data-edge-label="回放管理器状态：restore ×4 + mark_interrupted（runtime.py:947-951）" data-edge-key="3">
+        <g data-edge-from="rt" data-edge-to="session" data-edge-label="回放管理器状态：restore ×4 + mark_interrupted（runtime.py:973-977）" data-edge-key="3">
           <path data-composition-edge-from="rt" data-composition-edge-to="session" data-composition-points="560.5,262;750.25,262" d="M 560.5 262 L 750.25 262" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="475.17499999999995" y="242" width="360.40000000000003" height="16" rx="3" class="c-mask"/>
-          <text x="655.375" y="252" class="t-backend" font-size="9" text-anchor="middle">回放管理器状态：restore ×4 + mark_interrupted（runtime.py:947-951）</text>
+          <text x="655.375" y="252" class="t-backend" font-size="9" text-anchor="middle">回放管理器状态：restore ×4 + mark_interrupted（runtime.py:973-977）</text>
         </g>
         </g>
 
-        <g data-edge-from="rt" data-edge-to="core" data-edge-label="返回 deepcopy(Session)｜runtime.py:952" data-edge-key="4">
+        <g data-edge-from="rt" data-edge-to="core" data-edge-label="返回 deepcopy(Session)｜runtime.py:978" data-edge-key="4">
           <path data-composition-edge-from="rt" data-composition-edge-to="core" data-composition-points="546.5,292;356.75,292" d="M 546.5 292 L 356.75 292" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="346.825" y="272" width="209.6" height="16" rx="3" class="c-mask"/>
-          <text x="451.625" y="282" class="t-muted" font-size="9" text-anchor="middle">返回 deepcopy(Session)｜runtime.py:952</text>
+          <text x="451.625" y="282" class="t-muted" font-size="9" text-anchor="middle">返回 deepcopy(Session)｜runtime.py:978</text>
         </g>
         </g>
 
-        <g data-edge-from="core" data-edge-to="session" data-edge-label="投影历史 → 本轮 messages｜core.py:870、生效条件 :630、session.py:647" data-edge-key="5">
+        <g data-edge-from="core" data-edge-to="session" data-edge-label="投影历史 → 本轮 messages｜core.py:879、生效条件 :630、session.py:717" data-edge-key="5">
           <path data-composition-edge-from="core" data-composition-edge-to="session" data-composition-points="356.75,322;750.25,322" d="M 356.75 322 L 750.25 322" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="370.7" y="302" width="365.6" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="312" class="t-backend" font-size="9" text-anchor="middle">投影历史 → 本轮 messages｜core.py:870、生效条件 :630、session.py:647</text>
+          <text x="553.5" y="312" class="t-backend" font-size="9" text-anchor="middle">投影历史 → 本轮 messages｜core.py:879、生效条件 :630、session.py:717</text>
         </g>
         </g>
 
@@ -5111,7 +5111,7 @@
           <rect x="448.7" y="332" width="209.6" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="342" class="t-backend" font-size="9" text-anchor="middle">append turn.started / message.received</text>
         </g>
-        <text data-detail="fine" x="368.75" y="370" class="t-dim" font-size="7">core.py:878、:883｜append 只改内存并递增 sequence（session.py:216-239）</text>
+        <text data-detail="fine" x="368.75" y="370" class="t-dim" font-size="7">core.py:887、:883｜append 只改内存并递增 sequence（session.py:234-257）</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="store" data-edge-label="save(session)" data-edge-key="7">
@@ -5120,22 +5120,22 @@
           <rect x="615.575" y="374" width="79.60000000000001" height="16" rx="3" class="c-mask"/>
           <text x="655.375" y="384" class="t-messagebus" font-size="9" text-anchor="middle">save(session)</text>
         </g>
-        <text data-detail="fine" x="368.75" y="412" class="t-dim" font-size="7">core.py:905（_record_session_event 内）｜runtime._append 同构（runtime.py:1000-1009）</text>
+        <text data-detail="fine" x="368.75" y="412" class="t-dim" font-size="7">core.py:925（_record_session_event 内）｜runtime._append 同构（runtime.py:1026-1038）</text>
         </g>
 
-        <g data-edge-from="core" data-edge-to="session" data-edge-label="运行期 model.* / tool.*（trace_type → 事件名映射，core.py:915-926）" data-edge-key="8">
+        <g data-edge-from="core" data-edge-to="session" data-edge-label="运行期 model.* / tool.*（trace_type → 事件名映射，core.py:936-947）" data-edge-key="8">
           <path data-composition-edge-from="core" data-composition-edge-to="session" data-composition-points="356.75,436;750.25,436" d="M 356.75 436 L 750.25 436" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="373.29999999999995" y="416" width="360.40000000000003" height="16" rx="3" class="c-mask"/>
-          <text x="553.5" y="426" class="t-backend" font-size="9" text-anchor="middle">运行期 model.* / tool.*（trace_type → 事件名映射，core.py:915-926）</text>
+          <text x="553.5" y="426" class="t-backend" font-size="9" text-anchor="middle">运行期 model.* / tool.*（trace_type → 事件名映射，core.py:936-947）</text>
         </g>
         </g>
 
-        <g data-edge-from="app" data-edge-to="core" data-edge-label="checkpoint_session(label)｜core.py:797-802" data-edge-key="9">
+        <g data-edge-from="app" data-edge-to="core" data-edge-label="checkpoint_session(label)｜core.py:806-811" data-edge-key="9">
           <path data-composition-edge-from="app" data-composition-edge-to="core" data-composition-points="153,465;342.75,465" d="M 153 465 L 342.75 465" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <g data-detail="context">
           <rect x="132.675" y="445" width="230.4" height="16" rx="3" class="c-mask"/>
-          <text x="247.875" y="455" class="t-backend" font-size="9" text-anchor="middle">checkpoint_session(label)｜core.py:797-802</text>
+          <text x="247.875" y="455" class="t-backend" font-size="9" text-anchor="middle">checkpoint_session(label)｜core.py:806-811</text>
         </g>
         </g>
 
@@ -5145,7 +5145,7 @@
           <rect x="393.625" y="475" width="116" height="16" rx="3" class="c-mask"/>
           <text x="451.625" y="485" class="t-backend" font-size="9" text-anchor="middle">runtime.checkpoint()</text>
         </g>
-        <text data-detail="fine" x="368.75" y="513" class="t-dim" font-size="7">runtime.py:954-957｜session.checkpoint 记录当前 sequence 并再追加 session.checkpointed（session.py:262-270）</text>
+        <text data-detail="fine" x="368.75" y="513" class="t-dim" font-size="7">runtime.py:981-985｜session.checkpoint 记录当前 sequence 并再追加 session.checkpointed（session.py:286-294）</text>
         </g>
 
         <g data-edge-from="app" data-edge-to="core" data-edge-label="③ 新进程：同一 session_id 再 run()" data-edge-key="11">
@@ -5154,7 +5154,7 @@
           <rect x="153.475" y="517" width="188.8" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="527" class="t-backend" font-size="9" text-anchor="middle">③ 新进程：同一 session_id 再 run()</text>
         </g>
-        <text data-detail="fine" x="165" y="555" class="t-dim" font-size="7">投影历史成为本轮上下文 → 续聊（core.py:630、:687）</text>
+        <text data-detail="fine" x="165" y="555" class="t-dim" font-size="7">投影历史成为本轮上下文 → 续聊（core.py:634、:687）</text>
         </g>
 
         <!-- Segment Labels -->
@@ -5438,7 +5438,7 @@
           <h3>三种存储后端（session.py）</h3>
         </div>
         <ul>
-          <li>&bull; InMemory（:394）未传 session_store 时默认（runtime.py:908）；save 前 validate，拒绝更旧 sequence 覆盖（:414-421）</li>
+          <li>&bull; InMemory（:394）未传 session_store 时默认（runtime.py:912）；save 前 validate，拒绝更旧 sequence 覆盖（:414-421）</li>
           <li>&bull; JSONL（:435）每会话一文件；临时文件 → fsync → os.replace 原子替换（:480-498）</li>
           <li>&bull; SQLite（:521）WAL + 事务；save = UPSERT 后 DELETE 再整表重插，event_id 唯一（:537-626）</li>
         </ul>
@@ -5451,8 +5451,8 @@
         </div>
         <ul>
           <li>&bull; 整会话：Session.from_dict（:365）先 migrate（:366、:48）再逐条 SessionEvent.from_dict（:370、:148）</li>
-          <li>&bull; 管理器：open_session 按 inbox.* / goal.* / budget.* / job.* 命名空间回放（runtime.py:947-950）</li>
-          <li>&bull; 陷阱：Job 只恢复档案，PENDING/RUNNING 一律标 INTERRUPTED 并发 job.interrupted（runtime.py:684-688、:700）</li>
+          <li>&bull; 管理器：open_session 按 inbox.* / goal.* / budget.* / job.* 命名空间回放（runtime.py:973-976）</li>
+          <li>&bull; 陷阱：Job 只恢复档案，PENDING/RUNNING 一律标 INTERRUPTED 并发 job.interrupted（runtime.py:688-692、:700）</li>
         </ul>
       </div>
 
@@ -5462,9 +5462,9 @@
           <h3>续聊靠投影，不靠内存驻留</h3>
         </div>
         <ul>
-          <li>&bull; 投影规则：message.* → user|assistant、assistant.completed → assistant、tool.completed → role=tool（session.py:658-667）</li>
-          <li>&bull; 无匹配事件时回退最近一条 model.requested 的 messages 快照（session.py:668-672）</li>
-          <li>&bull; 两条写入口都是 append + save：core.py:893-905、runtime.py:1000-1009</li>
+          <li>&bull; 投影规则：message.* → user|assistant、assistant.completed → assistant、tool.completed → role=tool（session.py:729-738）</li>
+          <li>&bull; 无匹配事件时回退最近一条 model.requested 的 messages 快照（session.py:739-743）</li>
+          <li>&bull; 两条写入口都是 append + save：core.py:902-925、runtime.py:1026-1038</li>
         </ul>
       </div>
     </div>

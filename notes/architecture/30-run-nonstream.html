@@ -5062,7 +5062,7 @@
           <rect x="179.475" y="140" width="136.8" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="150" class="t-backend" font-size="9" text-anchor="middle">run(query, stream=False)</text>
         </g>
-        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:478｜同步：占满调用方线程</text>
+        <text data-detail="fine" x="165" y="178" class="t-dim" font-size="7">core.py:482｜同步：占满调用方线程</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="create(**chat_params)" data-edge-key="1">
@@ -5071,7 +5071,7 @@
           <rect x="391.025" y="186" width="121.2" height="16" rx="3" class="c-mask"/>
           <text x="451.625" y="196" class="t-backend" font-size="9" text-anchor="middle">create(**chat_params)</text>
         </g>
-        <text data-detail="fine" x="368.75" y="224" class="t-dim" font-size="7">core.py:729｜首轮同步 HTTP</text>
+        <text data-detail="fine" x="368.75" y="224" class="t-dim" font-size="7">core.py:736｜首轮同步 HTTP</text>
         </g>
 
         <g data-edge-from="llm" data-edge-to="core" data-edge-label="response（含 tool_calls）" data-edge-key="2">
@@ -5088,7 +5088,7 @@
           <rect x="448.7" y="262" width="209.6" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="272" class="t-backend" font-size="9" text-anchor="middle">run_async_safely(dispatch(name, args))</text>
         </g>
-        <text data-detail="fine" x="368.75" y="300" class="t-dim" font-size="7">core.py:1991｜同步→异步桥</text>
+        <text data-detail="fine" x="368.75" y="300" class="t-dim" font-size="7">core.py:2091｜同步→异步桥</text>
         </g>
 
         <g data-edge-from="disp" data-edge-to="tool" data-edge-label="tool_call(**params)" data-edge-key="4">
@@ -5105,7 +5105,7 @@
           <rect x="516.3" y="338" width="74.4" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="348" class="t-muted" font-size="9" text-anchor="middle">工具结果 str</text>
         </g>
-        <text data-detail="fine" x="368.75" y="376" class="t-dim" font-size="7">tools.py:273-291｜四路分支后序列化</text>
+        <text data-detail="fine" x="368.75" y="376" class="t-dim" font-size="7">tools.py:320-339｜四路分支后序列化</text>
         </g>
 
         <g data-edge-from="core" data-edge-to="llm" data-edge-label="再次 create()（带 assistant + tool 消息）" data-edge-key="6">
@@ -5130,7 +5130,7 @@
           <rect x="189.875" y="444" width="116" height="16" rx="3" class="c-mask"/>
           <text x="247.875" y="454" class="t-muted" font-size="9" text-anchor="middle">最终文本 / RunResult</text>
         </g>
-        <text data-detail="fine" x="165" y="482" class="t-dim" font-size="7">core.py:749｜循环 ≤ max_retry</text>
+        <text data-detail="fine" x="165" y="482" class="t-dim" font-size="7">core.py:757｜循环 ≤ max_retry</text>
         </g>
 
         <!-- Segment Labels -->
@@ -5408,9 +5408,9 @@
           <h3>同步 run() 从头等到尾</h3>
         </div>
         <ul>
-          <li>&bull; 首轮 create() 是同步 HTTP（core.py:729），调用方线程被占满</li>
-          <li>&bull; 工具结果要等 run_async_safely → future.result() 返回（core.py:109）</li>
-          <li>&bull; 模型不再返回 tool_calls 才把最终文本交给调用方（core.py:749）</li>
+          <li>&bull; 首轮 create() 是同步 HTTP（core.py:736），调用方线程被占满</li>
+          <li>&bull; 工具结果要等 run_async_safely → future.result() 返回（core.py:113）</li>
+          <li>&bull; 模型不再返回 tool_calls 才把最终文本交给调用方（core.py:757）</li>
         </ul>
       </div>
 
@@ -5420,9 +5420,9 @@
           <h3>dispatch 里藏着四态分支</h3>
         </div>
         <ul>
-          <li>&bull; dispatch 是 async def（tools.py:255），但同步工具被直接调用（tools.py:273-288）</li>
-          <li>&bull; 同步生成器透传 Generator，由同步循环消费（core.py:2004-2006）</li>
-          <li>&bull; 异步生成器在 dispatch 内收集并序列化为 str（tools.py:276-279）</li>
+          <li>&bull; dispatch 是 async def（tools.py:295），但同步工具被直接调用（tools.py:320-336）</li>
+          <li>&bull; 同步生成器透传 Generator，由同步循环消费（core.py:2105-2107）</li>
+          <li>&bull; 异步生成器在 dispatch 内收集并序列化为 str（tools.py:323-326）</li>
         </ul>
       </div>
 
@@ -5433,7 +5433,7 @@
         </div>
         <ul>
           <li>&bull; 全程不出现 asyncio.to_thread：同步调用者直接跑在主线程上</li>
-          <li>&bull; 工具轮循环上限沿用 max_retry（core.py:1914）</li>
+          <li>&bull; 工具轮循环上限沿用 max_retry（core.py:2009）</li>
           <li>&bull; result_format=&quot;object&quot; 时最后返回 RunResult，默认返回 str</li>
         </ul>
       </div>

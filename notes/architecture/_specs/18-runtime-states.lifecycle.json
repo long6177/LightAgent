@@ -24,7 +24,7 @@
       "col": 0,
       "label": "queued",
       "sublabel": "JobManager.start",
-      "tag": "runtime.py:484"
+      "tag": "runtime.py:488"
     },
     {
       "id": "running",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "running",
       "sublabel": "_execute 后台执行",
-      "tag": "runtime.py:525"
+      "tag": "runtime.py:529"
     },
     {
       "id": "succeeded",
@@ -42,7 +42,7 @@
       "col": 2,
       "label": "succeeded",
       "sublabel": "通知进收件箱",
-      "tag": "runtime.py:575"
+      "tag": "runtime.py:579"
     },
     {
       "id": "interrupted",
@@ -51,7 +51,7 @@
       "col": 0,
       "label": "interrupted",
       "sublabel": "进程中断待恢复",
-      "tag": "runtime.py:684"
+      "tag": "runtime.py:688"
     },
     {
       "id": "failed",
@@ -60,7 +60,7 @@
       "col": 1,
       "label": "failed / cancelled",
       "sublabel": "执行失败或手动取消",
-      "tag": "runtime.py:566/594"
+      "tag": "runtime.py:570/598"
     }
   ],
   "transitions": [

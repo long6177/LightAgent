@@ -62,7 +62,7 @@
       "type": "external",
       "label": "发起提问",
       "sublabel": "agent.run(query)",
-      "tag": "core.py:489"
+      "tag": "core.py:493"
     },
     {
       "id": "prepare",
@@ -71,7 +71,7 @@
       "type": "backend",
       "label": "准备与检查",
       "sublabel": "开会话·钩子·输入护栏",
-      "tag": "core.py:854/603"
+      "tag": "core.py:863/607"
     },
     {
       "id": "context",
@@ -80,7 +80,7 @@
       "type": "backend",
       "label": "组装上下文",
       "sublabel": "记忆注入 + 技能XML",
-      "tag": "core.py:1481/675"
+      "tag": "core.py:1516/680"
     },
     {
       "id": "budget",
@@ -89,7 +89,7 @@
       "type": "security",
       "label": "扣减预算",
       "sublabel": "model_calls 超限熔断",
-      "tag": "runtime.py:335"
+      "tag": "runtime.py:339"
     },
     {
       "id": "call",
@@ -98,7 +98,7 @@
       "type": "cloud",
       "label": "调用大模型",
       "sublabel": "chat.completions",
-      "tag": "core.py:742"
+      "tag": "core.py:749"
     },
     {
       "id": "branch",
@@ -107,7 +107,7 @@
       "type": "backend",
       "label": "要调用工具吗",
       "sublabel": "检查 tool_calls",
-      "tag": "core.py:1965"
+      "tag": "core.py:2064"
     },
     {
       "id": "run",
@@ -116,7 +116,7 @@
       "type": "backend",
       "label": "执行工具",
       "sublabel": "安全闸门 → dispatch",
-      "tag": "core.py:1298/2045"
+      "tag": "core.py:1319/2146"
     },
     {
       "id": "reply",
@@ -125,7 +125,7 @@
       "type": "backend",
       "label": "最终回复",
       "sublabel": "输出护栏 → 收尾",
-      "tag": "core.py:1337/1011"
+      "tag": "core.py:1358/1032"
     }
   ],
   "edges": [
@@ -181,10 +181,10 @@
       "dot": "cyan",
       "title": "三道安全门",
       "items": [
-        "进入时：before_run 钩子（core.py:596）+ 输入护栏 check_input（:603）",
+        "进入时：before_run 钩子（core.py:600）+ 输入护栏 check_input（:603）",
         "每次请求前：_prepare_model_request 统一闸门（:1084）扣预算",
         "输出前：输出护栏 check_output（:1337）——只在非流式路径生效",
-        "被拦截时 _finish_run(success=False) 直接返回 LA- 错误（core.py:617）"
+        "被拦截时 _finish_run(success=False) 直接返回 LA- 错误（core.py:621）"
       ]
     },
     {
@@ -193,14 +193,14 @@
       "items": [
         "开会话 _begin_session_run:854，收尾 _finish_run:997",
         "记忆注入 _add_memory_context:1439，ToT 思维树 run_thought:2713",
-        "工具闸门 _prepare_tool_call:1255，执行 dispatch（tools.py:255）"
+        "工具闸门 _prepare_tool_call:1255，执行 dispatch（tools.py:295）"
       ]
     },
     {
       "dot": "rose",
       "title": "容易误读",
       "items": [
-        "非流式的工具轮数由 max_retry 控制（core.py:1914），不是 max_tool_iterations",
+        "非流式的工具轮数由 max_retry 控制（core.py:2009），不是 max_tool_iterations",
         "ToT 启用时另有三连模型调用（:2744/2756/2781），走独立 tot_client",
         "流式路径不经过输出护栏，也不走 _format_run_result"
       ]

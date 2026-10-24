@@ -35,7 +35,7 @@
       "type": "external",
       "label": "带 user_id 提问",
       "sublabel": "_add_memory_context",
-      "tag": "core.py:1439",
+      "tag": "core.py:1464",
       "yOffset": -60
     },
     {
@@ -45,7 +45,7 @@
       "type": "backend",
       "label": "本轮 query 也存一份",
       "sublabel": "_store_memory_with_policy",
-      "tag": "core.py:1457",
+      "tag": "core.py:1490",
       "yOffset": 60
     },
     {
@@ -55,7 +55,7 @@
       "type": "backend",
       "label": "检索相关记忆",
       "sublabel": "钩子包夹 retrieve()",
-      "tag": "core.py:1517",
+      "tag": "core.py:1554",
       "yOffset": -60
     },
     {
@@ -65,7 +65,7 @@
       "type": "security",
       "label": "策略过滤",
       "sublabel": "allows_result 防注入",
-      "tag": "protocol.py:270",
+      "tag": "protocol.py:375",
       "yOffset": -60
     },
     {
@@ -75,7 +75,7 @@
       "type": "backend",
       "label": "拼进 query 前缀",
       "sublabel": "不改 system prompt",
-      "tag": "core.py:1486",
+      "tag": "core.py:1521",
       "yOffset": -60
     },
     {
@@ -85,7 +85,7 @@
       "type": "security",
       "label": "准入与去重",
       "sublabel": "allows_write + 指纹",
-      "tag": "protocol.py:409",
+      "tag": "protocol.py:613",
       "yOffset": 60
     },
     {
@@ -95,7 +95,7 @@
       "type": "backend",
       "label": "内部记忆先当候选",
       "sublabel": "MemoryCandidate 不可注入",
-      "tag": "protocol.py:85",
+      "tag": "protocol.py:109",
       "yOffset": 60
     },
     {
@@ -105,7 +105,7 @@
       "type": "security",
       "label": "评审通过才转正",
       "sublabel": "allows_promotion 默认拒绝",
-      "tag": "protocol.py:463",
+      "tag": "protocol.py:686",
       "yOffset": 60
     },
     {
@@ -115,7 +115,7 @@
       "type": "database",
       "label": "写入 mem0 / 向量库",
       "sublabel": "store(data, user_id)",
-      "tag": "core.py:1880"
+      "tag": "core.py:1956"
     }
   ],
   "edges": [
@@ -152,17 +152,17 @@
       "items": [
         "memory= 注入任意 MemoryProtocol（protocol.py:16，两个方法即可）",
         "内置 SharedMemoryPool：词面重叠打分、无持久化（shared_memory.py:40）",
-        "core 不直接 import mem0——一切经协议与策略（core.py:128/1880）",
-        "self_learning 开启时，还检索/回写 agent 命名空间（core.py:1465）"
+        "core 不直接 import mem0——一切经协议与策略（core.py:132/1956）",
+        "self_learning 开启时，还检索/回写 agent 命名空间（core.py:1499）"
       ]
     },
     {
       "dot": "rose",
       "title": "容易误读",
       "items": [
-        "记忆注入改写的是用户 query，不是 system prompt（core.py:1486）",
-        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（core.py:1457）",
-        "候选默认 injectable=False，未晋升的内部记忆检索时二次拦截（protocol.py:352）"
+        "记忆注入改写的是用户 query，不是 system prompt（core.py:1521）",
+        "每次 run 都把原 query 写回记忆，重复提问靠指纹去重（core.py:1490）",
+        "候选默认 injectable=False，未晋升的内部记忆检索时二次拦截（protocol.py:529）"
       ]
     }
   ]

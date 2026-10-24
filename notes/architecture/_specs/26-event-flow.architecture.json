@@ -22,9 +22,9 @@
       "tag": "core.py",
       "pos": [64, 110], "size": [190, 66],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 893, "label": "_record_session_event" },
-        { "path": "LightAgent/core.py", "line": 912, "label": "_record_trace" },
-        { "path": "LightAgent/core.py", "line": 943, "label": "_run_hooks" }
+        { "path": "LightAgent/core.py", "line": 902, "label": "_record_session_event" },
+        { "path": "LightAgent/core.py", "line": 932, "label": "_record_trace" },
+        { "path": "LightAgent/core.py", "line": 964, "label": "_run_hooks" }
       ]
     },
     {
@@ -44,8 +44,8 @@
       "tag": "runtime.py",
       "pos": [64, 410], "size": [180, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 1000, "label": "_append" },
-        { "path": "LightAgent/runtime.py", "line": 897, "label": "AgentRuntime" }
+        { "path": "LightAgent/runtime.py", "line": 1026, "label": "_append" },
+        { "path": "LightAgent/runtime.py", "line": 901, "label": "AgentRuntime" }
       ]
     },
     {
@@ -75,8 +75,8 @@
       "tag": "core.py",
       "pos": [1120, 110], "size": [168, 62],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 791, "label": "replay_session" },
-        { "path": "LightAgent/core.py", "line": 785, "label": "export_session" }
+        { "path": "LightAgent/core.py", "line": 800, "label": "replay_session" },
+        { "path": "LightAgent/core.py", "line": 794, "label": "export_session" }
       ]
     },
     {
@@ -85,8 +85,8 @@
       "tag": "session.py",
       "pos": [480, 330], "size": [190, 68],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 216, "label": "append" },
-        { "path": "LightAgent/session.py", "line": 83, "label": "_json_safe" }
+        { "path": "LightAgent/session.py", "line": 234, "label": "append" },
+        { "path": "LightAgent/session.py", "line": 86, "label": "_json_safe" }
       ]
     },
     {
@@ -95,9 +95,9 @@
       "tag": "session.py",
       "pos": [800, 330], "size": [186, 64],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore" },
-        { "path": "LightAgent/session.py", "line": 435, "label": "JsonlSessionStore" },
-        { "path": "LightAgent/session.py", "line": 521, "label": "SqliteSessionStore" }
+        { "path": "LightAgent/session.py", "line": 425, "label": "SessionStore" },
+        { "path": "LightAgent/session.py", "line": 497, "label": "JsonlSessionStore" },
+        { "path": "LightAgent/session.py", "line": 588, "label": "SqliteSessionStore" }
       ]
     },
     {
@@ -106,8 +106,8 @@
       "tag": "session.py",
       "pos": [1120, 330], "size": [176, 62],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 313, "label": "replay" },
-        { "path": "LightAgent/runtime.py", "line": 920, "label": "open_session" }
+        { "path": "LightAgent/session.py", "line": 357, "label": "replay" },
+        { "path": "LightAgent/runtime.py", "line": 924, "label": "open_session" }
       ]
     },
     {
@@ -116,8 +116,8 @@
       "tag": "session.py",
       "pos": [480, 470], "size": [190, 64],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 644, "label": "ContextProjector" },
-        { "path": "LightAgent/session.py", "line": 647, "label": "messages" }
+        { "path": "LightAgent/session.py", "line": 714, "label": "ContextProjector" },
+        { "path": "LightAgent/session.py", "line": 717, "label": "messages" }
       ]
     }
   ],
@@ -140,7 +140,7 @@
     {
       "dot": "cyan", "title": "双写枢纽",
       "items": [
-        "_record_trace（core.py:912）先把 trace_type 映射成 session 类型，再记 trace",
+        "_record_trace（core.py:932）先把 trace_type 映射成 session 类型，再记 trace",
         "映射示例：run_start→run.started、tool_call→tool.requested、hook_block→policy.blocked（:914-925）",
         "session 事件携带 turn_id / run_id / agent_id 与连续 sequence，可整条时间线回放"
       ]
@@ -148,7 +148,7 @@
     {
       "dot": "emerald", "title": "三类后端与消费路径",
       "items": [
-        "SessionStore 三实现：InMemory / Jsonl / Sqlite（session.py:394/435/521），可注入替换",
+        "SessionStore 三实现：InMemory / Jsonl / Sqlite（session.py:456/497/588），可注入替换",
         "回放：replay_session 重放事件流；open_session 用事件回放恢复管理器状态",
         "投影与压缩：ContextProjector 生成下一轮 messages；compact_session 追加 context.compacted"
       ]
@@ -156,8 +156,8 @@
     {
       "dot": "rose", "title": "容易误读",
       "items": [
-        "hook 本身不写事件：决策由 core._run_hooks 镜像成 hook_decision / review / hook_block（core.py:967-973）",
-        "session 落盘异常不打断主流程：只记 _session_store_error（core.py:907-910）",
+        "hook 本身不写事件：决策由 core._run_hooks 镜像成 hook_decision / review / hook_block（core.py:988-994）",
+        "session 落盘异常不打断主流程：只记 _session_store_error（core.py:927-930）",
         "trace 与 session 不是两份独立采集：同一调用点先写 session 再记 trace；导出器可自定义"
       ]
     }
