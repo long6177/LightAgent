@@ -21,8 +21,8 @@
       "sublabel": "同步脚本 · async 宿主",
       "pos": [64, 104], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 478, "label": "同步调用 run()" },
-        { "path": "LightAgent/core.py", "line": 751, "label": "异步调用 arun()" }
+        { "path": "LightAgent/core.py", "line": 482, "label": "同步调用 run()" },
+        { "path": "LightAgent/core.py", "line": 759, "label": "异步调用 arun()" }
       ]
     },
     {
@@ -30,8 +30,8 @@
       "sublabel": "异步入口（事件循环内）",
       "tag": "core.py", "pos": [420, 98], "size": [220, 100],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 751, "label": "arun 非流式" },
-        { "path": "LightAgent/core.py", "line": 763, "label": "astream 异步迭代器" }
+        { "path": "LightAgent/core.py", "line": 759, "label": "arun 非流式" },
+        { "path": "LightAgent/core.py", "line": 771, "label": "astream 异步迭代器" }
       ]
     },
     {
@@ -39,9 +39,9 @@
       "sublabel": "异步 → 同步桥",
       "tag": "core.py", "pos": [780, 104], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 760, "label": "to_thread(self.run)" },
-        { "path": "LightAgent/core.py", "line": 767, "label": "取同步生成器" },
-        { "path": "LightAgent/core.py", "line": 771, "label": "to_thread(next, gen)" }
+        { "path": "LightAgent/core.py", "line": 768, "label": "to_thread(self.run)" },
+        { "path": "LightAgent/core.py", "line": 775, "label": "取同步生成器" },
+        { "path": "LightAgent/core.py", "line": 780, "label": "to_thread(next, gen)" }
       ]
     },
     {
@@ -49,9 +49,9 @@
       "sublabel": "阻塞所在线程",
       "tag": "core.py", "pos": [1100, 98], "size": [220, 100],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 478, "label": "run 同步主入口" },
-        { "path": "LightAgent/core.py", "line": 744, "label": "交给 _core_run_logic" },
-        { "path": "LightAgent/core.py", "line": 749, "label": "返回 str / RunResult" }
+        { "path": "LightAgent/core.py", "line": 482, "label": "run 同步主入口" },
+        { "path": "LightAgent/core.py", "line": 752, "label": "交给 _core_run_logic" },
+        { "path": "LightAgent/core.py", "line": 757, "label": "_format_run_result 返回" }
       ]
     },
     {
@@ -59,8 +59,8 @@
       "sublabel": "chat.completions.create",
       "tag": "core.py", "pos": [1100, 292], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 729, "label": "首轮同步请求" },
-        { "path": "LightAgent/core.py", "line": 2186, "label": "流式逐块下发" }
+        { "path": "LightAgent/core.py", "line": 736, "label": "首轮同步请求" },
+        { "path": "LightAgent/core.py", "line": 2301, "label": "流式逐块下发" }
       ]
     },
     {
@@ -68,7 +68,7 @@
       "sublabel": "同步分流器",
       "tag": "core.py", "pos": [780, 292], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 1903, "label": "stream 分流" }
+        { "path": "LightAgent/core.py", "line": 1991, "label": "stream 分流" }
       ]
     },
     {
@@ -76,9 +76,9 @@
       "sublabel": "_run_non_stream / _run_stream",
       "tag": "core.py", "pos": [420, 292], "size": [220, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 1910, "label": "非流式循环" },
-        { "path": "LightAgent/core.py", "line": 2102, "label": "流式生成器" },
-        { "path": "LightAgent/core.py", "line": 1914, "label": "循环 ≤ max_retry" }
+        { "path": "LightAgent/core.py", "line": 1998, "label": "非流式循环" },
+        { "path": "LightAgent/core.py", "line": 2203, "label": "流式生成器" },
+        { "path": "LightAgent/core.py", "line": 2009, "label": "循环 ≤ max_retry" }
       ]
     },
     {
@@ -86,9 +86,9 @@
       "sublabel": "同步 → 异步桥",
       "tag": "core.py", "pos": [64, 450], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 80, "label": "桥接函数" },
-        { "path": "LightAgent/core.py", "line": 103, "label": "无 loop：asyncio.run" },
-        { "path": "LightAgent/core.py", "line": 107, "label": "有 loop：Executor" }
+        { "path": "LightAgent/core.py", "line": 81, "label": "桥接函数" },
+        { "path": "LightAgent/core.py", "line": 107, "label": "无 loop：asyncio.run" },
+        { "path": "LightAgent/core.py", "line": 111, "label": "有 loop：Executor" }
       ]
     },
     {
@@ -96,9 +96,9 @@
       "sublabel": "dispatch() 协程",
       "tag": "tools.py", "pos": [420, 450], "size": [220, 88],
       "sources": [
-        { "path": "LightAgent/tools.py", "line": 255, "label": "async def dispatch" },
-        { "path": "LightAgent/tools.py", "line": 273, "label": "四路分支" },
-        { "path": "LightAgent/tools.py", "line": 291, "label": "结果序列化" }
+        { "path": "LightAgent/tools.py", "line": 295, "label": "async def dispatch" },
+        { "path": "LightAgent/tools.py", "line": 320, "label": "四路分支" },
+        { "path": "LightAgent/tools.py", "line": 339, "label": "结果序列化" }
       ]
     },
     {
@@ -106,9 +106,9 @@
       "sublabel": "sync / async / 生成器",
       "tag": "tools.py", "pos": [780, 450], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/tools.py", "line": 273, "label": "同步 / 异步函数" },
-        { "path": "LightAgent/tools.py", "line": 276, "label": "异步生成器收集" },
-        { "path": "LightAgent/tools.py", "line": 280, "label": "同步生成器透传" }
+        { "path": "LightAgent/tools.py", "line": 320, "label": "同步 / 异步函数" },
+        { "path": "LightAgent/tools.py", "line": 323, "label": "异步生成器收集" },
+        { "path": "LightAgent/tools.py", "line": 327, "label": "同步生成器透传" }
       ]
     },
     {
@@ -116,7 +116,7 @@
       "sublabel": "事件旁路（双写）",
       "tag": "core.py", "pos": [1100, 450], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 912, "label": "_record_trace 事件" }
+        { "path": "LightAgent/core.py", "line": 932, "label": "_record_trace 事件" }
       ]
     }
   ],
@@ -142,8 +142,8 @@
       "dot": "cyan",
       "title": "两条桥，方向相反",
       "items": [
-        "异步 → 同步：asyncio.to_thread 把同步 run() 移出调用方事件循环（core.py:760、767）",
-        "同步 → 异步：run_async_safely 让同步核心等待异步 dispatch（core.py:80-109）",
+        "异步 → 同步：asyncio.to_thread 把同步 run() 移出调用方事件循环（core.py:768、775）",
+        "同步 → 异步：run_async_safely 让同步核心等待异步 dispatch（core.py:81-114）",
         "同步调用者直接跑 run()，两条桥都不参与"
       ]
     },
@@ -151,9 +151,9 @@
       "dot": "rose",
       "title": "同步是默认，异步只是外壳",
       "items": [
-        "_core_run_logic / _run_non_stream_logic / _run_stream_logic 全是同步实现（core.py:1903、1910、2102）",
-        "dispatch 声明为 async，但同步工具被直接调用（tools.py:273-288）",
-        "astream 用 to_thread(next, gen) 包装同步生成器（core.py:771）"
+        "_core_run_logic / _run_non_stream_logic / _run_stream_logic 全是同步实现（core.py:1991、1998、2203）",
+        "dispatch 声明为 async，但同步工具被直接调用（tools.py:320-336）",
+        "astream 用 to_thread(next, gen) 包装同步生成器（core.py:780）"
       ]
     },
     {
@@ -161,7 +161,7 @@
       "title": "阻塞发生在哪一层",
       "items": [
         "非流式 run() 占满它所在的线程；arun() 只是把这个线程换成工作线程",
-        "常见路径下 dispatch 的临时事件循环位于工作线程，被阻塞的是它（core.py:103、107-109）",
+        "常见路径下 dispatch 的临时事件循环位于工作线程，被阻塞的是它（core.py:107、111-109）",
         "取消与超时跨线程传播更复杂，是这套兼容架构的代价"
       ]
     }

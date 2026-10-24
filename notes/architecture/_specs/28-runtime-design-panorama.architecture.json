@@ -23,9 +23,9 @@
       "tag": "core.py",
       "pos": [64, 104], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 478, "label": "run 同步主循环入口" },
-        { "path": "LightAgent/core.py", "line": 751, "label": "arun 异步入口" },
-        { "path": "LightAgent/core.py", "line": 763, "label": "astream 异步迭代器" }
+        { "path": "LightAgent/core.py", "line": 482, "label": "run 同步主循环入口" },
+        { "path": "LightAgent/core.py", "line": 759, "label": "arun 异步入口" },
+        { "path": "LightAgent/core.py", "line": 771, "label": "astream 异步迭代器" }
       ]
     },
     {
@@ -34,9 +34,9 @@
       "tag": "runtime.py",
       "pos": [420, 98], "size": [220, 100],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 897, "label": "AgentRuntime" },
-        { "path": "LightAgent/runtime.py", "line": 920, "label": "open_session 回放恢复" },
-        { "path": "LightAgent/runtime.py", "line": 1000, "label": "_append 统一事件出口" }
+        { "path": "LightAgent/runtime.py", "line": 901, "label": "AgentRuntime" },
+        { "path": "LightAgent/runtime.py", "line": 924, "label": "open_session 回放恢复" },
+        { "path": "LightAgent/runtime.py", "line": 1026, "label": "_append 统一事件出口" }
       ]
     },
     {
@@ -45,9 +45,9 @@
       "tag": "session.py",
       "pos": [780, 104], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 195, "label": "Session 聚合根" },
-        { "path": "LightAgent/session.py", "line": 216, "label": "append 递增 sequence" },
-        { "path": "LightAgent/session.py", "line": 336, "label": "validate 连续性校验" }
+        { "path": "LightAgent/session.py", "line": 212, "label": "Session 聚合根" },
+        { "path": "LightAgent/session.py", "line": 234, "label": "append 递增 sequence" },
+        { "path": "LightAgent/session.py", "line": 381, "label": "validate 连续性校验" }
       ]
     },
     {
@@ -56,9 +56,9 @@
       "tag": "session.py",
       "pos": [1100, 104], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore 协议" },
-        { "path": "LightAgent/session.py", "line": 394, "label": "InMemory 默认后端" },
-        { "path": "LightAgent/session.py", "line": 521, "label": "Sqlite WAL 事务" }
+        { "path": "LightAgent/session.py", "line": 425, "label": "SessionStore 协议" },
+        { "path": "LightAgent/session.py", "line": 456, "label": "InMemory 默认后端" },
+        { "path": "LightAgent/session.py", "line": 588, "label": "Sqlite WAL 事务" }
       ]
     },
     {
@@ -67,9 +67,9 @@
       "tag": "capabilities.py",
       "pos": [64, 292], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/capabilities.py", "line": 375, "label": "CapabilityRegistry" },
-        { "path": "LightAgent/capabilities.py", "line": 460, "label": "resolve 作用域排序" },
-        { "path": "LightAgent/capabilities.py", "line": 507, "label": "invoke 路由" }
+        { "path": "LightAgent/capabilities.py", "line": 382, "label": "CapabilityRegistry" },
+        { "path": "LightAgent/capabilities.py", "line": 471, "label": "resolve 作用域排序" },
+        { "path": "LightAgent/capabilities.py", "line": 518, "label": "invoke 路由" }
       ]
     },
     {
@@ -78,9 +78,9 @@
       "tag": "runtime.py",
       "pos": [420, 292], "size": [220, 88],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 484, "label": "start 幂等键入档" },
-        { "path": "LightAgent/runtime.py", "line": 611, "label": "renew_lease 续租" },
-        { "path": "LightAgent/runtime.py", "line": 637, "label": "resume 递增 epoch" }
+        { "path": "LightAgent/runtime.py", "line": 488, "label": "start 幂等键入档" },
+        { "path": "LightAgent/runtime.py", "line": 615, "label": "renew_lease 续租" },
+        { "path": "LightAgent/runtime.py", "line": 641, "label": "resume 递增 epoch" }
       ]
     },
     {
@@ -89,9 +89,9 @@
       "tag": "session.py",
       "pos": [780, 292], "size": [204, 88],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 717, "label": "ContextBudget 估算" },
-        { "path": "LightAgent/session.py", "line": 741, "label": "ContextCompactor" },
-        { "path": "LightAgent/session.py", "line": 802, "label": "超长工具结果外溢" }
+        { "path": "LightAgent/session.py", "line": 800, "label": "ContextBudget 估算" },
+        { "path": "LightAgent/session.py", "line": 826, "label": "ContextCompactor" },
+        { "path": "LightAgent/session.py", "line": 904, "label": "超长工具结果外溢" }
       ]
     },
     {
@@ -122,9 +122,9 @@
       "tag": "capabilities.py",
       "pos": [420, 450], "size": [220, 88],
       "sources": [
-        { "path": "LightAgent/capabilities.py", "line": 298, "label": "PolicyEngine" },
-        { "path": "LightAgent/capabilities.py", "line": 343, "label": "evaluate_sync" },
-        { "path": "LightAgent/capabilities.py", "line": 275, "label": "PolicyDecision 三裁决" }
+        { "path": "LightAgent/capabilities.py", "line": 305, "label": "PolicyEngine" },
+        { "path": "LightAgent/capabilities.py", "line": 350, "label": "evaluate_sync" },
+        { "path": "LightAgent/capabilities.py", "line": 282, "label": "PolicyDecision 三裁决" }
       ]
     },
     {
@@ -134,7 +134,7 @@
       "pos": [780, 450], "size": [204, 88],
       "sources": [
         { "path": "LightAgent/skills.py", "line": 34, "label": "SkillManager" },
-        { "path": "LightAgent/skills.py", "line": 43, "label": "declared order 扫描" },
+        { "path": "LightAgent/skills.py", "line": 43, "label": "discover_skills 声明序扫描" },
         { "path": "LightAgent/skills.py", "line": 83, "label": "list_conflicts" }
       ]
     },
@@ -174,17 +174,17 @@
       "dot": "cyan", "title": "兼容边界与双轨异步",
       "items": [
         "agent.run('hello') / stream / Hooks / Guardrails / Memory / LightSwarm / LightFlow 保持兼容，runtime 完全 opt-in",
-        "arun 非流式用 asyncio.to_thread 隔离同步客户端；astream 以 sentinel 判停并在 finally 归还生成器（core.py:751-778）",
-        "原生异步 Provider 与后台 Job 留在调用方事件循环（core.py:752-756）",
+        "arun 非流式用 asyncio.to_thread 隔离同步客户端；astream 以 sentinel 判停并在 finally 归还生成器（core.py:759-787）",
+        "原生异步 Provider 与后台 Job 留在调用方事件循环（core.py:760-764）",
         "Session / Capability API 属 pre-1.0 契约：v1.0 冻结前只做 additive 变更（docs/runtime_v010.md）"
       ]
     },
     {
       "dot": "emerald", "title": "事件即持久化",
       "items": [
-        "六大管理器只改内存态，统一经 _append → Session.append + store.save（runtime.py:1000）",
+        "六大管理器只改内存态，统一经 _append → Session.append + store.save（runtime.py:1026）",
         "事件四大性质：append-only、sequence 连续校验、schema_version 版本、凭据字段写前脱敏（session.py:18-28、336）",
-        "open_session 按命名空间回放恢复；Job 只恢复档案，未完结立即标 INTERRUPTED（runtime.py:920、684）"
+        "open_session 按命名空间回放恢复；Job 只恢复档案，未完结立即标 INTERRUPTED（runtime.py:924、688）"
       ]
     },
     {
@@ -192,7 +192,7 @@
       "items": [
         "SecurityContext.narrow 只允许收紧资源 / 网络 / 沙箱 / 截止时间 / 风险，不能放宽（security.py:107）",
         "ApprovalToken 绑定 arguments_digest，reusable 默认 False；重复消费验证失败（security.py:208-310）",
-        "Job 幂等键去重返回原任务、租约过期不发布结果、恢复递增 fencing epoch（runtime.py:484、637）"
+        "Job 幂等键去重返回原任务、租约过期不发布结果、恢复递增 fencing epoch（runtime.py:488、641）"
       ]
     }
   ]

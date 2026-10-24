@@ -5063,7 +5063,7 @@
           <rect x="148.89999999999998" y="140" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
           <text x="214.7" y="150" class="t-backend" font-size="9" text-anchor="middle">await agent.arun(query)</text>
         </g>
-        <text data-detail="fine" x="149" y="178" class="t-dim" font-size="7">core.py:751｜非流式分支</text>
+        <text data-detail="fine" x="149" y="178" class="t-dim" font-size="7">core.py:759｜非流式分支</text>
         </g>
 
         <g data-edge-from="loop" data-edge-to="worker" data-edge-label="asyncio.to_thread(self.run, query)" data-edge-key="1">
@@ -5072,7 +5072,7 @@
           <rect x="289.70000000000005" y="184" width="188.8" height="16" rx="3" class="c-mask"/>
           <text x="384.1" y="194" class="t-backend" font-size="9" text-anchor="middle">asyncio.to_thread(self.run, query)</text>
         </g>
-        <text data-detail="fine" x="318.4" y="222" class="t-dim" font-size="7">core.py:760｜异步→同步桥</text>
+        <text data-detail="fine" x="318.4" y="222" class="t-dim" font-size="7">core.py:768｜异步→同步桥</text>
         </g>
 
         <g data-edge-from="worker" data-edge-to="core" data-edge-label="执行同步 run()" data-edge-key="2">
@@ -5105,7 +5105,7 @@
           <rect x="721" y="328" width="173.20000000000002" height="16" rx="3" class="c-mask"/>
           <text x="807.6" y="338" class="t-backend" font-size="9" text-anchor="middle">run_async_safely(dispatch(...))</text>
         </g>
-        <text data-detail="fine" x="657.2" y="366" class="t-dim" font-size="7">core.py:103｜无运行 loop → asyncio.run 直达</text>
+        <text data-detail="fine" x="657.2" y="366" class="t-dim" font-size="7">core.py:107｜无运行 loop → asyncio.run 直达</text>
         </g>
 
         <g data-edge-from="disp" data-edge-to="core" data-edge-label="工具结果 str" data-edge-key="6">
@@ -5419,7 +5419,7 @@
           <h3>桥的方向：异步 → 同步</h3>
         </div>
         <ul>
-          <li>&bull; arun() 非流式把整条同步 run() 交给线程池（core.py:760）</li>
+          <li>&bull; arun() 非流式把整条同步 run() 交给线程池（core.py:768）</li>
           <li>&bull; 调用方事件循环在等待期间仍可调度其他任务</li>
           <li>&bull; 协程本身仍要等线程返回，只是不占用事件循环线程</li>
         </ul>
@@ -5431,9 +5431,9 @@
           <h3>线程里没有第二次套娃</h3>
         </div>
         <ul>
-          <li>&bull; 工作线程内没有运行中的事件循环，run_async_safely 直接 asyncio.run(coro)（core.py:101-103）</li>
+          <li>&bull; 工作线程内没有运行中的事件循环，run_async_safely 直接 asyncio.run(coro)（core.py:105-107）</li>
           <li>&bull; 因此 arun() 路径不会为每个工具再开一层线程</li>
-          <li>&bull; 同步 run_async_safely 仍是阻塞等待：future.result()（core.py:107-109）</li>
+          <li>&bull; 同步 run_async_safely 仍是阻塞等待：future.result()（core.py:111-113）</li>
         </ul>
       </div>
 
@@ -5443,7 +5443,7 @@
           <h3>为什么这样设计</h3>
         </div>
         <ul>
-          <li>&bull; docstring 明确：同步模型与工具客户端隔离到工作线程，保持 v0.9 兼容（core.py:752-756）</li>
+          <li>&bull; docstring 明确：同步模型与工具客户端隔离到工作线程，保持 v0.9 兼容（core.py:760-764）</li>
           <li>&bull; 原生异步 Provider 与后台 Job 留在调用方事件循环，不走这条线程桥</li>
           <li>&bull; 代价：取消与超时跨线程传播更复杂</li>
         </ul>

@@ -23,55 +23,55 @@
     {
       "id": "writers", "type": "backend", "label": "写入调用点",
       "sublabel": "core + runtime 出口",
-      "tag": "core.py:893",
+      "tag": "core.py:902",
       "stage": 0, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "append", "type": "backend", "label": "Session.append",
       "sublabel": "sequence 单调递增",
-      "tag": "session.py:216",
+      "tag": "session.py:234",
       "stage": 1, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "fact", "type": "database", "label": "SessionEvent 事实",
       "sublabel": "timestamp · 溯源 id",
-      "tag": "session.py:104",
+      "tag": "session.py:107",
       "stage": 1, "row": 1, "width": 150, "height": 44
     },
     {
       "id": "checkpoint", "type": "backend", "label": "checkpoint 快照",
       "sublabel": "照下当前 sequence",
-      "tag": "session.py:262",
+      "tag": "session.py:286",
       "stage": 2, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "fork", "type": "backend", "label": "fork 分叉",
       "sublabel": "按序列边界复制",
-      "tag": "session.py:273",
+      "tag": "session.py:297",
       "stage": 2, "row": 1, "width": 150, "height": 44
     },
     {
       "id": "store", "type": "database", "label": "SessionStore",
       "sublabel": "三类后端 · 可注入",
-      "tag": "session.py:435",
+      "tag": "session.py:497",
       "stage": 2, "row": 2, "width": 150, "height": 44, "yOffset": -26
     },
     {
       "id": "replay", "type": "backend", "label": "replay 重放",
       "sublabel": "完成 / 未完成 / 失败",
-      "tag": "session.py:313",
+      "tag": "session.py:357",
       "stage": 3, "row": 0, "width": 150, "height": 44
     },
     {
       "id": "guard", "type": "security", "label": "读时把关",
       "sublabel": "validate · migrate",
-      "tag": "session.py:336",
+      "tag": "session.py:381",
       "stage": 3, "row": 1, "width": 150, "height": 44
     },
     {
       "id": "projector", "type": "backend", "label": "ContextProjector",
       "sublabel": "回放派生 messages",
-      "tag": "session.py:644",
+      "tag": "session.py:714",
       "stage": 4, "row": 0, "width": 150, "height": 44
     }
   ],
@@ -89,7 +89,7 @@
     {
       "dot": "cyan", "title": "一条事实的溯源坐标",
       "items": [
-        "每事件带 event_id、timestamp、单调 sequence（session.py:104-116）",
+        "每事件带 event_id、timestamp、单调 sequence（session.py:107-119）",
         "turn_id / step_id / run_id / agent_id / parent_event_id 定位时间位置与父因果（:112-116）",
         "增量回读用 page(after, limit) 游标翻页（:255）"
       ]
@@ -97,7 +97,7 @@
     {
       "dot": "emerald", "title": "快照与分叉",
       "items": [
-        "checkpoint 记录当前 sequence 快照，并追加 session.checkpointed 事件（session.py:262-271）",
+        "checkpoint 记录当前 sequence 快照，并追加 session.checkpointed 事件（session.py:286-295）",
         "fork(through_sequence) 复制 ≤ 边界事件，逐条挂 source_event_id / parent_event_id（:273-311）",
         "快照与分叉都不改写历史：日志 append-only，重放只读（:194）"
       ]
@@ -105,7 +105,7 @@
     {
       "dot": "rose", "title": "读时把关",
       "items": [
-        "validate：sequence 必须从 1 连续无缺口、event_id 唯一（session.py:336-352）",
+        "validate：sequence 必须从 1 连续无缺口、event_id 唯一（session.py:381-400）",
         "from_dict 先 session_migrations.migrate 升级旧 schema_version 再重建（:46-75、:364）",
         "schema_version 超上限直接报错，不做降级（:49-52、:344-348）"
       ]

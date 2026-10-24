@@ -66,7 +66,7 @@
       "type": "cloud",
       "label": "MCP 服务器提供",
       "sublabel": "setup_mcp 拉取",
-      "tag": "core.py:458",
+      "tag": "core.py:462",
       "width": 120
     },
     {
@@ -76,7 +76,7 @@
       "type": "backend",
       "label": "tools/ 目录热加载",
       "sublabel": "ToolLoader 动态 import",
-      "tag": "tools.py:240",
+      "tag": "tools.py:274",
       "width": 120
     },
     {
@@ -96,7 +96,7 @@
       "type": "backend",
       "label": "随请求发给模型",
       "sublabel": "chat_params['tools']",
-      "tag": "core.py:708",
+      "tag": "core.py:713",
       "width": 120
     },
     {
@@ -106,7 +106,7 @@
       "type": "cloud",
       "label": "模型点名要工具",
       "sublabel": "response.tool_calls",
-      "tag": "core.py:1965",
+      "tag": "core.py:2064",
       "width": 120
     },
     {
@@ -116,7 +116,7 @@
       "type": "security",
       "label": "检查通过再执行",
       "sublabel": "四道闸门 → dispatch",
-      "tag": "core.py:1298",
+      "tag": "core.py:1319",
       "width": 120
     }
   ],
@@ -162,27 +162,27 @@
       "title": "工具的三种来源",
       "items": [
         "自己写的函数：挂 tool_info 属性即可（tool_name/desc/params）",
-        "MCP：setup_mcp（core.py:458）→ register_mcp_tool（mcp_client_manager.py:88）",
-        "tools/ 目录：ToolLoader.load_tool（tools.py:240），LLM 还能自动生成（core.py:2977）"
+        "MCP：setup_mcp（core.py:462）→ register_mcp_tool（mcp_client_manager.py:88）",
+        "tools/ 目录：ToolLoader.load_tool（tools.py:274），LLM 还能自动生成（core.py:3100）"
       ]
     },
     {
       "dot": "rose",
-      "title": "执行前的四道闸门（core.py:1298）",
+      "title": "执行前的四道闸门（core.py:1319）",
       "items": [
-        "能力策略 PolicyEngine.evaluate_sync（capabilities.py:308，core.py:1279）",
-        "预算扣减 budget.consume(tool_calls)（core.py:1301）",
-        "工具护栏 check_tool（guardrails.py:41，core.py:1224）",
-        "before_tool_call 钩子（core.py:1308）——人工审批在此拦截"
+        "能力策略 PolicyEngine.evaluate_sync（capabilities.py:315，core.py:1300）",
+        "预算扣减 budget.consume(tool_calls)（core.py:1322）",
+        "工具护栏 check_tool（guardrails.py:41，core.py:1245）",
+        "before_tool_call 钩子（core.py:1329）——人工审批在此拦截"
       ]
     },
     {
       "dot": "emerald",
       "title": "结果怎么回去",
       "items": [
-        "dispatch 内 _serialize_result：dict/list→JSON，其余 str()（tools.py:345）",
-        "以 role:'tool' 消息 append 回 messages（core.py:1960/2423）",
-        "所有失败都返回 LA-TOOL 错误字符串，不抛异常（tools.py:342）"
+        "dispatch 内 _serialize_result：dict/list→JSON，其余 str()（tools.py:398）",
+        "以 role:'tool' 消息 append 回 messages（core.py:2059/2539）",
+        "所有失败都返回 LA-TOOL 错误字符串，不抛异常（tools.py:395）"
       ]
     }
   ]

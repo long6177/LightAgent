@@ -24,7 +24,7 @@
       "col": 0,
       "label": "pending",
       "sublabel": "内部记忆立候选",
-      "tag": "core.py:1682"
+      "tag": "core.py:1744"
     },
     {
       "id": "promoted",
@@ -33,7 +33,7 @@
       "col": 1,
       "label": "promoted",
       "sublabel": "写入正式记忆",
-      "tag": "core.py:1825"
+      "tag": "core.py:1893"
     },
     {
       "id": "blocked",
@@ -42,7 +42,7 @@
       "col": 0,
       "label": "blocked",
       "sublabel": "钩子拦截",
-      "tag": "core.py:1741"
+      "tag": "core.py:1805"
     },
     {
       "id": "rejected",
@@ -51,7 +51,7 @@
       "col": 1,
       "label": "rejected",
       "sublabel": "评审不通过",
-      "tag": "protocol.py:463"
+      "tag": "protocol.py:686"
     },
     {
       "id": "kept",
@@ -60,7 +60,7 @@
       "col": 2,
       "label": "keep",
       "sublabel": "留在候选池",
-      "tag": "protocol.py:212"
+      "tag": "protocol.py:270"
     }
   ],
   "transitions": [
@@ -149,7 +149,7 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "四种决定（protocol.py:159）",
+      "title": "四种决定（protocol.py:204）",
       "items": [
         "MemoryPromotionDecision：approve / reject / rewrite / keep",
         "approve 与 rewrite 都算晋升（promotes 属性 :179），rewrite 会替换内容后落库",
@@ -160,9 +160,9 @@
       "dot": "rose",
       "title": "为什么默认不可注入",
       "items": [
-        "候选 injectable 默认 False（protocol.py:102）",
+        "候选 injectable 默认 False（protocol.py:147）",
         "未晋升的内部记忆在检索侧还会被 _blocks_prompt_injection 二次拦截（:361）",
-        "手动晋升 API：promote_memory_candidate / list_memory_candidates（core.py:416/409）"
+        "手动晋升 API：promote_memory_candidate / list_memory_candidates（core.py:420/413）"
       ]
     }
   ]

@@ -68,7 +68,7 @@
       "type": "security",
       "label": "双重门控",
       "sublabel": "注册开关+SandboxProvider",
-      "tag": "core.py:270/1269",
+      "tag": "core.py:274/1290",
       "width": 156
     },
     {
@@ -129,7 +129,7 @@
       "type": "external",
       "label": "结果回模型",
       "sublabel": "字符串输出",
-      "tag": "tools.py:345",
+      "tag": "tools.py:398",
       "width": 156
     }
   ],

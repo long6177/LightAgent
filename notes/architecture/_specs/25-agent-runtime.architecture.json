@@ -22,9 +22,9 @@
       "tag": "core.py",
       "pos": [570, 96], "size": [186, 66],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 330, "label": "AgentRuntime 创建" },
-        { "path": "LightAgent/core.py", "line": 863, "label": "open_session 调用" },
-        { "path": "LightAgent/core.py", "line": 1097, "label": "budget.consume" }
+        { "path": "LightAgent/core.py", "line": 334, "label": "AgentRuntime 创建" },
+        { "path": "LightAgent/core.py", "line": 872, "label": "open_session 调用" },
+        { "path": "LightAgent/core.py", "line": 1118, "label": "budget.consume" }
       ]
     },
     {
@@ -33,9 +33,9 @@
       "tag": "runtime.py",
       "pos": [560, 256], "size": [206, 96],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 897, "label": "AgentRuntime" },
-        { "path": "LightAgent/runtime.py", "line": 920, "label": "open_session" },
-        { "path": "LightAgent/runtime.py", "line": 1000, "label": "_append" }
+        { "path": "LightAgent/runtime.py", "line": 901, "label": "AgentRuntime" },
+        { "path": "LightAgent/runtime.py", "line": 924, "label": "open_session" },
+        { "path": "LightAgent/runtime.py", "line": 1026, "label": "_append" }
       ]
     },
     {
@@ -45,8 +45,8 @@
       "pos": [64, 112], "size": [168, 64],
       "sources": [
         { "path": "LightAgent/runtime.py", "line": 66, "label": "AgentInbox" },
-        { "path": "LightAgent/runtime.py", "line": 105, "label": "claim_next" },
-        { "path": "LightAgent/runtime.py", "line": 142, "label": "restore" }
+        { "path": "LightAgent/runtime.py", "line": 109, "label": "claim_next" },
+        { "path": "LightAgent/runtime.py", "line": 146, "label": "restore" }
       ]
     },
     {
@@ -55,9 +55,9 @@
       "tag": "runtime.py",
       "pos": [64, 184], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 208, "label": "GoalManager" },
-        { "path": "LightAgent/runtime.py", "line": 261, "label": "restore" },
-        { "path": "LightAgent/runtime.py", "line": 272, "label": "_transition" }
+        { "path": "LightAgent/runtime.py", "line": 212, "label": "GoalManager" },
+        { "path": "LightAgent/runtime.py", "line": 265, "label": "restore" },
+        { "path": "LightAgent/runtime.py", "line": 276, "label": "_transition" }
       ]
     },
     {
@@ -66,9 +66,9 @@
       "tag": "runtime.py",
       "pos": [64, 256], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 325, "label": "BudgetManager" },
-        { "path": "LightAgent/runtime.py", "line": 335, "label": "consume" },
-        { "path": "LightAgent/runtime.py", "line": 372, "label": "restore" }
+        { "path": "LightAgent/runtime.py", "line": 329, "label": "BudgetManager" },
+        { "path": "LightAgent/runtime.py", "line": 339, "label": "consume" },
+        { "path": "LightAgent/runtime.py", "line": 376, "label": "restore" }
       ]
     },
     {
@@ -77,9 +77,9 @@
       "tag": "runtime.py",
       "pos": [64, 328], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 468, "label": "JobManager" },
-        { "path": "LightAgent/runtime.py", "line": 484, "label": "start" },
-        { "path": "LightAgent/runtime.py", "line": 684, "label": "mark_interrupted" }
+        { "path": "LightAgent/runtime.py", "line": 472, "label": "JobManager" },
+        { "path": "LightAgent/runtime.py", "line": 488, "label": "start" },
+        { "path": "LightAgent/runtime.py", "line": 688, "label": "mark_interrupted" }
       ]
     },
     {
@@ -88,8 +88,8 @@
       "tag": "runtime.py",
       "pos": [64, 400], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 389, "label": "ProgressTracker" },
-        { "path": "LightAgent/runtime.py", "line": 404, "label": "record" }
+        { "path": "LightAgent/runtime.py", "line": 393, "label": "ProgressTracker" },
+        { "path": "LightAgent/runtime.py", "line": 408, "label": "record" }
       ]
     },
     {
@@ -98,9 +98,9 @@
       "tag": "runtime.py",
       "pos": [64, 472], "size": [168, 64],
       "sources": [
-        { "path": "LightAgent/runtime.py", "line": 738, "label": "SubagentManager" },
-        { "path": "LightAgent/runtime.py", "line": 755, "label": "register" },
-        { "path": "LightAgent/runtime.py", "line": 791, "label": "run" }
+        { "path": "LightAgent/runtime.py", "line": 742, "label": "SubagentManager" },
+        { "path": "LightAgent/runtime.py", "line": 759, "label": "register" },
+        { "path": "LightAgent/runtime.py", "line": 795, "label": "run" }
       ]
     },
     {
@@ -109,8 +109,8 @@
       "tag": "session.py",
       "pos": [1140, 240], "size": [182, 68],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 195, "label": "Session" },
-        { "path": "LightAgent/session.py", "line": 216, "label": "append" }
+        { "path": "LightAgent/session.py", "line": 212, "label": "Session" },
+        { "path": "LightAgent/session.py", "line": 234, "label": "append" }
       ]
     },
     {
@@ -119,8 +119,8 @@
       "tag": "session.py",
       "pos": [1140, 410], "size": [182, 64],
       "sources": [
-        { "path": "LightAgent/session.py", "line": 377, "label": "SessionStore 协议" },
-        { "path": "LightAgent/session.py", "line": 394, "label": "InMemorySessionStore" }
+        { "path": "LightAgent/session.py", "line": 425, "label": "SessionStore 协议" },
+        { "path": "LightAgent/session.py", "line": 456, "label": "InMemorySessionStore" }
       ]
     }
   ],
@@ -143,7 +143,7 @@
     {
       "dot": "cyan", "title": "事件即持久化",
       "items": [
-        "创建 runtime 并暴露 runtime.registry（core.py:330/335）",
+        "创建 runtime 并暴露 runtime.registry（core.py:334/339）",
         "组件只持内存态；统一注入 _append 作 event_sink（:913-918）",
         "变更 → _append（:1000）→ Session.append + store.save，无独立存储"
       ]

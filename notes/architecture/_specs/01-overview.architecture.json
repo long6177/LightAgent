@@ -114,7 +114,7 @@
         },
         {
           "path": "LightAgent/tools.py",
-          "line": 255,
+          "line": 295,
           "label": "dispatch()"
         }
       ]
@@ -146,7 +146,7 @@
         },
         {
           "path": "LightAgent/runtime.py",
-          "line": 325,
+          "line": 329,
           "label": "BudgetManager"
         }
       ]
@@ -168,12 +168,12 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 478,
+          "line": 482,
           "label": "run()"
         },
         {
           "path": "LightAgent/core.py",
-          "line": 1255,
+          "line": 1276,
           "label": "_prepare_tool_call"
         }
       ]
@@ -195,12 +195,12 @@
       "sources": [
         {
           "path": "LightAgent/session.py",
-          "line": 195,
+          "line": 212,
           "label": "Session"
         },
         {
           "path": "LightAgent/core.py",
-          "line": 912,
+          "line": 932,
           "label": "_record_trace"
         },
         {
@@ -264,7 +264,7 @@
         },
         {
           "path": "LightAgent/protocol.py",
-          "line": 232,
+          "line": 290,
           "label": "MemoryPolicy"
         }
       ]
@@ -285,7 +285,7 @@
       "sources": [
         {
           "path": "LightAgent/core.py",
-          "line": 729,
+          "line": 736,
           "label": "create() 调用点"
         },
         {
@@ -447,7 +447,7 @@
         "三层边界：你的代码 → LightAgent 框架 → 外部服务，竖向中线是 run() 主线",
         "节点副标题写职责，tag 标来源文件；点击节点可看 file:行号 源码锚点",
         "连线文字是跨模块调用的方法名，可与源码对照",
-        "可插拔点：memory=(protocol.py:16)、session_store=(session.py:377)、provider=\"litellm\"(litellm_client.py:33)"
+        "可插拔点：memory=(protocol.py:16)、session_store=(session.py:425)、provider=\"litellm\"(litellm_client.py:33)"
       ]
     },
     {
@@ -456,7 +456,7 @@
       "items": [
         "_begin_session_run:854 开会话投影历史 → check_input:603 输入护栏",
         "_add_memory_context:1439 记忆注入 → create:729 调模型",
-        "有 tool_calls 时 _prepare_tool_call:1255 把关 → dispatch(tools.py:255) 执行",
+        "有 tool_calls 时 _prepare_tool_call:1255 把关 → dispatch(tools.py:295) 执行",
         "_finish_run:997 收尾：after_run 钩子 + run_end trace + turn 事件"
       ]
     },
@@ -464,10 +464,10 @@
       "dot": "rose",
       "title": "容易误读的四处",
       "items": [
-        "输出护栏只管非流式（core.py:2064），流式内容不经过它",
-        "max_tool_iterations 只约束流式（core.py:2375），非流式轮数看 max_retry（:1914）",
+        "输出护栏只管非流式（core.py:2164），流式内容不经过它",
+        "max_tool_iterations 只约束流式（core.py:2491），非流式轮数看 max_retry（:1914）",
         "MCP 注册完就断连，调用时现连（mcp_client_manager.py:162 / 238）",
-        "run() 会重置实例状态，同一实例并发调用不安全（core.py:546）"
+        "run() 会重置实例状态，同一实例并发调用不安全（core.py:550）"
       ]
     }
   ]

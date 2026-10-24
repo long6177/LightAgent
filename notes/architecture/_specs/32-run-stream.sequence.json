@@ -20,15 +20,15 @@
     { "from": 268, "to": 470, "label": "② 工具轮与收尾" }
   ],
   "messages": [
-    { "from": "caller", "to": "core", "y": 160, "label": "run(query, stream=True)", "note": "core.py:744｜返回同步生成器" },
-    { "from": "core", "to": "llm", "y": 204, "label": "create(stream=True)", "note": "core.py:729｜首轮流式请求" },
+    { "from": "caller", "to": "core", "y": 160, "label": "run(query, stream=True)", "note": "core.py:752｜返回同步生成器" },
+    { "from": "core", "to": "llm", "y": 204, "label": "create(stream=True)", "note": "core.py:736｜首轮流式请求" },
     { "from": "llm", "to": "core", "y": 248, "label": "chunk 增量（reasoning / content）", "variant": "return" },
     { "from": "core", "to": "caller", "y": 276, "label": "yield 文本块", "variant": "return" },
-    { "from": "core", "to": "disp", "y": 320, "label": "run_async_safely(dispatch(...))", "variant": "emphasis", "note": "core.py:2260｜tool_calls 拼装后" },
+    { "from": "core", "to": "disp", "y": 320, "label": "run_async_safely(dispatch(...))", "variant": "emphasis", "note": "core.py:2376｜tool_calls 拼装后" },
     { "from": "disp", "to": "tool", "y": 364, "label": "tool_call(**params)" },
-    { "from": "disp", "to": "core", "y": 392, "label": "Generator / str 结果", "variant": "return", "note": "tools.py:282 透传 / 291 序列化" },
+    { "from": "disp", "to": "core", "y": 392, "label": "Generator / str 结果", "variant": "return", "note": "tools.py:329 透传 / 291 序列化" },
     { "from": "core", "to": "llm", "y": 436, "label": "带工具结果再次 create(stream=True)" },
-    { "from": "core", "to": "caller", "y": 464, "label": "yield 最终回复 → 结束", "variant": "return", "note": "core.py:2375｜max_tool_iterations 上限" }
+    { "from": "core", "to": "caller", "y": 464, "label": "yield 最终回复 → 结束", "variant": "return", "note": "core.py:2491｜max_tool_iterations 上限" }
   ],
   "activations": [
     { "participant": "caller", "from": 156, "to": 474 },
@@ -43,8 +43,8 @@
       "dot": "cyan",
       "title": "流式协议：chunk 与 tool_calls",
       "items": [
-        "模型按 delta 下发 reasoning / content，累积后产出最终消息（core.py:2149）",
-        "tool_calls 按 index 分片到达，在流结束后拼装（core.py:2210）",
+        "模型按 delta 下发 reasoning / content，累积后产出最终消息（core.py:2264）",
+        "tool_calls 按 index 分片到达，在流结束后拼装（core.py:2326）",
         "每个 chunk 都要经过调用方的 next() 才继续推进"
       ]
     },
@@ -52,8 +52,8 @@
       "dot": "rose",
       "title": "工具轮仍走同一座桥",
       "items": [
-        "流式工具调用执行方式与非流式一致：run_async_safely(dispatch(...))（core.py:2260）",
-        "同步生成器工具被透传并逐块消费，结果再 yield 给调用方（core.py:2272-2274）",
+        "流式工具调用执行方式与非流式一致：run_async_safely(dispatch(...))（core.py:2376）",
+        "同步生成器工具被透传并逐块消费，结果再 yield 给调用方（core.py:2388-2390）",
         "工具轮结束后回到模型流，继续 yield 直到 finish_reason=stop"
       ]
     },
@@ -61,9 +61,9 @@
       "dot": "emerald",
       "title": "流式专属约束",
       "items": [
-        "max_tool_iterations 只约束这条流式路径，默认沿用 max_retry（core.py:530、2375）",
+        "max_tool_iterations 只约束这条流式路径，默认沿用 max_retry（core.py:534、2491）",
         "yield 的对象既有 ChatCompletionChunk 也有 dict，消费方需自行判型",
-        "想要结构化事件可用 result_format=\"event\"（core.py:746-747）"
+        "想要结构化事件可用 result_format=\"event\"（core.py:754-755）"
       ]
     }
   ]

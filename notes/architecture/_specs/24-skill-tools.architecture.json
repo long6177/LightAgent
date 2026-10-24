@@ -73,7 +73,7 @@
       "sublabel": "三视图登记 · 等同本地工具",
       "tag": "tools.py",
       "pos": [990, 110], "size": [172, 62],
-      "sources": [{ "path": "LightAgent/tools.py", "line": 36, "label": "register_tool" }]
+      "sources": [{ "path": "LightAgent/tools.py", "line": 37, "label": "register_tool" }]
     },
     {
       "id": "agent", "type": "backend", "label": "Agent 运行时",
@@ -81,8 +81,8 @@
       "tag": "core.py",
       "pos": [990, 330], "size": [172, 62],
       "sources": [
-        { "path": "LightAgent/core.py", "line": 286, "label": "auto_discover_skills" },
-        { "path": "LightAgent/core.py", "line": 293, "label": "create_skill_tools 调用" }
+        { "path": "LightAgent/core.py", "line": 290, "label": "auto_discover_skills" },
+        { "path": "LightAgent/core.py", "line": 297, "label": "create_skill_tools 调用" }
       ]
     }
   ],
@@ -104,7 +104,7 @@
       "dot": "cyan", "title": "渐进式披露",
       "items": [
         "构造期只扫 SKILL.md 元数据（skills.py:43），正文不读",
-        "get_skills_xml 把技能清单注入 system prompt（core.py:675）",
+        "get_skills_xml 把技能清单注入 system prompt（core.py:680）",
         "模型按需调 activate_skill 才载入全文指令（skills.py:142）"
       ]
     },

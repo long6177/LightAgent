@@ -5057,7 +5057,7 @@
           <rect x="199.96666666666664" y="140" width="178.4" height="16" rx="3" class="c-mask"/>
           <text x="289.16666666666663" y="150" class="t-backend" font-size="9" text-anchor="middle">async for item in astream(query)</text>
         </g>
-        <text data-detail="fine" x="176" y="178" class="t-dim" font-size="7">core.py:763｜返回异步生成器</text>
+        <text data-detail="fine" x="176" y="178" class="t-dim" font-size="7">core.py:771｜返回异步生成器</text>
         </g>
 
         <g data-edge-from="loop" data-edge-to="worker" data-edge-label="to_thread(self.run, stream=True)" data-edge-key="1">
@@ -5066,7 +5066,7 @@
           <rect x="464.3" y="184" width="178.4" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="194" class="t-backend" font-size="9" text-anchor="middle">to_thread(self.run, stream=True)</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="222" class="t-dim" font-size="7">core.py:767｜取得同步生成器</text>
+        <text data-detail="fine" x="440.3333333333333" y="222" class="t-dim" font-size="7">core.py:775｜取得同步生成器</text>
         </g>
 
         <g data-edge-from="worker" data-edge-to="core" data-edge-label="run() 启动（生成器惰性求值）" data-edge-key="2">
@@ -5083,7 +5083,7 @@
           <rect x="469.5" y="256" width="168" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="266" class="t-backend" font-size="9" text-anchor="middle">to_thread(next, gen, sentinel)</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="294" class="t-dim" font-size="7">core.py:771｜每 chunk 一次线程往返</text>
+        <text data-detail="fine" x="440.3333333333333" y="294" class="t-dim" font-size="7">core.py:780｜每 chunk 一次线程往返</text>
         </g>
 
         <g data-edge-from="worker" data-edge-to="core" data-edge-label="推进 _run_stream_logic()" data-edge-key="4">
@@ -5108,7 +5108,7 @@
           <rect x="534.5" y="372" width="38" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="382" class="t-muted" font-size="9" text-anchor="middle">chunk</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="410" class="t-dim" font-size="7">core.py:771-774｜sentinel 判停</text>
+        <text data-detail="fine" x="440.3333333333333" y="410" class="t-dim" font-size="7">core.py:780-783｜sentinel 判停</text>
         </g>
 
         <g data-edge-from="loop" data-edge-to="caller" data-edge-label="yield item" data-edge-key="7">
@@ -5125,7 +5125,7 @@
           <rect x="472.1" y="444" width="162.8" height="16" rx="3" class="c-mask"/>
           <text x="553.5" y="454" class="t-backend" font-size="9" text-anchor="middle">finally: to_thread(gen.close)</text>
         </g>
-        <text data-detail="fine" x="440.3333333333333" y="482" class="t-dim" font-size="7">core.py:775-778｜归还生成器</text>
+        <text data-detail="fine" x="440.3333333333333" y="482" class="t-dim" font-size="7">core.py:784-787｜归还生成器</text>
         </g>
 
         <!-- Segment Labels -->
@@ -5392,8 +5392,8 @@
           <h3>每 chunk 一次线程往返</h3>
         </div>
         <ul>
-          <li>&bull; astream 不重写流式内核，而是给同步生成器加异步外壳（core.py:763-778）</li>
-          <li>&bull; 每个 chunk 都是一次 to_thread(next, gen, sentinel)（core.py:771）</li>
+          <li>&bull; astream 不重写流式内核，而是给同步生成器加异步外壳（core.py:771-787）</li>
+          <li>&bull; 每个 chunk 都是一次 to_thread(next, gen, sentinel)（core.py:780）</li>
           <li>&bull; sentinel 是普通对象哨兵，用于判断生成器结束，不是异常控制流</li>
         </ul>
       </div>
@@ -5404,7 +5404,7 @@
           <h3>取消与资源归还</h3>
         </div>
         <ul>
-          <li>&bull; 异步生成器被取消或正常结束时，finally 里 to_thread(gen.close)（core.py:775-778）</li>
+          <li>&bull; 异步生成器被取消或正常结束时，finally 里 to_thread(gen.close)（core.py:784-787）</li>
           <li>&bull; 同步生成器因此不会被半途遗弃</li>
           <li>&bull; 工具轮（dispatch）同样发生在工作线程内，不额外开线程</li>
         </ul>
@@ -5416,7 +5416,7 @@
           <h3>它到底是不是“异步流”</h3>
         </div>
         <ul>
-          <li>&bull; 推进的对象是同步的 _run_stream_logic()（core.py:2102）</li>
+          <li>&bull; 推进的对象是同步的 _run_stream_logic()（core.py:2203）</li>
           <li>&bull; 对调用方来说可被 await 取消，但底层仍是阻塞式产出</li>
           <li>&bull; 代价：每个 chunk 都有一次线程调度开销</li>
         </ul>
