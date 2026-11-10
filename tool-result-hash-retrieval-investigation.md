@@ -20,15 +20,15 @@
 
 spill 逻辑在 `LightAgent/session.py:802-822`：
 
-- 触发条件：`role == "tool"` 且字符串内容长度超过 `max_inline_tool_chars`（默认 12000 字符，`session.py:748`）。
+- **触发条件**：**`role == "tool"` 且字符串内容长度超过 `max_inline_tool_chars`（默认 12000 字符，`session.py:748`）。**
 - 处理方式：计算 SHA-256 → `reference = "tool-result:sha256:<digest>"`（`session.py:813`）→ 原文连同 reference/digest/size 放进 `spilled` 列表（`session.py:814-819`）→ 模型侧消息内容替换为占位符 `[Tool result stored outside context: <reference>, N chars]`（`session.py:820`）→ 消息 `metadata.content_reference` 写入 reference（`session.py:821`）。
 - 触发时机：只有两处。一是手动调用 `agent.compact_session()`（`core.py:812`）；二是配置了 `context_budget` 且请求前估算超预算的自动压缩（`core.py:1107-1117`）。不配 budget、不手动压缩，就不发生 spill。
-- spilled 的去向：两处调用点都把完整 `spilled` 列表记录成 `context.compacted` 会话事件（`core.py:827/834`、`core.py:1116`）。完整内容就在事件数据里。
+- **spilled 的去向：两处调用点都把完整 `spilled` 列表记录成 `context.compacted` 会话事件（`core.py:827/834`、`core.py:1116`）。完整内容就在事件数据里。**
 
 模型可见的工具面：
 
 - 模型收到的工具清单 = `tool_registry.get_tools()`（`core.py:705`），没有别的来源。
-- 默认注册的工具：`safe_expression`、`upload_file_to_oss`（`core.py:269`），可选 Python 执行器；发现技能时另有 list_skills / activate_skill / execute_skill_script / read_skill_reference（只读技能目录文档）；以及用户自加工具、MCP 工具。
+- 默认注册的工具：`safe_expression`、`upload_file_to_oss`（`core.py:269`），可选 Python 执行器；发现技能时另有 **`list_skills / activate_skill / execute_skill_script / read_skill_reference`**（只读技能目录文档）；以及用户自加工具、MCP 工具。
 - 没有任何"按 reference / hash 取回"的工具。全仓 grep `content_reference` 只有 `session.py:821` 一处写入，无任何读取方。
 - 占位符文本本身不含"怎么取回"的任何提示：没有工具名，没有调用建议。
 
@@ -36,14 +36,18 @@ spill 逻辑在 `LightAgent/session.py:802-822`：
 
 边界 A：完整内容并没有丢，spill 是"按请求生成的视图"，不是销毁。
 
-- `tool_result` 追踪事件把完整 output 写入 `tool.completed` 会话事件（`core.py:2044` 等）。
-- 带 `session_id` 运行时，每轮 run 会从会话事件重新投影历史消息（`core.py:567-577`、`core.py:630`），完整工具输出会重新进入消息列表；再次超预算时才重新 spill（同一内容 hash 稳定，前后两次 digest 一致）。
+- **`tool_result` 追踪事件把完整 output 写入 `tool.completed` 会话事件**（`core.py:2044` 等）。
+- 带 `session_id` 运行时，**每轮 run 会从会话事件重新投影历史消息（`core.py:567-577`、`core.py:630`），完整工具输出会重新进入消息列表；再次超预算时才重新 spill（同一内容 hash 稳定，前后两次 digest 一致）**。
 - 内容跨不跨进程取决于 store：默认 `InMemorySessionStore`（`runtime.py:909`），进程结束就没了；换 Jsonl/Sqlite store 才是持久的。
 
 边界 B：有一条开发者侧旁路，但不成机制。
 
 - `SessionSearchProvider`（`knowledge.py:302-338`）提供 `session.search`：对 session 事件 JSON 做字面子串搜索，返回带 citation（`session:<id>:<seq>`）的事件数据。spill 的完整内容和 digest 字符串都在 `context.compacted` 事件数据里，所以拿 digest 去搜能命中。
-- 但它（1）是 capability，走 `agent.invoke_capability()` 给开发者用，不会自动变成模型工具；（2）需要持久化 store；（3）官方文档只把它作为"跨 Session 字面搜索"介绍（`docs/runtime_v010.md:149`）。要模型用上它，应用得自己包装注册——框架没做这一步。
+- 但它
+  - （1）是 capability，走 `agent.invoke_capability()` 给开发者用，不会自动变成模型工具；
+  - （2）需要持久化 store；
+  - （3）官方文档只把它作为"跨 Session 字面搜索"介绍（`docs/runtime_v010.md:149`）。要模型用上它，应用得自己包装注册——框架没做这一步。
+
 - 同仓库还有一个可参照的既有实现：LightDAG 的 `LocalArtifactStore`（`LightAgent/dag/artifacts.py`）是内容寻址存储，带 `read(manifest, ctx)` 读回与 SHA-256 完整性校验。但它服务 DAG 任务产物，和 session spill 之间没有任何代码连接（互不引用）。
 
 ### 1.3 判定
